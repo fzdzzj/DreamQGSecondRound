@@ -1,0 +1,40 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# .gitignore
+
+# ==================== 敏感配置文件 ====================
+.env
+.env.local
+.env.*.local
+application-local.yaml
+application-prod.yaml
+application-dev.yml
+*.key
+*.pem
+#保留模板文件
+!**/.env.example
+
+# ==================== 编译输出 ====================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# ==================== IDE 文件 ====================
+.idea/
+*.iml
+.vscode/
+.settings/
+
+# ==================== 日志文件 ====================
+logs/
+*.log
+
+# ==================== 操作系统文件 ====================
+.DS_Store
+Thumbs.db
+

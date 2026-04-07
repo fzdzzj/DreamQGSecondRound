@@ -1,0 +1,80 @@
+# 所有环境共用
+spring:
+  application:
+    name: lost-found
+  config:
+    import: optional:file:.env[.properties]
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  # 基础数据源配置（具体值由环境配置覆盖）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis 基础配置
+  data:
+    redis:
+      url: ${SPRING_REDIS_URL:redis://localhost:6379/10}
+
+# ==============================
+# 服务器配置
+# ==============================
+server:
+  port: ${SERVER_PORT:8080}
+
+# ==============================
+# 日志基础配置
+# ==============================
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+
+# MyBatis-Plus 核心配置
+mybatis-plus:
+  # 1. Mapper XML 文件扫描路径
+  mapper-locations: classpath:mapper/*.xml
+  # 2. 实体类别名包扫描
+  type-aliases-package: com.qg.pojo
+  # 3. MyBatis-Plus 高级配置
+  configuration:
+    # 开启下划线转驼峰命名映射（必须开）
+    map-underscore-to-camel-case: true
+    # 打印 SQL 日志（你现在最需要的）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 自动映射行为配置
+    auto-mapping-behavior: FULL
+
+# JWT 认证配置
+jwt:
+  sign-key: ${JWT_SIGN_KEY}
+  expire: ${JWT_EXPIRE}
+  refresh-expire: ${JWT_REFRESH_EXPIRE}
+  refresh-sign-key: ${JWT_REFRESH_SIGN_KEY}
+
+# 阿里云 OSS 基础配置
+aliyun:
+  oss:
+    endpoint: ${OSS_ENDPOINT}
+    region: ${OSS_REGION:cn-beijing}
+
+# 接口文档配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+auth:
+  filter:
+    enabled: true
+

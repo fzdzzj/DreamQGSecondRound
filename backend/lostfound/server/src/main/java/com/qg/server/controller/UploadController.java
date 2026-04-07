@@ -1,0 +1,67 @@
+package com.qg.server.controller;
+
+import com.qg.common.result.Result;
+import com.qg.common.util.AliyunOSSOperator;
+import com.qg.server.anno.OperationLog;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.unit.DataSize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Arrays;
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/file")
+@RequiredArgsConstructor
+@Tag(name = "文件上传接口", description = "图片/文件上传至阿里云OSS，返回URL地址")
+public class UploadController {
+
+    private final AliyunOSSOperator aliyunOSSOperator;
+
+    @Value("${aliyun.oss.allowed-types}")
+    private String allowedTypesStr;
+
+    @Value("${aliyun.oss.max-file-size}")
+    private DataSize maxFileSize;
+
+    @PostMapping("/upload")
+    @OperationLog("文件上传")
+    @Operation(summary = "文件上传", description = "支持图片格式，上传成功返回OSS访问地址")
+    public Result<String> upload(
+            @Parameter(description = "上传文件", required = true)
+            @RequestParam("file") MultipartFile file) throws Exception {
+
+        if (file == null || file.isEmpty()) {
+            log.warn("上传文件不能为空");
+            return Result.error(400, "上传文件不能为空");
+        }
+
+        log.info("文件上传请求，文件名={}, 大小={}KB",
+                file.getOriginalFilename(), file.getSize() / 1024);
+
+        List<String> allowedTypes = Arrays.asList(allowedTypesStr.split(","));
+        String contentType = file.getContentType();
+
+        if (contentType == null || !allowedTypes.contains(contentType)) {
+            log.warn("不支持的文件类型：{}", contentType);
+            return Result.error(400, "不支持的文件类型：" + contentType);
+        }
+
+        if (file.getSize() > maxFileSize.toBytes()) {
+            log.warn("文件大小超限，当前={}KB，最大={}MB",
+                    file.getSize() / 1024, maxFileSize.toMegabytes());
+            return Result.error(413, "文件大小不能超过 " + maxFileSize.toMegabytes() + "MB");
+        }
+
+        String url = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+        log.info("文件上传成功，URL={}", url);
+        return Result.success(url);
+    }
+}

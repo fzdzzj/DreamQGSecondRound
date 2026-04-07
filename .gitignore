@@ -1,0 +1,2 @@
+backend/lostfound/server/src/main/resources/application-dev.yml
+backend/lostfound/server/src/main/resources/application-prod.yml
