@@ -121,4 +121,19 @@ public class PinServiceImpl implements PinService {
         log.info("置顶审核完成，requestId={}, status={}", request.getId(), update.getStatus());
 
     }
+
+    @Override
+    public void adminCancelPin(Long requestId, String reason) {
+        Long adminId = BaseContext.getCurrentId();
+        var request = bizPinRequestDao.selectById(requestId);
+        if (request == null) throw new AbsentException("申请不存在");
+
+        request.setStatus("CANCELLED");
+        request.setAuditAdminId(adminId);
+        request.setAuditRemark("管理员撤销: " + reason);
+        request.setAuditTime(LocalDateTime.now());
+
+        bizPinRequestDao.updateById(request);
+        log.info("管理员撤销置顶, requestId={}, adminId={}, reason={}", requestId, adminId, reason);
+    }
 }

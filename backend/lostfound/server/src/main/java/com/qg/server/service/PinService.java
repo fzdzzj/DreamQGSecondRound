@@ -8,4 +8,5 @@ public interface PinService {
     void cancelPin(Long requestId);
 
     void audit(PinAuditDTO pinAuditDTO);
+    void adminCancelPin(Long requestId, String reason);
 }
