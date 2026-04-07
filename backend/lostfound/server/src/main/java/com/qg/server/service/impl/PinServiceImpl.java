@@ -70,6 +70,22 @@ public class PinServiceImpl implements PinService {
     }
 
     @Override
+    public void cancelPin(Long requestId) {
+        Long userId = BaseContext.getCurrentId();
+        var request = bizPinRequestDao.selectById(requestId);
+        if (request == null) throw new AbsentException("申请不存在");
+        if (!request.getApplicantId().equals(userId)) throw new BaseException(403, "无权限撤销");
+
+        if (PinRequestStatus.PENDING.equals(request.getStatus())||PinRequestStatus.APPROVED.equals(request.getStatus())) {
+            request.setStatus(PinRequestStatus.CANCELED);
+            bizPinRequestDao.updateById(request);
+            log.info("用户撤销置顶申请, requestId={}, userId={}", requestId, userId);
+        } else {
+            throw new BaseException(400, "无法撤销该申请");
+        }
+    }
+
+    @Override
     public void audit(PinAuditDTO pinAuditDTO) {
         Long adminId = BaseContext.getCurrentId();
 
