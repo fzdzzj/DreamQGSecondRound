@@ -6,6 +6,7 @@ package com.qg.common.constant;
  */
 public class PinConstant {
 
+
     // 私有构造，防止实例化
     private PinConstant() {
     }
@@ -14,6 +15,7 @@ public class PinConstant {
      * 未置顶
      */
     public static final Integer NOT_PINNED = 0;
+    public static final long PIN_EXPIRE_HOURS = 24;
 
     /**
      * 已置顶

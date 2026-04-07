@@ -42,7 +42,9 @@ public class PermissionServiceImpl implements PermissionService {
                     "POST:/report/audit",
                     "GET:/admin/report/page",
                     "PUT:/admin/report/{id}/review",
-                    "GET:/admin/statistics"
+                    "GET:/admin/statistics",
+
+                    "POST:/pin/audit"
             );
         }
 

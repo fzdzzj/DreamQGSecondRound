@@ -3,6 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qg.common.constant.BizItemStatus;
 import com.qg.common.constant.MessageConstant;
+import com.qg.common.constant.PinConstant;
 import com.qg.common.constant.PinRequestStatus;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
@@ -18,6 +19,8 @@ import com.qg.server.service.PinService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -68,6 +71,38 @@ public class PinServiceImpl implements PinService {
 
     @Override
     public void audit(PinAuditDTO pinAuditDTO) {
+        Long adminId = BaseContext.getCurrentId();
+
+        BizPinRequest request = bizPinRequestDao.selectById(pinAuditDTO.getRequestId());
+        if (request == null) {
+            throw new AbsentException("置顶申请不存在");
+        }
+
+        if (!PinRequestStatus.PENDING.equals(request.getStatus())) {
+            throw new BaseException(400, "该申请已处理");
+        }
+
+        // 更新申请
+        BizPinRequest update = new BizPinRequest();
+        update.setId(request.getId());
+        update.setStatus(pinAuditDTO.getStatus());
+        update.setAuditAdminId(adminId);
+        update.setAuditRemark(pinAuditDTO.getRemark());
+        update.setAuditTime(LocalDateTime.now());
+
+        bizPinRequestDao.updateById(update);
+
+        // 审核通过 → 真正置顶
+        if (PinRequestStatus.APPROVED.equals(pinAuditDTO.getStatus())) {
+            BizItem item = new BizItem();
+            item.setId(request.getItemId());
+            item.setIsPinned(1);
+            item.setPinExpireTime(LocalDateTime.now().plusHours(PinConstant.PIN_EXPIRE_HOURS));
+
+            bizItemDao.updateById(item);
+        }
+
+        log.info("置顶审核完成，requestId={}, status={}", request.getId(), update.getStatus());
 
     }
 }
