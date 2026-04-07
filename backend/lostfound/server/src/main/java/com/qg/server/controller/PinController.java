@@ -1,17 +1,17 @@
 package com.qg.server.controller;
 
+import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
+import com.qg.pojo.dto.PinRequestQueryDTO;
+import com.qg.pojo.entity.BizPinRequest;
 import com.qg.server.service.PinService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/pin")
@@ -40,4 +40,21 @@ public class PinController {
         pinService.audit(dto);
         return Result.success();
     }
+    /**
+     * 查询置顶申请列表
+     */
+    @PostMapping("/page")
+    @Operation(summary = "分页查询置顶申请列表")
+    public Result<PageResult<BizPinRequest>> page(@Validated @RequestBody PinRequestQueryDTO query) {
+        PageResult<BizPinRequest> pageResult = pinService.queryPinRequests(query);
+        return Result.success(pageResult);
+    }
+    @PostMapping("/cancel/{id}")
+    @Operation(summary = "取消置顶申请", description = "用户或管理员取消置顶申请")
+    public Result<Void> cancel(@PathVariable Long id) {
+        pinService.cancelPin(id); // Service 内区分角色逻辑
+        log.info("取消置顶申请，pinRequestId={}", id);
+        return Result.success();
+    }
+
 }

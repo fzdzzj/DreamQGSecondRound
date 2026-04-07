@@ -44,7 +44,9 @@ public class PermissionServiceImpl implements PermissionService {
                     "PUT:/admin/report/{id}/review",
                     "GET:/admin/statistics",
 
-                    "POST:/pin/audit"
+                    "POST:/pin/page",
+                    "POST:/pin/audit",
+                    "POST:/pin/cancel/{id}"
             );
         }
 
@@ -71,7 +73,8 @@ public class PermissionServiceImpl implements PermissionService {
                 "POST:/pin/apply",
 
                 // 普通用户可举报
-                "POST:/report"
+                "POST:/report",
+                "POST:/pin/cancel/{id}"
         );
     }
 }

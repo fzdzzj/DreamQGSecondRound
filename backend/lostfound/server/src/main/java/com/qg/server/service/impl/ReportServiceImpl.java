@@ -98,7 +98,5 @@ public class ReportServiceImpl implements ReportService {
             itemDao.updateById(item);
         }
         log.info("举报审核完成，reportId={}, result={}",reportAuditDTO.getReportId(), reportAuditDTO.getStatus());
-
-
     }
 }

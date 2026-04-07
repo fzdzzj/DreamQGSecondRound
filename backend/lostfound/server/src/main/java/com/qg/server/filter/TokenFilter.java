@@ -134,7 +134,8 @@ public class TokenFilter extends OncePerRequestFilter {
             }
 
             // 6. 写入线程上下文，供后续 Controller / Service 使用
-            BaseContext.setCurrentId(userId);
+            BaseContext.setCurrentUser(userId, role);
+
 
             // 7. RBAC 权限校验
             if (!hasPermission(uri, method, role, permissions)) {
@@ -145,7 +146,7 @@ public class TokenFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } finally {
-            BaseContext.removeCurrentId();
+            BaseContext.remove();
         }
     }
 

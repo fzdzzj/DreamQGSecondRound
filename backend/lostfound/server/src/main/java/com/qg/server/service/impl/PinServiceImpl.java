@@ -23,6 +23,7 @@ import com.qg.server.service.PinService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -74,19 +75,49 @@ public class PinServiceImpl implements PinService {
     }
 
     @Override
-    public void cancelPin(Long requestId) {
-        Long userId = BaseContext.getCurrentId();
-        var request = bizPinRequestDao.selectById(requestId);
-        if (request == null) throw new AbsentException("申请不存在");
-        if (!request.getApplicantId().equals(userId)) throw new BaseException(403, "无权限撤销");
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelPin(Long pinRequestId) {
+        Long currentUserId = BaseContext.getCurrentId();
+        String currentRole = BaseContext.getCurrentRole(); // RBAC 获取角色
 
-        if (PinRequestStatus.PENDING.equals(request.getStatus())||PinRequestStatus.APPROVED.equals(request.getStatus())) {
-            request.setStatus(PinRequestStatus.CANCELED);
-            bizPinRequestDao.updateById(request);
-            log.info("用户撤销置顶申请, requestId={}, userId={}", requestId, userId);
-        } else {
-            throw new BaseException(400, "无法撤销该申请");
+        // 查询置顶申请
+        BizPinRequest pinRequest = bizPinRequestDao.selectById(pinRequestId);
+        if (pinRequest == null) {
+            throw new AbsentException("置顶申请不存在");
         }
+
+        // 用户角色逻辑：只能取消自己的申请，且状态为 PENDING
+        if ("STUDENT".equals(currentRole)) {
+            if (!pinRequest.getApplicantId().equals(currentUserId)) {
+                throw new BaseException(403, "不能取消他人申请");
+            }
+            if (!PinRequestStatus.PENDING.equals(pinRequest.getStatus())) {
+                throw new BaseException(400, "已处理的申请无法取消");
+            }
+            pinRequest.setStatus(PinRequestStatus.CANCELED);
+            bizPinRequestDao.updateById(pinRequest);
+            log.info("学生取消自己的置顶申请，pinRequestId={}", pinRequestId);
+            return;
+        }
+
+        // 管理员逻辑：可以取消任意申请
+        if ("ADMIN".equals(currentRole) || "SYSTEM".equals(currentRole)) {
+            if (PinRequestStatus.APPROVED.equals(pinRequest.getStatus())) {
+                // 如果管理员取消已批准的申请，同时撤销物品置顶
+                BizItem item = bizItemDao.selectById(pinRequest.getItemId());
+                if (item != null) {
+                    item.setIsPinned(0);
+                    item.setPinExpireTime(null);
+                    bizItemDao.updateById(item);
+                }
+            }
+            pinRequest.setStatus(PinRequestStatus.CANCELED);
+            bizPinRequestDao.updateById(pinRequest);
+            log.info("管理员取消置顶申请，pinRequestId={}", pinRequestId);
+            return;
+        }
+
+        throw new BaseException(403, "无权限操作");
     }
 
     @Override
@@ -126,20 +157,6 @@ public class PinServiceImpl implements PinService {
 
     }
 
-    @Override
-    public void adminCancelPin(Long requestId, String reason) {
-        Long adminId = BaseContext.getCurrentId();
-        var request = bizPinRequestDao.selectById(requestId);
-        if (request == null) throw new AbsentException("申请不存在");
-
-        request.setStatus("CANCELLED");
-        request.setAuditAdminId(adminId);
-        request.setAuditRemark("管理员撤销: " + reason);
-        request.setAuditTime(LocalDateTime.now());
-
-        bizPinRequestDao.updateById(request);
-        log.info("管理员撤销置顶, requestId={}, adminId={}, reason={}", requestId, adminId, reason);
-    }
 
     @Override
     public PageResult<BizPinRequest> queryPinRequests(PinRequestQueryDTO queryDTO) {
