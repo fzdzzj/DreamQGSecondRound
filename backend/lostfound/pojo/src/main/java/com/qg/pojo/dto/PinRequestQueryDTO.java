@@ -1,0 +1,29 @@
+package com.qg.pojo.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import lombok.Data;
+
+@Data
+@Schema(description = "置顶申请查询参数DTO")
+public class PinRequestQueryDTO {
+
+    @Min(1)
+    @Schema(description = "页码", example = "1")
+    private Integer pageNum = 1;
+
+    @Min(1)
+    @Max(50)
+    @Schema(description = "每页记录数", example = "10")
+    private Integer pageSize = 10;
+
+    @Schema(description = "申请状态，PENDING/APPROVED/REJECTED/CANCELLED", example = "PENDING")
+    private String status;
+
+    @Schema(description = "申请用户ID")
+    private Long applicantId;
+
+    @Schema(description = "物品ID")
+    private Long itemId;
+}

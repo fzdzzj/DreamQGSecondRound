@@ -1,6 +1,8 @@
 package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qg.common.constant.BizItemStatus;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.PinConstant;
@@ -9,8 +11,10 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.BaseException;
 import com.qg.common.exception.UpdateNotAllowedException;
+import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
+import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizPinRequest;
 import com.qg.server.mapper.BizItemDao;
@@ -135,5 +139,15 @@ public class PinServiceImpl implements PinService {
 
         bizPinRequestDao.updateById(request);
         log.info("管理员撤销置顶, requestId={}, adminId={}, reason={}", requestId, adminId, reason);
+    }
+
+    @Override
+    public PageResult<BizPinRequest> queryPinRequests(PinRequestQueryDTO queryDTO) {
+        Page<BizPinRequest> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+        LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
+        if (queryDTO.getApplicantId() != null) wrapper.eq(BizPinRequest::getApplicantId, queryDTO.getApplicantId());
+        if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizPinRequest::getStatus, queryDTO.getStatus());
+        bizPinRequestDao.selectPage(page, wrapper);
+        return new PageResult<>(page.getRecords(), page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 }
