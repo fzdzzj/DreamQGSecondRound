@@ -34,7 +34,7 @@ public class BizItemStatVO {
     /**
      * 状态code: OPEN
      */
-    private String statusCode;
+    private String statusDesc;
 
     /**
      * 状态描述: 开放

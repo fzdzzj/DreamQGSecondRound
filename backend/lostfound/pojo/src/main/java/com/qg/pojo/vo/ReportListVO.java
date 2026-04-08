@@ -11,8 +11,8 @@ public class ReportListVO {
     private Long itemId;
     private Long reporterId;
 
-    private String statusCode;
     private String status;
+    private String statusDesc;
 
     private LocalDateTime createTime;
 }

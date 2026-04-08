@@ -14,7 +14,7 @@ public class ReportDetailVO {
     private String reason;
     private String detail;
 
-    private String statusCode;
+    private String statusDesc;
     private String status;
 
     private Long adminId;

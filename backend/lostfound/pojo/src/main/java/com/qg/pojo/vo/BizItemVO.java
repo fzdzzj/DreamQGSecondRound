@@ -15,7 +15,7 @@ public class BizItemVO {
     private String description;
     private String location;
     private LocalDateTime happenTime;
-    private String statusCode;
+    private String statusDesc;
     private String status;
     private Integer isPinned;
     private LocalDateTime pinExpireTime;

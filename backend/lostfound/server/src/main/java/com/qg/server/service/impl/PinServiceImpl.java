@@ -19,7 +19,8 @@ import com.qg.pojo.dto.PinAuditDTO;
 import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizPinRequest;
-import com.qg.pojo.vo.PinRequestListVO;
+import com.qg.pojo.vo.PinRequestDetailVO;
+import com.qg.pojo.vo.PinRequestStatVO;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizPinRequestDao;
 import com.qg.server.service.PinService;
@@ -165,7 +166,7 @@ public class PinServiceImpl implements PinService {
 
 
     @Override
-    public PageResult<PinRequestListVO> queryPinRequests(PinRequestQueryDTO queryDTO) {
+    public PageResult<PinRequestStatVO> queryPinRequests(PinRequestQueryDTO queryDTO) {
         Page<BizPinRequest> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
         if (queryDTO.getApplicantId() != null) wrapper.eq(BizPinRequest::getApplicantId, queryDTO.getApplicantId());
@@ -176,15 +177,19 @@ public class PinServiceImpl implements PinService {
     }
 
     @Override
-    public BizPinRequest getById(Long id) {
+    public PinRequestDetailVO getById(Long id) {
         String role = BaseContext.getCurrentRole();
         BizPinRequest request = null;
+        PinRequestDetailVO vo = new PinRequestDetailVO();
         if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
              request=bizPinRequestDao.selectById(id);
              if (request == null) {
                  throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
              }
-             return request;
+
+             BeanUtils.copyProperties(request, vo);
+             vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
+             return vo;
         }
         if ("STUDENT".equals(role)) {
              request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
@@ -194,34 +199,37 @@ public class PinServiceImpl implements PinService {
             }else if (!request.getApplicantId().equals(BaseContext.getCurrentId())) {
                 throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
             }
-            return request;
+            vo = new PinRequestDetailVO();
+            BeanUtils.copyProperties(request, vo);
+            vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
+            return vo;
         }
         throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
     }
 
     @Override
-    public List<PinRequestListVO> myList() {
+    public List<PinRequestStatVO> myList() {
 
         Long currentUserId = BaseContext.getCurrentId();
-        List<PinRequestListVO> list = bizPinRequestDao.selectList(new LambdaQueryWrapper<BizPinRequest>()
+        List<PinRequestStatVO> list = bizPinRequestDao.selectList(new LambdaQueryWrapper<BizPinRequest>()
                 .eq(BizPinRequest::getApplicantId, currentUserId))
                 .stream()
                 .map(item -> {
-                    PinRequestListVO vo = new PinRequestListVO();
+                    PinRequestStatVO vo = new PinRequestStatVO();
                     BeanUtils.copyProperties(item, vo);
-                    vo.setStatus(PinRequestStatusEnum.getDescByCode(item.getStatus()));
+                    vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(item.getStatus()));
                     return vo;
                 })
                 .collect(Collectors.toList());
         return list;
     }
 
-    private PageResult<PinRequestListVO> convertToVOPage(Page<BizPinRequest> page) {
-        List<PinRequestListVO> voList = page.getRecords().stream()
+    private PageResult<PinRequestStatVO> convertToVOPage(Page<BizPinRequest> page) {
+        List<PinRequestStatVO> voList = page.getRecords().stream()
                 .map(item -> {
-                    PinRequestListVO vo = new PinRequestListVO();
+                    PinRequestStatVO vo = new PinRequestStatVO();
                     BeanUtils.copyProperties(item, vo);
-                    vo.setStatus(PinRequestStatusEnum.getDescByCode(item.getStatus()));
+                    vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(item.getStatus()));
                     return vo;
                 })
                 .collect(Collectors.toList());

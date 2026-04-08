@@ -13,7 +13,7 @@ public class PinRequestDetailVO {
 
     private String reason;
 
-    private String statusCode;
+    private String statusDesc;
     private String status;
 
     private Long auditAdminId;

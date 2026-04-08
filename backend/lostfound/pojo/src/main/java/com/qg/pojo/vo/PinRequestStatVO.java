@@ -5,13 +5,13 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class PinRequestListVO {
+public class PinRequestStatVO {
 
     private Long id;
     private Long itemId;
     private Long applicantId;
 
-    private String statusCode;
+    private String statusDesc;
     private String status;
 
     private LocalDateTime createTime;

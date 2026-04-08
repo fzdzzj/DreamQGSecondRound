@@ -4,8 +4,9 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
 import com.qg.pojo.dto.PinRequestQueryDTO;
-import com.qg.pojo.entity.BizPinRequest;
+import com.qg.pojo.vo.PinRequestDetailVO;
 import com.qg.pojo.vo.PinRequestListVO;
+import com.qg.pojo.vo.PinRequestStatVO;
 
 import java.util.List;
 
@@ -15,9 +16,9 @@ public interface PinService {
 
     void audit(PinAuditDTO pinAuditDTO);
 
-    PageResult<PinRequestListVO> queryPinRequests(PinRequestQueryDTO queryDTO);
+    PageResult<PinRequestStatVO> queryPinRequests(PinRequestQueryDTO queryDTO);
 
-    BizPinRequest getById(Long id);
+    PinRequestDetailVO getById(Long id);
 
-    List<PinRequestListVO> myList();
+    List<PinRequestStatVO> myList();
 }
