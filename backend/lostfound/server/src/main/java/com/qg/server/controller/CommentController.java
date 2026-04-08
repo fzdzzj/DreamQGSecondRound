@@ -98,6 +98,19 @@ public class CommentController {
         return Result.success(count);
     }
 
+    /**
+     * 获取用户未读留言数量
+     */
+    @GetMapping("/user/{userId}/unread")
+    @Operation(summary = "获取用户未读留言数量")
+    public Result<Long> getUserUnreadCount(@PathVariable Long userId) {
+        log.info("查询用户未读留言数量，userId={}", userId);
+        Long count = commentService.getUserUnreadCount(userId);
+        log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
+        return Result.success(count);
+    }
+
+
 
 
 

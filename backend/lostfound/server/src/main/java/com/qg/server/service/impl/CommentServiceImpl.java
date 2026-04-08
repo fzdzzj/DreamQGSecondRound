@@ -175,6 +175,20 @@ public class CommentServiceImpl implements CommentService {
         return count;
     }
 
+    @Override
+    public Long getUserUnreadCount(Long userId) {
+        log.info("查询用户未读留言数量，userId={}", userId);
+
+        Long count = bizCommentDao.selectCount(
+                new LambdaQueryWrapper<BizComment>()
+                        .eq(BizComment::getUserId, userId)
+                        .eq(BizComment::getIsRead, 0)
+        );
+
+        log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
+        return count;
+    }
+
 
 
 }

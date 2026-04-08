@@ -41,4 +41,11 @@ public interface CommentService {
      */
     Long getUnreadCount(Long itemId);
 
+    /**
+     * 获取用户的未读留言数量
+     *
+     * @param userId 用户ID
+     * @return 未读留言数量
+     */
+    Long getUserUnreadCount(Long userId);
 }
