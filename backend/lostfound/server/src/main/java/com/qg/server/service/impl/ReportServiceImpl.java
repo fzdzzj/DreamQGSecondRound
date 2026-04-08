@@ -111,6 +111,9 @@ public class ReportServiceImpl implements ReportService {
             item.setId(report.getItemId());
             item.setStatus(BizItemStatus.REPORTED);
             itemDao.updateById(item);
+            itemDao.deleteById(report.getItemId());
+            log.info("物品删除成功，itemId={}", report.getItemId());
+
         }
         log.info("举报审核完成，reportId={}, result={}",reportAuditDTO.getReportId(), reportAuditDTO.getStatus());
     }

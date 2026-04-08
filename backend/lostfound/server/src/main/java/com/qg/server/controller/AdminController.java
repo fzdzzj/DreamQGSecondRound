@@ -2,7 +2,9 @@ package com.qg.server.controller;
 
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
+import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
+import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
 import com.qg.server.service.AdminService;
@@ -80,6 +82,19 @@ public class AdminController {
         log.info("管理员请求删除物品成功，itemId={}", id);
         return Result.success();
     }
+
+    /**
+     * 平台统计
+     */
+    @GetMapping("/statistics")
+    @Operation(summary = "平台统计")
+    public Result<AdminStatisticsVO> statistics(@Validated @RequestBody AdminStatisticsQueryDTO dto) {
+        log.info("管理员请求平台统计，startTime={}, endTime={}", dto.getStartTime(), dto.getEndTime());
+        AdminStatisticsVO vo = adminService.statistics(dto);
+        log.info("管理员请求平台统计成功");
+        return Result.success(vo);
+    }
+
 
 
 

@@ -1,7 +1,9 @@
 package com.qg.server.service;
 
 import com.qg.common.result.PageResult;
+import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
+import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
 
@@ -39,5 +41,13 @@ public interface AdminService {
      * @param itemId 物品ID
      */
     void deleteItem(Long itemId);
+
+    /**
+     * 平台统计
+     *
+     * @param queryDTO 查询条件
+     * @return 统计结果
+     */
+    AdminStatisticsVO statistics(AdminStatisticsQueryDTO queryDTO);
 
 }

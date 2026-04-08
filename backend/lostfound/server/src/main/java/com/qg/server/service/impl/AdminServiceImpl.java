@@ -10,9 +10,11 @@ import com.qg.common.enums.UserRoleEnum;
 import com.qg.common.enums.UserStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.result.PageResult;
+import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
 import com.qg.server.mapper.BizItemDao;
@@ -25,6 +27,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -180,6 +183,70 @@ public class AdminServiceImpl implements AdminService {
         bizItemDao.deleteById(itemId);
         evictItemCaches(itemId);
     }
+
+    /**
+     * 管理员平台统计
+     *
+     * 统计内容：
+     * 1. 发布信息数量（指定时间段内创建，且未被逻辑删除）
+     * 2. 找回物品数量（指定时间段内创建，且状态为 MATCHED）
+     * 3. 活跃用户数（指定时间段内登录）
+     *
+     * @param queryDTO 查询条件
+     * @return 统计结果
+     */
+    @Override
+    public AdminStatisticsVO statistics(AdminStatisticsQueryDTO queryDTO) {
+        log.info("管理员获取平台统计开始，queryDTO={}", queryDTO);
+
+
+        LocalDateTime startTime = queryDTO == null ? null : queryDTO.getStartTime();
+        LocalDateTime endTime = queryDTO == null ? null : queryDTO.getEndTime();
+        if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("开始时间不能大于结束时间");
+        }
+
+        // 默认时间范围：最近7天
+        if (startTime == null && endTime == null) {
+            endTime = LocalDateTime.now();
+            startTime = endTime.minusDays(7);
+            log.info("未传时间范围，使用默认时间范围：startTime={}, endTime={}", startTime, endTime);
+        }
+
+        AdminStatisticsVO vo = new AdminStatisticsVO();
+
+        // 发布信息数量
+        Long publishCount = bizItemDao.selectCount(
+                new LambdaQueryWrapper<BizItem>()
+                        .ge(startTime != null, BizItem::getCreateTime, startTime)
+                        .le(endTime != null, BizItem::getCreateTime, endTime)
+        );
+
+        // 找回物品数量
+        Long foundCount = bizItemDao.selectCount(
+                new LambdaQueryWrapper<BizItem>()
+                        .eq(BizItem::getStatus, BizItemStatus.MATCHED)
+                        .ge(startTime != null, BizItem::getCreateTime, startTime)
+                        .le(endTime != null, BizItem::getCreateTime, endTime)
+        );
+
+        // 活跃用户数
+        Long activeUserCount = userDao.selectCount(
+                new LambdaQueryWrapper<SysUser>()
+                        .ge(startTime != null, SysUser::getLastLoginTime, startTime)
+                        .le(endTime != null, SysUser::getLastLoginTime, endTime)
+        );
+
+        vo.setPublishCount(publishCount == null ? 0L : publishCount);
+        vo.setFoundCount(foundCount == null ? 0L : foundCount);
+        vo.setActiveUserCount(activeUserCount == null ? 0L : activeUserCount);
+
+        log.info("平台统计完成，publishCount={}, foundCount={}, activeUserCount={}",
+                vo.getPublishCount(), vo.getFoundCount(), vo.getActiveUserCount());
+
+        return vo;
+    }
+
 
 
 
