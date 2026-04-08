@@ -4,20 +4,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+
 @Data
 @Schema(description = "物品统计VO")
 public class BizItemStatVO {
-    /**
-     * 主键ID
-     */
+
     private Long id;
+
     /**
-     * 类型: LOST(丢失), FOUND(拾取)
+     * 类型: LOST / FOUND
      */
     private String type;
 
     /**
-     * 标题/物品名称
+     * 标题
      */
     private String title;
 
@@ -27,18 +27,22 @@ public class BizItemStatVO {
     private String location;
 
     /**
-     * 丢失/拾取时间
+     * 时间
      */
     private LocalDateTime happenTime;
 
     /**
-     * 状态: OPEN, MATCHED, CLOSED, REPORTED, DELETED
+     * 状态code: OPEN
+     */
+    private String statusCode;
+
+    /**
+     * 状态描述: 开放
      */
     private String status;
 
     /**
-     * AI识别分类
+     * AI分类
      */
     private String aiCategory;
-
 }

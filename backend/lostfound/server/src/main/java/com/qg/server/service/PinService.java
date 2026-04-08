@@ -5,6 +5,7 @@ import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
 import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizPinRequest;
+import com.qg.pojo.vo.PinRequestListVO;
 
 public interface PinService {
     void apply(PinApplyDTO pinApplyDTO);
@@ -12,5 +13,7 @@ public interface PinService {
 
     void audit(PinAuditDTO pinAuditDTO);
 
-    PageResult<BizPinRequest> queryPinRequests(PinRequestQueryDTO queryDTO);
+    PageResult<PinRequestListVO> queryPinRequests(PinRequestQueryDTO queryDTO);
+
+    BizPinRequest getById(Long id);
 }

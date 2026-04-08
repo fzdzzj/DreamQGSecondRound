@@ -8,24 +8,30 @@ import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.PinConstant;
 import com.qg.common.constant.PinRequestStatus;
 import com.qg.common.context.BaseContext;
+import com.qg.common.enums.PinRequestStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.BaseException;
 import com.qg.common.exception.UpdateNotAllowedException;
+import com.qg.common.exception.ViewNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
 import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizPinRequest;
+import com.qg.pojo.vo.PinRequestListVO;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizPinRequestDao;
 import com.qg.server.service.PinService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -159,12 +165,50 @@ public class PinServiceImpl implements PinService {
 
 
     @Override
-    public PageResult<BizPinRequest> queryPinRequests(PinRequestQueryDTO queryDTO) {
+    public PageResult<PinRequestListVO> queryPinRequests(PinRequestQueryDTO queryDTO) {
         Page<BizPinRequest> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
         if (queryDTO.getApplicantId() != null) wrapper.eq(BizPinRequest::getApplicantId, queryDTO.getApplicantId());
         if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizPinRequest::getStatus, queryDTO.getStatus());
         bizPinRequestDao.selectPage(page, wrapper);
-        return new PageResult<>(page.getRecords(), page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+        PageResult pageResult=convertToVOPage(page);
+        return pageResult;
+    }
+
+    @Override
+    public BizPinRequest getById(Long id) {
+        String role = BaseContext.getCurrentRole();
+        BizPinRequest request = null;
+        if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
+             request=bizPinRequestDao.selectById(id);
+             if (request == null) {
+                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
+             }
+             return request;
+        }
+        if ("STUDENT".equals(role)) {
+             request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
+                    .eq(BizPinRequest::getId, id));
+            if (request == null) {
+                throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
+            }else if (!request.getApplicantId().equals(BaseContext.getCurrentId())) {
+                throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
+            }
+            return request;
+        }
+        throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
+    }
+
+    private PageResult<PinRequestListVO> convertToVOPage(Page<BizPinRequest> page) {
+        List<PinRequestListVO> voList = page.getRecords().stream()
+                .map(item -> {
+                    PinRequestListVO vo = new PinRequestListVO();
+                    BeanUtils.copyProperties(item, vo);
+                    vo.setStatus(PinRequestStatusEnum.getDescByCode(item.getStatus()));
+                    return vo;
+                })
+                .collect(Collectors.toList());
+
+        return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 }

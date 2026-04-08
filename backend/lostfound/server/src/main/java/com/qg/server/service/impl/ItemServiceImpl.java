@@ -8,6 +8,7 @@ import com.qg.common.constant.BizItemType;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.PinConstant;
 import com.qg.common.context.BaseContext;
+import com.qg.common.enums.BizItemStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.exception.UpdateNotAllowedException;
@@ -242,6 +243,7 @@ public class ItemServiceImpl implements ItemService {
         ).stream().map(BizItemImage::getUrl).toList();
 
         bizItemVO.setImageUrls(imageUrls);
+        bizItemVO.setStatus(BizItemStatusEnum.getDescByCode(bizItem.getStatus()));
 
         // 4. 回写缓存
         redisTemplate.opsForValue().set(cacheKey, bizItemVO, 30, TimeUnit.MINUTES);
@@ -431,6 +433,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(item -> {
                     BizItemStatVO vo = new BizItemStatVO();
                     BeanUtils.copyProperties(item, vo);
+                    vo.setStatus(BizItemStatusEnum.getDescByCode(item.getStatus()));
                     return vo;
                 })
                 .collect(Collectors.toList());

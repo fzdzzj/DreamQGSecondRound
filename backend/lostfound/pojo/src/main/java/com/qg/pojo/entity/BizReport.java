@@ -1,5 +1,6 @@
 package com.qg.pojo.entity;
 import com.baomidou.mybatisplus.annotation.*;
+import com.qg.common.enums.ReportStatusEnum;
 import lombok.Data;
 import java.time.LocalDateTime;
 

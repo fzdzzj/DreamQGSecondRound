@@ -6,6 +6,7 @@ import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
 import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizPinRequest;
+import com.qg.pojo.vo.PinRequestListVO;
 import com.qg.server.service.PinService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +46,8 @@ public class PinController {
      */
     @PostMapping("/page")
     @Operation(summary = "分页查询置顶申请列表")
-    public Result<PageResult<BizPinRequest>> page(@Validated @RequestBody PinRequestQueryDTO query) {
-        PageResult<BizPinRequest> pageResult = pinService.queryPinRequests(query);
+    public Result<PageResult<PinRequestListVO>> page(@Validated @RequestBody PinRequestQueryDTO query) {
+        PageResult<PinRequestListVO> pageResult = pinService.queryPinRequests(query);
         return Result.success(pageResult);
     }
     @PostMapping("/cancel/{id}")
@@ -55,6 +56,12 @@ public class PinController {
         pinService.cancelPin(id); // Service 内区分角色逻辑
         log.info("取消置顶申请，pinRequestId={}", id);
         return Result.success();
+    }
+    @GetMapping("/{id}")
+    @Operation(summary = "查询置顶申请详情")
+    public Result<BizPinRequest> get(@PathVariable Long id) {
+        BizPinRequest request = pinService.getById(id);
+        return Result.success(request);
     }
 
 }
