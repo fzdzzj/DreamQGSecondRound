@@ -3,11 +3,14 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.qg.common.constant.MessageConstant;
 import com.qg.common.enums.UserRoleEnum;
 import com.qg.common.enums.UserStatusEnum;
+import com.qg.common.exception.AbsentException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.UserPageQueryDTO;
 import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.AdminService;
@@ -54,6 +57,18 @@ public class AdminServiceImpl implements AdminService {
                 (int) resultPage.getSize()
         );
     }
+
+    @Override
+    public SysUserDetailVO userDetail(Long userId) {
+        log.info("管理员查看用户详情，userId={}", userId);
+
+        SysUser user = userDao.selectById(userId);
+        if (user == null) {
+            throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        return toSysUserDetailVO(user);
+    }
+
     private SysUserStatVO toSysUserStatVO(SysUser user) {
         SysUserStatVO vo = new SysUserStatVO();
         BeanUtils.copyProperties(user, vo);
@@ -61,5 +76,13 @@ public class AdminServiceImpl implements AdminService {
         vo.setStatusDesc(UserStatusEnum.getDescByCode(user.getStatus()));
         return vo;
     }
+    private SysUserDetailVO toSysUserDetailVO(SysUser user) {
+        SysUserDetailVO vo = new SysUserDetailVO();
+        BeanUtils.copyProperties(user, vo);
+        vo.setRoleDesc(UserRoleEnum.getDescByCode(user.getRole()));
+        vo.setStatusDesc(UserStatusEnum.getDescByCode(user.getStatus()));
+        return vo;
+    }
+
 
 }

@@ -35,12 +35,12 @@ public class SysUserDetailVO implements Serializable {
     private String nickname;
 
     /**
-     * 头像URL
+     * 头像
      */
     private String avatar;
 
     /**
-     * 角色编码
+     * 角色
      */
     private String role;
 
@@ -50,7 +50,7 @@ public class SysUserDetailVO implements Serializable {
     private String roleDesc;
 
     /**
-     * 状态编码
+     * 状态
      */
     private Integer status;
 
@@ -73,4 +73,9 @@ public class SysUserDetailVO implements Serializable {
      * 创建时间
      */
     private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
 }

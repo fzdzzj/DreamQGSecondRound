@@ -32,4 +32,18 @@ public class AdminController {
                 pageResult.getTotal(), pageResult.getPageNum(), pageResult.getPageSize());
         return Result.success(pageResult);
     }
+
+    /**
+     * 获取用户详情
+     */
+    @GetMapping("/user/{id}")
+    @Operation(summary = "获取用户详情")
+    public Result<SysUserDetailVO> getUserDetail(@PathVariable Long id) {
+        log.info("管理员获取用户详情，userId={}", id);
+        SysUserDetailVO vo = adminService.userDetail(id);
+        log.info("用户详情获取成功，userId={}", id);
+        return Result.success(vo);
+    }
+
+
 }
