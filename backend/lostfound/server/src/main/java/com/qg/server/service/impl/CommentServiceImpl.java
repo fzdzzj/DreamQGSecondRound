@@ -17,6 +17,7 @@ import com.qg.server.mapper.BizCommentDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.CommentService;
+import com.qg.server.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class CommentServiceImpl implements CommentService {
     private final BizCommentDao bizCommentDao;
     private final BizItemDao bizItemDao;
     private final UserDao UserDao;
+    private final NotificationService notificationService;
 
     /**
      * 新增留言
@@ -208,6 +210,11 @@ public class CommentServiceImpl implements CommentService {
                 log.warn("回复留言失败，父留言不存在，parentId={}", commentAddDTO.getParentId());
                 throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
             }
+
+            // 创建通知：通知父留言的用户
+            Long parentUserId = parentComment.getUserId();
+            String content = "您的留言有新的回复：" + commentAddDTO.getContent();
+            notificationService.createNotification(parentUserId, commentAddDTO.getParentId(), content); // 创建通知
         }
 
         // 创建回复留言
@@ -215,7 +222,7 @@ public class CommentServiceImpl implements CommentService {
         bizComment.setItemId(commentAddDTO.getItemId());
         bizComment.setUserId(userId);
         bizComment.setContent(commentAddDTO.getContent());
-        bizComment.setParentId(commentAddDTO.getParentId()); // 回复的父留言
+        bizComment.setParentId(commentAddDTO.getParentId());
         bizComment.setIsRead(0);
 
         bizCommentDao.insert(bizComment);
@@ -223,6 +230,7 @@ public class CommentServiceImpl implements CommentService {
         log.info("回复留言成功，commentId={}, userId={}, itemId={}",
                 bizComment.getId(), userId, commentAddDTO.getItemId());
     }
+
 
 
 
