@@ -11,7 +11,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.executable.ValidateOnExecution;
 
 @RestController
 @RequestMapping("/comment")
@@ -109,6 +112,20 @@ public class CommentController {
         log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
         return Result.success(count);
     }
+
+    /**
+     * 回复留言
+     */
+    @PostMapping("/reply")
+    @Operation(summary = "回复留言")
+    public Result<Void> replyComment(@Validated @RequestBody CommentAddDTO commentAddDTO) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("用户请求回复留言，userId={}, itemId={}, parentId={}", userId, commentAddDTO.getItemId(), commentAddDTO.getParentId());
+        commentService.replyComment(commentAddDTO);
+        log.info("用户回复留言成功，userId={}, itemId={}, parentId={}", userId, commentAddDTO.getItemId(), commentAddDTO.getParentId());
+        return Result.success();
+    }
+
 
 
 

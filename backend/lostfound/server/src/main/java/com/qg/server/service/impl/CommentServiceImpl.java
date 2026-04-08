@@ -189,6 +189,41 @@ public class CommentServiceImpl implements CommentService {
         return count;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void replyComment(CommentAddDTO commentAddDTO) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("回复留言开始，userId={}, itemId={}, parentId={}", userId, commentAddDTO.getItemId(), commentAddDTO.getParentId());
+
+        BizItem bizItem = bizItemDao.selectById(commentAddDTO.getItemId());
+        if (bizItem == null) {
+            log.warn("回复留言失败，物品不存在，itemId={}", commentAddDTO.getItemId());
+            throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
+        }
+
+        // 父留言验证
+        if (commentAddDTO.getParentId() != 0) {
+            BizComment parentComment = bizCommentDao.selectById(commentAddDTO.getParentId());
+            if (parentComment == null) {
+                log.warn("回复留言失败，父留言不存在，parentId={}", commentAddDTO.getParentId());
+                throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
+            }
+        }
+
+        // 创建回复留言
+        BizComment bizComment = new BizComment();
+        bizComment.setItemId(commentAddDTO.getItemId());
+        bizComment.setUserId(userId);
+        bizComment.setContent(commentAddDTO.getContent());
+        bizComment.setParentId(commentAddDTO.getParentId()); // 回复的父留言
+        bizComment.setIsRead(0);
+
+        bizCommentDao.insert(bizComment);
+
+        log.info("回复留言成功，commentId={}, userId={}, itemId={}",
+                bizComment.getId(), userId, commentAddDTO.getItemId());
+    }
+
 
 
 }

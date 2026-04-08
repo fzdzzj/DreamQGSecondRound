@@ -34,4 +34,5 @@ public interface MessageConstant {
     String PIN_REQUEST_ABSENT = "置顶申请不存在";
     String COMMENT_NOT_FOUND = "留言不存在";
     String USER_NOT_FOUND = "用户不存在";
+    String PARENT_COMMENT_NOT_FOUND = "父留言不存在";
 }

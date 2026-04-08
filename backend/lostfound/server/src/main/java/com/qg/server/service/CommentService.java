@@ -48,4 +48,11 @@ public interface CommentService {
      * @return 未读留言数量
      */
     Long getUserUnreadCount(Long userId);
+
+    /**
+     * 回复留言
+     *
+     * @param commentAddDTO 留言添加的参数
+     */
+    void replyComment(CommentAddDTO commentAddDTO);
 }
