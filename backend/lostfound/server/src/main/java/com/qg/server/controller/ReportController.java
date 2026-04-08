@@ -3,6 +3,7 @@ package com.qg.server.controller;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.ReportAuditDTO;
 import com.qg.pojo.dto.ReportDTO;
+import com.qg.pojo.vo.ReportListVO;
 import com.qg.server.service.ReportService;
 import com.qg.server.service.impl.ReportServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping ("/report")
@@ -38,5 +41,13 @@ public class ReportController {
     public Result<Void> audit(@Validated @RequestBody ReportAuditDTO reportAuditDTO){
         reportService.auditReport(reportAuditDTO);
         return Result.success();
+    }
+    /**
+     * 获取举报列表(管理员)
+     */
+    @PostMapping("/list")
+    @Operation(summary = "获取举报列表")
+    public Result<List<ReportListVO>> list(){
+        return Result.success(reportService.list());
     }
 }

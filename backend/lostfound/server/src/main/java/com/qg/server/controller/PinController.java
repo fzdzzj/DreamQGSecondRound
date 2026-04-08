@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/pin")
 @RequiredArgsConstructor
@@ -62,6 +64,12 @@ public class PinController {
     public Result<BizPinRequest> get(@PathVariable Long id) {
         BizPinRequest request = pinService.getById(id);
         return Result.success(request);
+    }
+    @GetMapping("/mylist")
+    @Operation(summary = "查询当前用户的置顶申请列表")
+    public Result<List<PinRequestListVO>> mylist() {
+        List<PinRequestListVO> pageResult = pinService.myList();
+        return Result.success(pageResult);
     }
 
 }

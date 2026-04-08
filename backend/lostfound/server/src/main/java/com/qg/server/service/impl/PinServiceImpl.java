@@ -199,6 +199,23 @@ public class PinServiceImpl implements PinService {
         throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
     }
 
+    @Override
+    public List<PinRequestListVO> myList() {
+
+        Long currentUserId = BaseContext.getCurrentId();
+        List<PinRequestListVO> list = bizPinRequestDao.selectList(new LambdaQueryWrapper<BizPinRequest>()
+                .eq(BizPinRequest::getApplicantId, currentUserId))
+                .stream()
+                .map(item -> {
+                    PinRequestListVO vo = new PinRequestListVO();
+                    BeanUtils.copyProperties(item, vo);
+                    vo.setStatus(PinRequestStatusEnum.getDescByCode(item.getStatus()));
+                    return vo;
+                })
+                .collect(Collectors.toList());
+        return list;
+    }
+
     private PageResult<PinRequestListVO> convertToVOPage(Page<BizPinRequest> page) {
         List<PinRequestListVO> voList = page.getRecords().stream()
                 .map(item -> {

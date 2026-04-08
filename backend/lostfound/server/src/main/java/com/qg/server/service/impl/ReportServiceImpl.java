@@ -11,6 +11,7 @@ import com.qg.pojo.dto.ReportAuditDTO;
 import com.qg.pojo.dto.ReportDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizReport;
+import com.qg.pojo.vo.ReportListVO;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizReportDao;
 import com.qg.server.service.ReportService;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -98,5 +100,11 @@ public class ReportServiceImpl implements ReportService {
             itemDao.updateById(item);
         }
         log.info("举报审核完成，reportId={}, result={}",reportAuditDTO.getReportId(), reportAuditDTO.getStatus());
+    }
+
+    @Override
+    public List<ReportListVO> list() {
+        String role = BaseContext.getCurrentRole();
+
     }
 }

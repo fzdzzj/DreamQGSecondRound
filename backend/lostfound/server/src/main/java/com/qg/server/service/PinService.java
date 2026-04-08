@@ -7,6 +7,8 @@ import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizPinRequest;
 import com.qg.pojo.vo.PinRequestListVO;
 
+import java.util.List;
+
 public interface PinService {
     void apply(PinApplyDTO pinApplyDTO);
     void cancelPin(Long requestId);
@@ -16,4 +18,6 @@ public interface PinService {
     PageResult<PinRequestListVO> queryPinRequests(PinRequestQueryDTO queryDTO);
 
     BizPinRequest getById(Long id);
+
+    List<PinRequestListVO> myList();
 }
