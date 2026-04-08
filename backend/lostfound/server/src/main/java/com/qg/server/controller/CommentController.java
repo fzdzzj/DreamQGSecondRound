@@ -4,8 +4,8 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.CommentAddDTO;
+import com.qg.pojo.vo.CommentDetailVO;
 import com.qg.pojo.vo.CommentStatVO;
-import com.qg.pojo.vo.CommentVO;
 import com.qg.server.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -62,5 +62,17 @@ public class CommentController {
         log.info("用户删除留言成功，commentId={}, userId={}", commentId, userId);
         return Result.success();
     }
+    /**
+     * 获取留言详情
+     */
+    @GetMapping("/{commentId}")
+    @Operation(summary = "获取留言详情")
+    public Result<CommentDetailVO> getCommentDetail(@PathVariable Long commentId) {
+        log.info("查询留言详情，commentId={}", commentId);
+        CommentDetailVO commentVO = commentService.getCommentDetail(commentId);
+        log.info("查询留言详情成功，commentId={}", commentId);
+        return Result.success(commentVO);
+    }
+
 
 }

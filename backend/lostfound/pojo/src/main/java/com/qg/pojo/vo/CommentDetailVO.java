@@ -41,6 +41,15 @@ public class CommentDetailVO {
     private Integer isRead;
 
     /**
+     * 用户昵称
+     */
+    private String nickname;
+    /**
+     * 用户头像
+     */
+    private String avatar;
+
+    /**
      * 逻辑删除
      */
     @TableLogic

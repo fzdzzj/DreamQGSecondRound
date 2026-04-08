@@ -9,10 +9,12 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
 import com.qg.pojo.entity.BizItem;
+import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.vo.CommentDetailVO;
 import com.qg.pojo.vo.CommentStatVO;
-import com.qg.pojo.vo.CommentVO;
 import com.qg.server.mapper.BizCommentDao;
 import com.qg.server.mapper.BizItemDao;
+import com.qg.server.mapper.UserDao;
 import com.qg.server.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final BizCommentDao bizCommentDao;
     private final BizItemDao bizItemDao;
+    private final UserDao UserDao;
 
     /**
      * 新增留言
@@ -97,4 +100,38 @@ public class CommentServiceImpl implements CommentService {
         bizCommentDao.deleteById(commentId);
         log.info("删除留言成功，commentId={}, userId={}", commentId, userId);
     }
+
+    @Override
+    public CommentDetailVO getCommentDetail(Long commentId) {
+        log.info("查询留言详情，commentId={}", commentId);
+
+        // 查询留言
+        BizComment comment = bizCommentDao.selectById(commentId);
+        if (comment == null) {
+            log.warn("留言不存在，commentId={}", commentId);
+            throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
+        }
+
+        // 获取留言的用户信息
+        SysUser user = UserDao.selectById(comment.getUserId());
+        if (user == null) {
+            log.warn("用户信息不存在，userId={}", comment.getUserId());
+            throw new AbsentException(MessageConstant.USER_NOT_FOUND);
+        }
+
+        // 封装到 VO 中
+        CommentDetailVO vo = new CommentDetailVO();
+        vo.setId(comment.getId());
+        vo.setItemId(comment.getItemId());
+        vo.setUserId(comment.getUserId());
+        vo.setNickname(user.getNickname());
+        vo.setAvatar(user.getAvatar());
+        vo.setContent(comment.getContent());
+        vo.setParentId(comment.getParentId());
+        vo.setCreateTime(comment.getCreateTime());
+
+        log.info("查询留言详情成功，commentId={}", commentId);
+        return vo;
+    }
+
 }
