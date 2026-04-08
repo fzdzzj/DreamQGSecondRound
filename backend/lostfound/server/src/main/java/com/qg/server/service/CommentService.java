@@ -33,4 +33,12 @@ public interface CommentService {
      */
     void markAsRead(Long commentId);
 
+    /**
+     * 获取物品下的未读留言数量
+     *
+     * @param itemId 物品ID
+     * @return 未读留言数量
+     */
+    Long getUnreadCount(Long itemId);
+
 }

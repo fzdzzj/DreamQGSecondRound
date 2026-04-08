@@ -1,5 +1,6 @@
 package com.qg.server.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.context.BaseContext;
@@ -159,6 +160,21 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("留言标记为已读成功，commentId={}", commentId);
     }
+
+    @Override
+    public Long getUnreadCount(Long itemId) {
+        log.info("查询物品下未读留言数量，itemId={}", itemId);
+
+        Long count = bizCommentDao.selectCount(
+                new LambdaQueryWrapper<BizComment>()
+                        .eq(BizComment::getItemId, itemId)
+                        .eq(BizComment::getIsRead, 0)
+        );
+
+        log.info("查询物品下未读留言数量成功，itemId={}, count={}", itemId, count);
+        return count;
+    }
+
 
 
 }
