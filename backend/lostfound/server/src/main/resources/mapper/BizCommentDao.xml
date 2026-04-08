@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.qg.server.mapper.BizCommentDao">
+    <resultMap id="BaseResultMap" type="com.qg.pojo.vo.CommentVO">
+        <id property="id" column="id"/>
+        <result property="itemId" column="item_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="nickname" column="nickname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="content" column="content"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="selectCommentList" resultMap="BaseResultMap">
+        SELECT
+            *
+        from
+            biz_comment c
+        LEFT JOIN sys_user u on c.user_id=u.id
+        WHERE
+            c.item_id=#{itemId}
+            and c.deleted=0
+        ORDER BY
+            c.create_time DESC
+
+    </select>
+</mapper>

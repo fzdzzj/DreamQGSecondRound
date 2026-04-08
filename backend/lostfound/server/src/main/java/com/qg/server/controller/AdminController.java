@@ -88,7 +88,7 @@ public class AdminController {
      */
     @GetMapping("/statistics")
     @Operation(summary = "平台统计")
-    public Result<AdminStatisticsVO> statistics(@Validated @RequestBody AdminStatisticsQueryDTO dto) {
+    public Result<AdminStatisticsVO> statistics( @RequestBody AdminStatisticsQueryDTO dto) {
         log.info("管理员请求平台统计，startTime={}, endTime={}", dto.getStartTime(), dto.getEndTime());
         AdminStatisticsVO vo = adminService.statistics(dto);
         log.info("管理员请求平台统计成功");

@@ -1,11 +1,14 @@
 package com.qg.server.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
+import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
 import com.qg.pojo.entity.BizItem;
+import com.qg.pojo.vo.CommentVO;
 import com.qg.server.mapper.BizCommentDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.service.CommentService;
@@ -55,5 +58,18 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("新增留言成功，commentId={}, userId={}, itemId={}",
                 bizComment.getId(), userId, commentAddDTO.getItemId());
+    }
+
+    @Override
+    public PageResult<CommentVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize){
+        log.info("获取留言列表开始，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
+        Page<CommentVO> page = new Page<CommentVO>(pageNum, pageSize);
+
+        //查询留言
+        Page<CommentVO>commentPage=bizCommentDao.selectCommentList(page, itemId);
+
+        //返回结果
+        // 返回结果
+        return new PageResult<>(commentPage.getRecords(), commentPage.getTotal(), pageNum, pageSize);
     }
 }

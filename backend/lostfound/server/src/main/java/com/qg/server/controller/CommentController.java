@@ -1,17 +1,16 @@
 package com.qg.server.controller;
 
 import com.qg.common.context.BaseContext;
+import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.CommentAddDTO;
+import com.qg.pojo.vo.CommentVO;
 import com.qg.server.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/comment")
@@ -33,5 +32,19 @@ public class CommentController {
         commentService.addComment(commentAddDTO);
         log.info("用户发表留言成功，用户ID：{}，物品ID：{}",userId,commentAddDTO.getItemId());
         return Result.success();
+    }
+
+    /**
+     * 获取物品留言列表
+     */
+    @GetMapping("/item/{itemId}")
+    @Operation(summary = "获取物品留言列表")
+    public Result<PageResult<CommentVO>> getCommentList(@PathVariable Long itemId,
+                                                        @RequestParam(defaultValue = "1") int pageNum,
+                                                        @RequestParam(defaultValue = "10") int pageSize) {
+        log.info("管理员请求查看留言列表，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
+        PageResult<CommentVO> pageResult = commentService.getCommentList(itemId, pageNum, pageSize);
+        log.info("管理员查看留言列表成功，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
+        return Result.success(pageResult);
     }
 }
