@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-public class CommentVO implements Serializable {
+public class CommentStatVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -20,11 +20,6 @@ public class CommentVO implements Serializable {
     private Long itemId;
 
     /**
-     * 用户ID
-     */
-    private Long userId;
-
-    /**
      * 用户昵称
      */
     private String nickname;
@@ -35,17 +30,17 @@ public class CommentVO implements Serializable {
     private String avatar;
 
     /**
-     * 留言内容（包含联系方式）
+     * 留言内容（简短）
      */
     private String content;
 
     /**
-     * 父留言ID
-     */
-    private Long parentId;
-
-    /**
-     * 创建时间
+     * 留言时间
      */
     private LocalDateTime createTime;
+
+    /**
+     * 是否已读
+     */
+    private Integer isRead;
 }

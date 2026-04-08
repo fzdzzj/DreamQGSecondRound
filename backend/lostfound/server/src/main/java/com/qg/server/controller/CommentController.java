@@ -4,6 +4,7 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.CommentAddDTO;
+import com.qg.pojo.vo.CommentStatVO;
 import com.qg.pojo.vo.CommentVO;
 import com.qg.server.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,14 +40,15 @@ public class CommentController {
      */
     @GetMapping("/item/{itemId}")
     @Operation(summary = "获取物品留言列表")
-    public Result<PageResult<CommentVO>> getCommentList(@PathVariable Long itemId,
-                                                        @RequestParam(defaultValue = "1") int pageNum,
-                                                        @RequestParam(defaultValue = "10") int pageSize) {
+    public Result<PageResult<CommentStatVO>> getCommentList(@PathVariable Long itemId,
+                                                            @RequestParam(defaultValue = "1") int pageNum,
+                                                            @RequestParam(defaultValue = "10") int pageSize) {
         log.info("管理员请求查看留言列表，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
-        PageResult<CommentVO> pageResult = commentService.getCommentList(itemId, pageNum, pageSize);
+        PageResult<CommentStatVO> pageResult = commentService.getCommentList(itemId, pageNum, pageSize);
         log.info("管理员查看留言列表成功，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
         return Result.success(pageResult);
     }
+
 
     /**
      * 删除留言

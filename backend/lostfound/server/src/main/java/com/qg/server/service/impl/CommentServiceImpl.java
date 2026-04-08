@@ -9,6 +9,7 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
 import com.qg.pojo.entity.BizItem;
+import com.qg.pojo.vo.CommentStatVO;
 import com.qg.pojo.vo.CommentVO;
 import com.qg.server.mapper.BizCommentDao;
 import com.qg.server.mapper.BizItemDao;
@@ -62,17 +63,18 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PageResult<CommentVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize){
-        log.info("获取留言列表开始，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
-        Page<CommentVO> page = new Page<CommentVO>(pageNum, pageSize);
+    public PageResult<CommentStatVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize) {
+        log.info("查询物品留言，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
 
-        //查询留言
-        Page<CommentVO>commentPage=bizCommentDao.selectCommentList(page, itemId);
+        Page<CommentStatVO> page = new Page<>(pageNum, pageSize);
 
-        //返回结果
+        // 查询留言
+        Page<CommentStatVO> commentPage = bizCommentDao.selectCommentList(page, itemId);
+
         // 返回结果
         return new PageResult<>(commentPage.getRecords(), commentPage.getTotal(), pageNum, pageSize);
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
