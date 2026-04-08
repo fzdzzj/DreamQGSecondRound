@@ -18,4 +18,12 @@ public interface AdminService {
      * @return 用户详情
      */
     SysUserDetailVO userDetail(Long userId);
+
+    /**
+     * 封禁用户
+     *
+     * @param userId 用户ID
+     */
+    void disableUser(Long userId);
+
 }

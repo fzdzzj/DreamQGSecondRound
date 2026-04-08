@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qg.common.constant.MessageConstant;
+import com.qg.common.constant.UserStatus;
 import com.qg.common.enums.UserRoleEnum;
 import com.qg.common.enums.UserStatusEnum;
 import com.qg.common.exception.AbsentException;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -68,6 +70,43 @@ public class AdminServiceImpl implements AdminService {
         }
         return toSysUserDetailVO(user);
     }
+
+    /**
+     * 管理员封禁用户
+     *
+     * 说明：
+     * 1. 仅对未被逻辑删除且存在的用户生效
+     * 2. 若用户不存在，则抛出不存在异常
+     * 3. 若用户当前已是禁用状态，则直接返回，保证接口幂等
+     *
+     * @param userId 用户ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void disableUser(Long userId) {
+        log.info("管理员封禁用户，userId={}", userId);
+
+        SysUser user = userDao.selectById(userId);
+        if (user == null) {
+            log.warn("封禁用户失败，用户不存在或已被逻辑删除，userId={}", userId);
+            throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+
+        if (UserStatus.DISABLE.equals(user.getStatus())) {
+            log.info("用户当前已为禁用状态，无需重复封禁，userId={}", userId);
+            return;
+        }
+
+        SysUser updateUser = new SysUser();
+        updateUser.setId(userId);
+        updateUser.setStatus(UserStatus.DISABLE);
+
+        userDao.updateById(updateUser);
+
+        log.info("管理员封禁用户成功，userId={}, oldStatus={}, newStatus={}",
+                userId, user.getStatus(), UserStatus.DISABLE);
+    }
+
 
     private SysUserStatVO toSysUserStatVO(SysUser user) {
         SysUserStatVO vo = new SysUserStatVO();

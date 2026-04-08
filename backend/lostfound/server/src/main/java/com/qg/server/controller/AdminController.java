@@ -45,5 +45,16 @@ public class AdminController {
         return Result.success(vo);
     }
 
+    /**
+     * 封禁用户
+     */
+    @PutMapping("/user/{id}/disable")
+    @Operation(summary = "封禁用户")
+    public Result<Void> disableUser(@PathVariable Long id) {
+        log.info("管理员请求封禁用户，userId={}", id);
+        adminService.disableUser(id);
+        log.info("管理员请求封禁用户成功，userId={}", id);
+        return Result.success();
+    }
 
 }
