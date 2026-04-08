@@ -134,4 +134,31 @@ public class CommentServiceImpl implements CommentService {
         return vo;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markAsRead(Long commentId) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("将留言标记为已读，commentId={}, userId={}", commentId, userId);
+
+        BizComment comment = bizCommentDao.selectById(commentId);
+        if (comment == null) {
+            log.warn("留言不存在，commentId={}", commentId);
+            throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
+        }
+
+        // 只允许修改未读留言
+        if (comment.getIsRead() == 1) {
+            log.warn("留言已经是已读状态，commentId={}", commentId);
+            return;
+        }
+
+        BizComment updateComment = new BizComment();
+        updateComment.setId(commentId);
+        updateComment.setIsRead(1); // 更新为已读
+        bizCommentDao.updateById(updateComment);
+
+        log.info("留言标记为已读成功，commentId={}", commentId);
+    }
+
+
 }

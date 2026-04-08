@@ -76,6 +76,8 @@ public class CommonController {
         return Result.success();
     }
 
+
+
     private String extractBearerToken(String authHeader) {
         if (authHeader == null || authHeader.isBlank()) {
             return null;

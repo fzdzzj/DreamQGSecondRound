@@ -26,4 +26,11 @@ public interface CommentService {
      */
     CommentDetailVO getCommentDetail(Long commentId);
 
+    /**
+     * 更新留言为已读
+     *
+     * @param commentId 留言ID
+     */
+    void markAsRead(Long commentId);
+
 }

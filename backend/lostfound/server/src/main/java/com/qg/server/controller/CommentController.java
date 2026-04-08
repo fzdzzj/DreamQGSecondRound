@@ -73,6 +73,19 @@ public class CommentController {
         log.info("查询留言详情成功，commentId={}", commentId);
         return Result.success(commentVO);
     }
+    /**
+     * 标记留言为已读
+     */
+    @PutMapping("/{commentId}/read")
+    @Operation(summary = "标记留言为已读")
+    public Result<Void> markAsRead(@PathVariable Long commentId) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("用户请求标记留言为已读，commentId={}, userId={}", commentId, userId);
+        commentService.markAsRead(commentId);
+        log.info("用户标记留言为已读成功，commentId={}, userId={}", commentId, userId);
+        return Result.success();
+    }
+
 
 
 }
