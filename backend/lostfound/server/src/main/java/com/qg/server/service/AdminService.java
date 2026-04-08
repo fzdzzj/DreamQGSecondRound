@@ -26,4 +26,18 @@ public interface AdminService {
      */
     void disableUser(Long userId);
 
+    /**
+     * 解封用户
+     *
+     * @param userId 用户ID
+     */
+    void enableUser(Long userId);
+
+    /**
+     * 管理员删除物品
+     *
+     * @param itemId 物品ID
+     */
+    void deleteItem(Long itemId);
+
 }

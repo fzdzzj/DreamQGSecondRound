@@ -57,4 +57,30 @@ public class AdminController {
         return Result.success();
     }
 
+    /**
+     * 解封用户
+     */
+    @PutMapping("/user/{id}/enable")
+    @Operation(summary = "解封用户")
+    public Result<Void> enableUser(@PathVariable Long id) {
+        log.info("管理员请求解封用户，userId={}", id);
+        adminService.enableUser(id);
+        log.info("管理员请求解封用户成功，userId={}", id);
+        return Result.success();
+    }
+
+    /**
+     * 管理员删除物品
+     */
+    @DeleteMapping("/item/{id}")
+    @Operation(summary = "管理员删除物品")
+    public Result<Void> deleteItem(@PathVariable Long id) {
+        log.info("管理员请求删除物品，itemId={}", id);
+        adminService.deleteItem(id);
+        log.info("管理员请求删除物品成功，itemId={}", id);
+        return Result.success();
+    }
+
+
+
 }

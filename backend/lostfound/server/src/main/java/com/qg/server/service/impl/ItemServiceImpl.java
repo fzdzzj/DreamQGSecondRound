@@ -217,8 +217,7 @@ public class ItemServiceImpl implements ItemService {
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
 
-        if (BizItemStatus.REPORTED.equals(bizItem.getStatus())
-                || BizItemStatus.DELETED.equals(bizItem.getStatus())) {
+        if (BizItemStatus.REPORTED.equals(bizItem.getStatus())) {
             log.warn("获取物品详情失败，物品不可见，itemId={}, status={}", id, bizItem.getStatus());
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
@@ -278,7 +277,6 @@ public class ItemServiceImpl implements ItemService {
         }
 
         bizItemDao.deleteById(id);
-
         // 删除后清理缓存
         evictItemCaches(id);
 
@@ -406,8 +404,8 @@ public class ItemServiceImpl implements ItemService {
         }
 
         // 已删除 / 已举报 状态不允许关闭
-        if (BizItemStatus.DELETED.equals(bizItem.getStatus())
-                || BizItemStatus.REPORTED.equals(bizItem.getStatus())) {
+        if (BizItemStatus.REPORTED.equals(bizItem.getStatus())) {
+
             log.warn("关闭物品失败，当前状态不允许关闭，itemId={}, status={}", id, bizItem.getStatus());
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
