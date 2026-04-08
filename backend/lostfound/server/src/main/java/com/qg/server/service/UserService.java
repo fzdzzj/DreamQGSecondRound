@@ -1,11 +1,7 @@
 package com.qg.server.service;
 
-import com.qg.pojo.dto.ChangePasswordDTO;
-import com.qg.pojo.dto.LoginDTO;
-import com.qg.pojo.dto.RegisterDTO;
-import com.qg.pojo.dto.UpdateUserDTO;
-import com.qg.pojo.entity.SysUser;
-import com.qg.pojo.vo.SysUserVO;
+import com.qg.pojo.dto.*;
+import com.qg.pojo.vo.SysUserDetailVO;
 
 import java.util.Map;
 
@@ -19,7 +15,7 @@ public interface UserService {
      * @param userId 用户ID
      * @return 用户信息
      */
-    SysUserVO getPersonalInfo(Long userId);
+    SysUserDetailVO getPersonalInfo(Long userId);
 
     /**
      * 更新个人信息
@@ -34,4 +30,5 @@ public interface UserService {
      * @param changePasswordDTO 修改密码DTO
      */
     void changePassword(Long userId, ChangePasswordDTO changePasswordDTO);
+
 }

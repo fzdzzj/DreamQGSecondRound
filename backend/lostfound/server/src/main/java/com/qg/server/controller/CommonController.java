@@ -4,7 +4,7 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.ChangePasswordDTO;
 import com.qg.pojo.dto.UpdateUserDTO;
-import com.qg.pojo.vo.SysUserVO;
+import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.server.service.TokenRefreshService;
 import com.qg.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,10 +31,10 @@ public class CommonController {
      */
     @GetMapping("/personal-info")
     @Operation(summary = "获取个人信息")
-    public Result<SysUserVO> getPersonalInfo() {
+    public Result<SysUserDetailVO> getPersonalInfo() {
         Long userId = BaseContext.getCurrentId();
         log.info("获取个人信息，用户ID={}", userId);
-        SysUserVO userInfo = userService.getPersonalInfo(userId);
+        SysUserDetailVO userInfo = userService.getPersonalInfo(userId);
         log.info("个人信息获取成功，用户ID={}", userId);
         return Result.success(userInfo);
     }

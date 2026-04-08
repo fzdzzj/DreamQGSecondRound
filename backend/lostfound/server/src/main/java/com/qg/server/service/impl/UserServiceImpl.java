@@ -7,12 +7,9 @@ import com.qg.common.constant.UserStatus;
 import com.qg.common.exception.*;
 import com.qg.common.util.JwtUtil;
 import com.qg.common.util.PasswordUtil;
-import com.qg.pojo.dto.ChangePasswordDTO;
-import com.qg.pojo.dto.LoginDTO;
-import com.qg.pojo.dto.RegisterDTO;
-import com.qg.pojo.dto.UpdateUserDTO;
+import com.qg.pojo.dto.*;
 import com.qg.pojo.entity.SysUser;
-import com.qg.pojo.vo.SysUserVO;
+import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.PermissionService;
 import com.qg.server.service.UserService;
@@ -154,14 +151,14 @@ public class UserServiceImpl implements UserService {
          userDao.insert(user);
     }
     @Override
-    public SysUserVO getPersonalInfo(Long userId) {
+    public SysUserDetailVO getPersonalInfo(Long userId) {
         log.info("获取个人信息，用户ID：{}", userId);
         SysUser user = userDao.selectById(userId);
         if (user == null) {
             log.warn("用户不存在，用户ID：{}", userId);
             throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
-        SysUserVO userVO = new SysUserVO();
+        SysUserDetailVO userVO = new SysUserDetailVO();
         BeanUtils.copyProperties(user, userVO);
         return userVO;
     }

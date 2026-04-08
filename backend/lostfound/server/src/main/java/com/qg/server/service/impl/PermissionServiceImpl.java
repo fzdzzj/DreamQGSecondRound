@@ -40,9 +40,8 @@ public class PermissionServiceImpl implements PermissionService {
                     // 预留管理员接口权限
                     "POST:/report",
                     "POST:/report/audit",
-                    "GET:/admin/report/page",
-                    "PUT:/admin/report/{id}/review",
-                    "GET:/admin/statistics",
+                    "GET:/report/list",
+                    "PUT:/admin/report/{id}",
 
                     "POST:/pin/page",
                     "POST:/pin/audit",
