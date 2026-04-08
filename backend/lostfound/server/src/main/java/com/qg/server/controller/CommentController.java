@@ -47,4 +47,18 @@ public class CommentController {
         log.info("管理员查看留言列表成功，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
         return Result.success(pageResult);
     }
+
+    /**
+     * 删除留言
+     */
+    @DeleteMapping("/{commentId}")
+    @Operation(summary = "删除留言")
+    public Result<Void> deleteComment(@PathVariable Long commentId) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("用户请求删除留言，commentId={}, userId={}", commentId, userId);
+        commentService.deleteComment(commentId);
+        log.info("用户删除留言成功，commentId={}, userId={}", commentId, userId);
+        return Result.success();
+    }
+
 }

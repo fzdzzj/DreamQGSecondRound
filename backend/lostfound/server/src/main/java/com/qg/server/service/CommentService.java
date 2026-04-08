@@ -6,5 +6,14 @@ import com.qg.pojo.vo.CommentVO;
 
 public interface CommentService {
     void addComment(CommentAddDTO commentAddDTO);
-    PageResult<CommentVO>getCommentList(Long itemId,int pageNum,int pageSize);
+
+
+    PageResult<CommentVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize);
+
+    /**
+     * 删除留言
+     *
+     * @param commentId 留言ID
+     */
+    void deleteComment(Long commentId);
 }

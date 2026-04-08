@@ -32,4 +32,5 @@ public interface MessageConstant {
     String REPORT_NOT_PENDING = "举报记录不是待审核状态";
     String ITEM_STATUS_INVALID = "物品状态异常";
     String PIN_REQUEST_ABSENT = "置顶申请不存在";
+    String COMMENT_NOT_FOUND = "留言不存在";
 }

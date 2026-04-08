@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
+import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
@@ -71,5 +72,27 @@ public class CommentServiceImpl implements CommentService {
         //返回结果
         // 返回结果
         return new PageResult<>(commentPage.getRecords(), commentPage.getTotal(), pageNum, pageSize);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteComment(Long commentId){
+        Long userId=BaseContext.getCurrentId();
+        log.info("删除留言开始，userId={}, commentId={}", userId, commentId);
+
+        BizComment comment=bizCommentDao.selectById(commentId);
+        if(comment==null){
+            log.warn("删除留言失败，留言不存在，commentId={}, userId={}", commentId, userId);
+            throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
+        }
+
+        //判断留言拥有者或管理员是否进行删除
+        if(!comment.getUserId().equals(userId)&&!BaseContext.getCurrentRole().equals("admin")){
+            log.warn("删除留言失败，非留言拥有者或管理员，commentId={}, userId={}", commentId, userId);
+            throw new DeletionNotAllowedException(MessageConstant.DELETE_NOT_ALLOWED);
+        }
+
+        bizCommentDao.deleteById(commentId);
+        log.info("删除留言成功，commentId={}, userId={}", commentId, userId);
     }
 }
