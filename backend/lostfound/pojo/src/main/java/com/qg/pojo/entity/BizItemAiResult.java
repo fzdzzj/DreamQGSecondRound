@@ -1,5 +1,7 @@
 package com.qg.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -78,8 +80,8 @@ public class BizItemAiResult implements Serializable {
     private Long createUser;
 
     private Long updateUser;
-
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
-
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

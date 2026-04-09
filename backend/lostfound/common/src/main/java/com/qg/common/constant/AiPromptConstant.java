@@ -1,9 +1,14 @@
 package com.qg.common.constant;
 
+import java.util.List;
+
 public class AiPromptConstant {
 
     private AiPromptConstant() {
     }
+    public static final String DEFAULT_DESCRIPTION_TEMPLATE = "该物品为%s，请尽快联系失主。";
+    public static final int MAX_DESCRIPTION_LENGTH = 500;
+    public static final List<String> SENSITIVE_WORDS = List.of("身份证", "学号"); // 需要屏蔽的敏感信息
 
     public static final String ITEM_DESCRIPTION_PROMPT = """
             你是校园失物招领平台的辅助助手。

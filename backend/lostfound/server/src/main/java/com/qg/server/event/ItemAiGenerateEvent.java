@@ -8,14 +8,20 @@ public class ItemAiGenerateEvent extends ApplicationEvent {
      * 物品ID
      */
     private final Long itemId;
+    private final String title;
+    private final String description;
+    private final String location;
+    private final Long userId;
 
     /**
      * 触发类型：CREATE/UPDATE/REGENERATE
      */
-    private final String triggerType;
-    public ItemAiGenerateEvent(Object source,Long itemId,String triggerType){
+    public ItemAiGenerateEvent(Object source,Long itemId,String title,String description,String location,Long userId){
         super(source);
         this.itemId=itemId;
-        this.triggerType=triggerType;
+        this.title=title;
+        this.description=description;
+        this.location=location;
+        this.userId=userId;
     }
 }

@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.qg.common.constant.BizItemStatus;
-import com.qg.common.constant.BizItemType;
-import com.qg.common.constant.ItemTriggerType;
-import com.qg.common.constant.MessageConstant;
+import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.BizItemStatusEnum;
 import com.qg.common.exception.AbsentException;
@@ -50,17 +47,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final BizItemAiResultDao bizItemAiResultDao;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
-    /**
-     * 详情缓存 key 前缀
-     * 示例：item:detail:1001
-     */
-    private static final String ITEM_DETAIL_KEY = "item:detail:";
 
-    /**
-     * 分页缓存 key 前缀
-     * 示例：item:page:type=LOST:keyword=校园卡:location=图书馆:page=1:size=10
-     */
-    private static final String ITEM_PAGE_KEY = "item:page:";
 
 
     /**
@@ -87,7 +74,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         save(bizItem);  // 使用 IService 提供的 save 方法
         saveItemImages(bizItem.getId(), lostBizItemDTO.getImageUrls());  // 保存物品图片
         applicationEventPublisher.publishEvent(
-                new ItemAiGenerateEvent(this,bizItem.getId(), ItemTriggerType.CREATE)
+                new ItemAiGenerateEvent(this,bizItem.getId(),lostBizItemDTO.getTitle(),lostBizItemDTO.getDescription(),lostBizItemDTO.getLocation(),userId)
         );
         // 新增后清理首页热点缓存
         evictItemCaches(bizItem.getId());
@@ -118,7 +105,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         save(bizItem);  // 使用 IService 提供的 save 方法
         saveItemImages(bizItem.getId(), lostBizItemDTO.getImageUrls());  // 保存物品图片
         applicationEventPublisher.publishEvent(
-                new ItemAiGenerateEvent(this,bizItem.getId(), ItemTriggerType.CREATE)
+                new ItemAiGenerateEvent(this,bizItem.getId(),lostBizItemDTO.getTitle(),lostBizItemDTO.getDescription(),lostBizItemDTO.getLocation(),userId)
+
         );
         // 新增后清理首页热点缓存
         evictItemCaches(bizItem.getId());
@@ -180,8 +168,11 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                         .eq(BizItemImage::getItemId, id)
         );
         saveItemImages(id, updateBizItemDTO.getImageUrls());  // 保存更新后的物品图片
+
+        BizItem newBizItem = getById(id);
         applicationEventPublisher.publishEvent(
-                new ItemAiGenerateEvent(this,bizItem.getId(), ItemTriggerType.CREATE)
+                new ItemAiGenerateEvent(this,newBizItem.getId(),newBizItem.getTitle(),newBizItem.getDescription(),newBizItem.getLocation(),userId)
+
         );
         // 修改后清理缓存
         evictItemCaches(id);
@@ -194,7 +185,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      */
     @Override
     public BizItemDetailVO getItem(Long id) {
-        String cacheKey = ITEM_DETAIL_KEY + id;
+        String cacheKey = RedisConstant.ITEM_DETAIL_KEY + id;
 
         // 1. 先查缓存
         Object cache = redisTemplate.opsForValue().get(cacheKey);
@@ -447,7 +438,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 构建分页缓存 key
      */
     private String buildPageCacheKey(ItemPageQueryDTO query) {
-        return ITEM_PAGE_KEY
+        return RedisConstant.ITEM_PAGE_KEY
                 + "type=" + safe(query.getType())
                 + ":keyword=" + safe(query.getKeyword())
                 + ":location=" + safe(query.getLocation())
@@ -467,9 +458,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 清理物品相关缓存
      */
     private void evictItemCaches(Long itemId) {
-        redisTemplate.delete(ITEM_DETAIL_KEY + itemId);
+        redisTemplate.delete(RedisConstant.ITEM_DETAIL_KEY + itemId);
 
-        Set<String> keys = redisTemplate.keys(ITEM_PAGE_KEY + "*");
+        Set<String> keys = redisTemplate.keys(RedisConstant.ITEM_PAGE_KEY + "*");
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
         }

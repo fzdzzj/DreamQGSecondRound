@@ -44,4 +44,6 @@ public interface MessageConstant {
     String PRIVATE_MESSAGE_CONTENT_EMPTY = "消息内容不能为空";
     String PRIVATE_MESSAGE_SEND_TO_SELF_NOT_ALLOWED = "不能给自己发送私聊消息";
 
+    String DAILY_LIMIT_EXCEEDED = "今日生成次数已用完";
+    String AI_GENERATE_FAILED = "AI生成失败";
 }

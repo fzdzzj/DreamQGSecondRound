@@ -1,126 +1,114 @@
 package com.qg.server.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.constant.BizItemAiResultStatus;
-import com.qg.common.constant.BizItemStatus;
+import com.qg.common.constant.RedisConstant;
+import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
-import com.qg.server.ai.prompt.ItemAiPromptBuilder;
+import com.qg.server.ai.client.DescriptionClient;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.service.AiAsyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class AiAsyncServiceImpl implements AiAsyncService {
-    private final BizItemDao bizItemDao;
-    private final BizItemAiResultDao bizItemAiResultDao;
-    private final ChatClient chatClient;
-    private final RedisTemplate<String,Object>redisTemplate;
-    private final ItemAiPromptBuilder itemAiPromptBuilder;
 
-    private static final String ITEM_DETAIL_KEY="item:detail:";
-    private static final String ITEM_PAGE_KEY="item:page";
-    private static final String MODEL="gpt-3.5-turbo";
+    private final DescriptionClient descriptionClient;
+
+    private final BizItemAiResultDao aiResultDao;
+
+    private final BizItemDao itemDao;
+
+    private final AIProperties aiProperties;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+
+    @Transactional
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void generateItemDescription(Long itemId, String triggerType) {
-        log.info("开始生成物品AI描述，itemId={},triggerType={}",itemId,triggerType);
+    public void generateItemDescription(String title, String description, String location,Long userId,Long itemId){
+        String generatedDesc;
 
-        BizItem item=bizItemDao.selectById(itemId);
-        if(item==null){
-            log.warn("AI生成失败，物品不存在，itemId={}",itemId);
-            return;
-        }
-        if(!BizItemStatus.OPEN.equals(item.getStatus())){
-            log.warn("AI生成跳过，物品状态不允许分析，itemId={},status={}",itemId,item.getStatus());
-            return;
-        }
-        Integer nextVersion=getNextVersion(itemId);
+        try {
+            generatedDesc = descriptionClient.generateDescription(
+                    title,
+                    description,
+                    location,userId
+                           );
 
-        BizItemAiResult aiResult=new BizItemAiResult();
-        aiResult.setItemId(itemId);
-        aiResult.setResultVersion(nextVersion);
-        aiResult.setSourceType(triggerType);
-        aiResult.setStatus(BizItemAiResultStatus.PENDING);
-        aiResult.setIsDeleted(0);
+            persistAiDescription(title, location, userId, itemId, generatedDesc, description, BizItemAiResultStatus.SUCCESS);
 
-        String prompt=itemAiPromptBuilder.buildItemDescriptionPrompt(item);
-        aiResult.setPromptText(prompt);
-        aiResult.setOriginText(item.getDescription());
 
-        bizItemAiResultDao.insert(aiResult);
 
-        try{
-            // 调用AI生成
-            String aiText=chatClient.prompt()
-                    .user( prompt)
-                    .call()
-                    .content();
-
-            String aiDescription=aiText;
-            String aiCategory=item.getAiCategory();
-            String aiTags=item.getAiTags();
-
-            aiResult.setAiDescription(aiDescription);
-            aiResult.setAiCategory(aiCategory);
-            aiResult.setAiTags(aiTags);
-            aiResult.setModelName(MODEL);
-            aiResult.setStatus(BizItemAiResultStatus.SUCCESS);
-            bizItemAiResultDao.updateById(aiResult);
-
-            //回写主表摘要
-            BizItem updateItem=new BizItem();
-            updateItem.setId(itemId);
-            updateItem.setCurrentAiResultId(aiResult.getId());
-            updateItem.setAiStatus(BizItemAiResultStatus.SUCCESS);
-            updateItem.setAiCategory(aiCategory);
-            updateItem.setAiTags(aiTags);
-            bizItemDao.updateById(updateItem);
-
-            evictItemCaches(itemId);
-            log.info("AI生成成功，itemId={}, aiResultId={}", itemId, aiResult.getId());
-        }catch (Exception e){
-            log.error("AI生成失败，itemId={}",itemId,e);
-
-            aiResult.setStatus(BizItemAiResultStatus.FAILURE);
-            aiResult.setErrorMessage(e.getMessage());
-            bizItemAiResultDao.updateById(aiResult);
-
-            BizItem failItem = new BizItem();
-            failItem.setId(itemId);
-            failItem.setAiStatus("FAILED");
-            bizItemDao.updateById(failItem);
-
-            evictItemCaches(itemId);
+        } catch(Exception e){
+            log.warn("AI生成异常, 使用默认描述, itemId={}, userId={}", itemId, userId, e);
+            generatedDesc = String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title);
+            persistAiDescription(title, location, userId, itemId, generatedDesc, description, BizItemAiResultStatus.FAILURE);
         }
     }
 
-    private Integer getNextVersion(Long itemId){
-        BizItemAiResult latest=bizItemAiResultDao.selectOne(new LambdaQueryWrapper<BizItemAiResult>()
-                .eq(BizItemAiResult::getItemId,itemId)
-                .eq(BizItemAiResult::getIsDeleted,0)
-                .orderByDesc(BizItemAiResult::getResultVersion)
-                .last("limit 1"));
-        return latest==null?1:latest.getResultVersion()+1;
+    private void persistAiDescription(String title,String location,Long userId, Long itemId, String generatedDesc,String originDesc, String status){
+        BizItemAiResult lastResult = aiResultDao.selectLatestByItemId(itemId);
+        int newVersion = (lastResult == null ? 1 : lastResult.getResultVersion() + 1);
+
+        BizItemAiResult result = new BizItemAiResult();
+        result.setItemId(itemId);
+        result.setResultVersion(newVersion);
+        result.setSourceType(lastResult == null ? "AUTO" : "REGENERATE");
+        result.setPromptText(title + " " + location+" "+originDesc);
+        result.setOriginText(originDesc);
+        result.setAiDescription(generatedDesc);
+        result.setModelName(aiProperties.getModel());
+        result.setStatus(status);
+        result.setIsDeleted(0);
+        if(lastResult== null){
+        result.setCreateUser(userId);
+        }
+        result.setUpdateUser(userId);
+        if(lastResult== null){
+            result.setCreateUser(userId);
+        }
+        result.setUpdateUser(userId);
+        aiResultDao.insert(result);
+
+        // 同步更新 BizItem
+        BizItem item = itemDao.selectById(itemId);
+        if(item != null){
+            item.setCurrentAiResultId(result.getId());
+            item.setAiStatus(status);
+            item.setAiTags(result.getAiTags());
+            itemDao.updateById(item);
+        }
+        evictItemCaches(itemId);
+
+    }
+    /**
+     * 处理 null 字符串，避免缓存 key 中出现 null 文本干扰判断
+     */
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 
+    /**
+     * 清理物品相关缓存
+     */
     private void evictItemCaches(Long itemId) {
-        redisTemplate.delete(ITEM_DETAIL_KEY + itemId);
+        redisTemplate.delete(RedisConstant.ITEM_DETAIL_KEY + itemId);
 
-        Set<String> keys = redisTemplate.keys(ITEM_PAGE_KEY + "*");
-        if (keys != null && !keys.isEmpty()) {
+        Set<String> keys = redisTemplate.keys(RedisConstant.ITEM_PAGE_KEY + "*");
+        if (!keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
     }
-
 }
