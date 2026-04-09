@@ -7,6 +7,7 @@ import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.server.ai.client.DescriptionClient;
+import com.qg.server.ai.prompt.ItemAiPromptBuilder;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.service.AiAsyncService;
