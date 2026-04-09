@@ -6,11 +6,14 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Schema(name = "用户分页查询参数")
-public class UserPageQueryDTO {
+public class UserPageQueryDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     @Min(value = 1L, message = "页码不能小于1")
     private Integer pageNum;
     @Max(value = 100, message = "页大小不能大于100")

@@ -9,7 +9,7 @@ import java.io.Serializable;
 @Schema(description = "更新用户DTO")
 @Data
 public class UpdateUserDTO implements Serializable {
-    public static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     /**
      * 邮箱
      */

@@ -6,9 +6,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-@Data
-public class LoginDTO {
+import java.io.Serializable;
 
+@Data
+public class LoginDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @NotBlank(message = "登录标识不能为空")
     @Pattern(regexp = RegexConstant.IDENTIFIER,
             message = "请输入有效的邮箱或用户名（4-20位字母数字）")

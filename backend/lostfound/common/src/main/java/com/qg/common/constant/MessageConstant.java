@@ -36,4 +36,12 @@ public interface MessageConstant {
     String USER_NOT_FOUND = "用户不存在";
     String PARENT_COMMENT_NOT_FOUND = "父留言不存在";
     String NOTIFICATION_NOT_FOUND = "通知不存在";
+
+    String PRIVATE_MESSAGE_NOT_FOUND = "私聊消息不存在";
+    String PRIVATE_MESSAGE_VIEW_NOT_ALLOWED = "无权查看该消息";
+    String PRIVATE_MESSAGE_DELETE_NOT_ALLOWED = "无权删除该消息";
+    String PRIVATE_MESSAGE_RECEIVER_NOT_FOUND = "接收用户不存在";
+    String PRIVATE_MESSAGE_CONTENT_EMPTY = "消息内容不能为空";
+    String PRIVATE_MESSAGE_SEND_TO_SELF_NOT_ALLOWED = "不能给自己发送私聊消息";
+
 }

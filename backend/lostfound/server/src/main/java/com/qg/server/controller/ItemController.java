@@ -4,11 +4,13 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.LostBizItemDTO;
+import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
-import com.qg.pojo.query.ItemPageQuery;
+import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
 import com.qg.pojo.vo.BizItemVO;
 import com.qg.server.service.ItemService;
+import com.qg.server.service.PinService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class ItemController {
 
     private final ItemService itemService;
+    private final PinService pinService;
 
     @PostMapping("/lost")
     @Operation(summary = "发布丢失物品")
@@ -77,7 +80,7 @@ public class ItemController {
 
     @PostMapping("/page")
     @Operation(summary = "分页查询列表")
-    public Result<PageResult<BizItemStatVO>> page(@Validated @RequestBody ItemPageQuery query) {
+    public Result<PageResult<BizItemStatVO>> page(@Validated @RequestBody ItemPageQueryDTO query) {
         log.info("分页查询列表，请求参数={}", query);
         PageResult<BizItemStatVO> pageResult = itemService.pageList(query);
         log.info("分页查询列表成功");
@@ -86,7 +89,7 @@ public class ItemController {
 
     @PostMapping("/my/page")
     @Operation(summary = "分页查询我的物品")
-    public Result<PageResult<BizItemStatVO>> myPage(@Validated @RequestBody ItemPageQuery query) {
+    public Result<PageResult<BizItemStatVO>> myPage(@Validated @RequestBody ItemPageQueryDTO query) {
         Long userId = BaseContext.getCurrentId();
         log.info("分页查询我的物品，userId={}, query={}", userId, query);
         PageResult<BizItemStatVO> pageResult = itemService.myPageList(query);
@@ -106,10 +109,11 @@ public class ItemController {
 
     @PutMapping("/{id}/pin/apply")
     @Operation(summary = "申请置顶")
-    public Result<Void> applyPin(@PathVariable Long id){
+    public Result<Void> applyPin(@PathVariable Long id, @Validated @RequestBody PinApplyDTO pinApplyDTO){
         Long userId=BaseContext.getCurrentId();
         log.info("申请置顶，itemId={}, userId={}", id, userId);
-        itemService.applyPin(id);
+        pinApplyDTO.setItemId(id);
+        pinService.apply(pinApplyDTO);
         log.info("申请置顶成功，itemId={}, userId={}", id, userId);
         return Result.success();
     }

@@ -5,11 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 @Schema(description = "更新物品DTO")
 @Data
-public class UpdateBizItemDTO {
+public class UpdateBizItemDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "标题/物品名称")
     @NotBlank(message = "标题/物品名称不能为空")
     private String title;

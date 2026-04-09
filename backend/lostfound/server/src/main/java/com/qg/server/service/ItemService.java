@@ -4,7 +4,7 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.LostBizItemDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
 import com.qg.pojo.entity.BizItem;
-import com.qg.pojo.query.ItemPageQuery;
+import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
 import com.qg.pojo.vo.BizItemVO;
 import com.baomidou.mybatisplus.extension.service.IService;  // 引入 IService
@@ -48,14 +48,14 @@ public interface ItemService extends IService<BizItem> { // 继承 IService
      * @param query 查询条件
      * @return 物品分页列表
      */
-    PageResult<BizItemStatVO> pageList(ItemPageQuery query);
+    PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query);
 
     /**
      * 获取当前用户发布的物品列表（分页）
      * @param query 查询条件
      * @return 物品分页列表
      */
-    PageResult<BizItemStatVO> myPageList(ItemPageQuery query);
+    PageResult<BizItemStatVO> myPageList(ItemPageQueryDTO query);
 
     /**
      * 关闭物品（仅发布者可以关闭）

@@ -7,9 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "修改密码DTO")
-public class ChangePasswordDTO {
+public class ChangePasswordDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Pattern(regexp = RegexConstant.PASSWORD, message = "密码格式错误")
     @Schema(description = "旧密码", required = true, example = "123456")
     @NotBlank(message = "旧密码不能为空")

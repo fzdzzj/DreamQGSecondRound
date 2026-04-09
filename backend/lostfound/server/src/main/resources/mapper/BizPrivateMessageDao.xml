@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qg.server.mapper.BizPrivateMessageDao">
+
+    <select id="selectConversationList" resultType="com.qg.pojo.vo.ConversationVO">
+        SELECT
+            t.peer_id AS peerId,
+            u.nickname AS peerNickname,
+            u.avatar AS peerAvatar,
+            t.content AS lastMessage,
+            t.create_time AS lastMessageTime,
+            IFNULL(uc.unread_count, 0) AS unreadCount
+        FROM
+            (
+                SELECT
+                    pm.id,
+                    CASE
+                        WHEN pm.sender_id = #{currentUserId} THEN pm.receiver_id
+                        ELSE pm.sender_id
+                        END AS peer_id,
+                    pm.content,
+                    pm.create_time
+                FROM biz_private_message pm
+                         INNER JOIN
+                     (
+                         SELECT MAX(id) AS max_id
+                         FROM biz_private_message
+                         WHERE
+                             (sender_id = #{currentUserId} AND sender_deleted = 0)
+                            OR
+                             (receiver_id = #{currentUserId} AND receiver_deleted = 0)
+                         GROUP BY
+                             CASE
+                                 WHEN sender_id = #{currentUserId} THEN receiver_id
+                                 ELSE sender_id
+                                 END
+                     ) latest ON pm.id = latest.max_id
+            ) t
+                LEFT JOIN sys_user u ON u.id = t.peer_id
+                LEFT JOIN
+            (
+                SELECT
+                    sender_id AS peer_id,
+                    COUNT(*) AS unread_count
+                FROM biz_private_message
+                WHERE receiver_id = #{currentUserId}
+                  AND status = 'UNREAD'
+                  AND receiver_deleted = 0
+                GROUP BY sender_id
+            ) uc ON uc.peer_id = t.peer_id
+        ORDER BY t.create_time DESC
+    </select>
+
+    <select id="selectChatHistory" resultType="com.qg.pojo.vo.PrivateMessageVO">
+        SELECT
+            id,
+            sender_id AS senderId,
+            receiver_id AS receiverId,
+            content,
+            status,
+            create_time AS createTime
+        FROM biz_private_message
+        WHERE
+            (
+                sender_id = #{currentUserId}
+                    AND receiver_id = #{peerId}
+                    AND sender_deleted = 0
+                )
+           OR
+            (
+                sender_id = #{peerId}
+                    AND receiver_id = #{currentUserId}
+                    AND receiver_deleted = 0
+                )
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+</mapper>

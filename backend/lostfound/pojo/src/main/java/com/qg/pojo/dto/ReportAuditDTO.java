@@ -5,9 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "举报审核DTO")
-public class ReportAuditDTO {
+public class ReportAuditDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @NotNull(message = "举报ID不能为空")
     private Long reportId;

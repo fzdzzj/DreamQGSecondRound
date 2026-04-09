@@ -1,16 +1,17 @@
-package com.qg.pojo.query;
+package com.qg.pojo.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "物品分页查询参数")
-public class ItemPageQuery {
+public class ItemPageQueryDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Min(1)
     @Schema(description = "页码")
     private Integer pageNum = 1;

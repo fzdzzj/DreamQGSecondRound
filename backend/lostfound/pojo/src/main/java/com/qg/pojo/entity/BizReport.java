@@ -2,6 +2,8 @@ package com.qg.pojo.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import com.qg.common.enums.ReportStatusEnum;
 import lombok.Data;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -10,8 +12,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("biz_report")
-public class BizReport {
-
+public class BizReport implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * 主键ID
      */

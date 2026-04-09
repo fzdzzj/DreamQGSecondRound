@@ -2,12 +2,14 @@ package com.qg.pojo.vo;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class BizItemVO {
+public class BizItemVO implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private Long id;
     private Long userId;
     private String type;

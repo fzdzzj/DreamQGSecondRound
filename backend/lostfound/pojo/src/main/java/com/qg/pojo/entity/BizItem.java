@@ -3,6 +3,8 @@ package com.qg.pojo.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import com.qg.common.enums.BizItemStatusEnum;
 import lombok.Data;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -11,8 +13,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("biz_item")
-public class BizItem {
-
+public class BizItem implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * 主键ID
      */

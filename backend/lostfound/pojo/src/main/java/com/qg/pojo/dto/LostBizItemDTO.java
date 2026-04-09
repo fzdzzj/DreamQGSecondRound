@@ -7,12 +7,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(description = "丢失物品信息DTO")
 @Data
-public class LostBizItemDTO {
+public class LostBizItemDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
 
 
     /**

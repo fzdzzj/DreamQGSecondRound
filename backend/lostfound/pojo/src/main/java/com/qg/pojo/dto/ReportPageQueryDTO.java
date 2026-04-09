@@ -3,11 +3,14 @@ package com.qg.pojo.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "管理员查询举报申请分页参数")
-public class ReportPageQueryDTO {
+public class ReportPageQueryDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @Schema(description = "页码", example = "1")
     private Integer pageNum = 1;
 

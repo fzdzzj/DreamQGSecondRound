@@ -5,9 +5,12 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "置顶申请查询参数DTO")
-public class PinRequestQueryDTO {
+public class PinRequestQueryDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Min(1)
     @Schema(description = "页码", example = "1")

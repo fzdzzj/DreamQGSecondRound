@@ -7,9 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "用户注册DTO")
-public class RegisterDTO {
+public class RegisterDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * 注册账号
      * <p>

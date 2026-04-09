@@ -3,12 +3,14 @@ package com.qg.pojo.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "物品统计VO")
-public class BizItemStatVO {
+public class BizItemStatVO implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private Long id;
 
     /**
