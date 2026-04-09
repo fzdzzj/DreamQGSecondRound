@@ -16,10 +16,12 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.LostBizItemDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
 import com.qg.pojo.entity.BizItem;
+import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemImage;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
-import com.qg.pojo.vo.BizItemVO;
+import com.qg.pojo.vo.BizItemDetailVO;
+import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizItemImageDao;
 import com.qg.server.service.ItemService;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements ItemService {
 
     private final BizItemImageDao bizItemImageDao;
+    private final BizItemAiResultDao bizItemAiResultDao;
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
@@ -55,6 +58,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 示例：item:page:type=LOST:keyword=校园卡:location=图书馆:page=1:size=10
      */
     private static final String ITEM_PAGE_KEY = "item:page:";
+
 
     /**
      * 发布丢失物品
@@ -71,7 +75,11 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         bizItem.setType(BizItemType.LOST);
         bizItem.setStatus(BizItemStatus.OPEN);
         bizItem.setIsPinned(0);
+        // 新发布后等待 AI 分析
         bizItem.setAiStatus("PENDING");
+        bizItem.setAiCategory(null);
+        bizItem.setAiTags(null);
+        bizItem.setCurrentAiResultId(null);
 
         save(bizItem);  // 使用 IService 提供的 save 方法
         saveItemImages(bizItem.getId(), lostBizItemDTO.getImageUrls());  // 保存物品图片
@@ -97,8 +105,11 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         bizItem.setType(BizItemType.FOUND);
         bizItem.setStatus(BizItemStatus.OPEN);
         bizItem.setIsPinned(0);
+        // 新发布后等待 AI 分析
         bizItem.setAiStatus("PENDING");
-
+        bizItem.setAiCategory(null);
+        bizItem.setAiTags(null);
+        bizItem.setCurrentAiResultId(null);
         save(bizItem);  // 使用 IService 提供的 save 方法
         saveItemImages(bizItem.getId(), lostBizItemDTO.getImageUrls());  // 保存物品图片
 
@@ -148,8 +159,11 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         bizItem.setAiCategory(oldItem.getAiCategory());
         bizItem.setAiTags(oldItem.getAiTags());
 
-        // 修改后可重新触发 AI 分析
+        // 用户修改了物品核心信息后，旧 AI 结果视为失效
         bizItem.setAiStatus("PENDING");
+        bizItem.setAiCategory(null);
+        bizItem.setAiTags(null);
+        bizItem.setCurrentAiResultId(null);
 
         updateById(bizItem);  // 使用 IService 提供的 updateById 方法
 
@@ -170,14 +184,14 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 获取物品详情
      */
     @Override
-    public BizItemVO getItem(Long id) {
+    public BizItemDetailVO getItem(Long id) {
         String cacheKey = ITEM_DETAIL_KEY + id;
 
         // 1. 先查缓存
         Object cache = redisTemplate.opsForValue().get(cacheKey);
-        if (cache instanceof BizItemVO bizItemVO) {
+        if (cache instanceof BizItemDetailVO bizItemDetailVO) {
             log.info("命中物品详情缓存，itemId={}", id);
-            return bizItemVO;
+            return bizItemDetailVO;
         }
 
         // 2. 查数据库
@@ -202,8 +216,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         }
 
         // 3. 组装 VO
-        BizItemVO bizItemVO = new BizItemVO();
-        BeanUtils.copyProperties(bizItem, bizItemVO);
+        BizItemDetailVO bizItemDetailVO = new BizItemDetailVO();
+        BeanUtils.copyProperties(bizItem, bizItemDetailVO);
 
         List<String> imageUrls = bizItemImageDao.selectList(
                 new LambdaQueryWrapper<BizItemImage>()
@@ -211,14 +225,35 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                         .orderByAsc(BizItemImage::getId)
         ).stream().map(BizItemImage::getUrl).toList();
 
-        bizItemVO.setImageUrls(imageUrls);
-        bizItemVO.setStatusDesc(BizItemStatusEnum.getDescByCode(bizItem.getStatus()));
+        bizItemDetailVO.setImageUrls(imageUrls);
+        bizItemDetailVO.setStatusDesc(BizItemStatusEnum.getDescByCode(bizItem.getStatus()));
 
+        // 详情页按需查询当前生效 AI 结果
+        if (bizItem.getCurrentAiResultId() != null) {
+            BizItemAiResult aiResult = bizItemAiResultDao.selectOne(
+                    new LambdaQueryWrapper<BizItemAiResult>()
+                            .eq(BizItemAiResult::getId, bizItem.getCurrentAiResultId())
+                            .eq(BizItemAiResult::getItemId, id)
+                            .eq(BizItemAiResult::getIsDeleted, 0)
+                            .last("limit 1")
+            );
+            if (aiResult != null) {
+                bizItemDetailVO.setAiDescription(aiResult.getAiDescription());
+
+                // 兜底：如果主表摘要字段为空，可回填展示
+                if (StringUtils.isBlank(bizItemDetailVO.getAiCategory())) {
+                    bizItemDetailVO.setAiCategory(aiResult.getAiCategory());
+                }
+                if (StringUtils.isBlank(bizItemDetailVO.getAiTags())) {
+                    bizItemDetailVO.setAiTags(aiResult.getAiTags());
+                }
+            }
+        }
         // 4. 回写缓存
-        redisTemplate.opsForValue().set(cacheKey, bizItemVO, 30, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(cacheKey, bizItemDetailVO, 30, TimeUnit.MINUTES);
         log.info("写入物品详情缓存，itemId={}", id);
 
-        return bizItemVO;
+        return bizItemDetailVO;
     }
 
     /**
@@ -287,7 +322,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     @Override
     public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
 
-        // 只缓存首页第一页、小页数结果，避免缓存太多分页数据
         boolean cacheable = query.getPageNum() != null
                 && query.getPageNum() == 1
                 && query.getPageSize() != null
@@ -308,11 +342,12 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
-        // 基础筛选条件
         wrapper.eq(StringUtils.isNotBlank(query.getType()), BizItem::getType, query.getType())
                 .like(StringUtils.isNotBlank(query.getLocation()), BizItem::getLocation, query.getLocation())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
+                .eq(StringUtils.isNotBlank(query.getAiCategory()), BizItem::getAiCategory, query.getAiCategory())
+                .eq(StringUtils.isNotBlank(query.getAiStatus()), BizItem::getAiStatus, query.getAiStatus())
                 .eq(BizItem::getStatus, BizItemStatus.OPEN);
 
         // 关键词搜索：标题 or 描述
@@ -327,11 +362,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 .orderByDesc(BizItem::getPinExpireTime)
                 .orderByDesc(BizItem::getCreateTime);
 
-        page(page, wrapper);  // 使用 IService 提供的 page 方法
+        page(page, wrapper);
 
         PageResult<BizItemStatVO> result = convertToVOPage(page);
 
-        // 首页热点缓存写回 Redis
         if (cacheable && cacheKey != null) {
             redisTemplate.opsForValue().set(cacheKey, result, 5, TimeUnit.MINUTES);
             log.info("写入物品分页缓存，key={}", cacheKey);
@@ -350,14 +384,13 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
-        // 只查当前登录用户自己的数据
-        wrapper.eq(BizItem::getUserId, userId);
-
-        // 个人列表通常允许看自己的各种状态数据，不只 OPEN
-        wrapper.eq(StringUtils.isNotBlank(query.getType()), BizItem::getType, query.getType())
+        wrapper.eq(BizItem::getUserId, userId)
+                .eq(StringUtils.isNotBlank(query.getType()), BizItem::getType, query.getType())
                 .like(StringUtils.isNotBlank(query.getLocation()), BizItem::getLocation, query.getLocation())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
-                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime());
+                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
+                .eq(StringUtils.isNotBlank(query.getAiCategory()), BizItem::getAiCategory, query.getAiCategory())
+                .eq(StringUtils.isNotBlank(query.getAiStatus()), BizItem::getAiStatus, query.getAiStatus());
 
         if (StringUtils.isNotBlank(query.getKeyword())) {
             wrapper.and(w -> w.like(BizItem::getTitle, query.getKeyword())
@@ -365,13 +398,13 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                     .like(BizItem::getDescription, query.getKeyword()));
         }
 
-        // 我的物品按最新更新时间/创建时间看更合理
         wrapper.orderByDesc(BizItem::getUpdateTime)
                 .orderByDesc(BizItem::getCreateTime);
 
-        page(page, wrapper);  // 使用 IService 提供的 page 方法
+        page(page, wrapper);
         return convertToVOPage(page);
     }
+
     private PageResult<BizItemStatVO> convertToVOPage(Page<BizItem> page) {
         List<BizItemStatVO> voList = page.getRecords().stream()
                 .map(item -> {

@@ -6,7 +6,7 @@ import com.qg.pojo.dto.UpdateBizItemDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
-import com.qg.pojo.vo.BizItemVO;
+import com.qg.pojo.vo.BizItemDetailVO;
 import com.baomidou.mybatisplus.extension.service.IService;  // 引入 IService
 
 public interface ItemService extends IService<BizItem> { // 继承 IService
@@ -35,7 +35,7 @@ public interface ItemService extends IService<BizItem> { // 继承 IService
      * @param id 物品ID
      * @return 物品详情的 VO 对象
      */
-    BizItemVO getItem(Long id);
+    BizItemDetailVO getItem(Long id);
 
     /**
      * 删除物品

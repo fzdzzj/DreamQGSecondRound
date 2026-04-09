@@ -8,7 +8,7 @@ import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
-import com.qg.pojo.vo.BizItemVO;
+import com.qg.pojo.vo.BizItemDetailVO;
 import com.qg.server.service.ItemService;
 import com.qg.server.service.PinService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,11 +61,11 @@ public class ItemController {
 
     @GetMapping("/{id}")
     @Operation(summary = "获取物品详情")
-    public Result<BizItemVO> getItem(@PathVariable Long id) {
+    public Result<BizItemDetailVO> getItem(@PathVariable Long id) {
         log.info("获取物品详情，物品ID={}", id);
-        BizItemVO bizItemVO = itemService.getItem(id);
+        BizItemDetailVO bizItemDetailVO = itemService.getItem(id);
         log.info("获取物品详情成功，物品ID={}", id);
-        return Result.success(bizItemVO);
+        return Result.success(bizItemDetailVO);
     }
 
     @DeleteMapping("/{id}")

@@ -22,6 +22,12 @@ public class BizItem implements Serializable {
     private Long id;
 
     /**
+     * 最新的AI结果ID
+     */
+    private Long currentAiResultId;
+
+
+    /**
      * 发布者ID
      */
     private Long userId;

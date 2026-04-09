@@ -28,4 +28,9 @@ public class ItemPageQueryDTO implements Serializable {
     private LocalDateTime startTime;
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
+    @Schema(description = "AI分类")
+    private String aiCategory;
+    @Schema(description = "AI状态")
+    private String aiStatus;
+
 }
