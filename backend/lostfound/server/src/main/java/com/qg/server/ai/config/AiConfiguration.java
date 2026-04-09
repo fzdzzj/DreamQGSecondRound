@@ -1,4 +1,4 @@
-package com.qg.server.config;
+package com.qg.server.ai.config;
 
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.properties.AIProperties;
