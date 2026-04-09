@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qg.common.constant.BizItemStatus;
 import com.qg.common.constant.BizItemType;
+import com.qg.common.constant.ItemTriggerType;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.BizItemStatusEnum;
@@ -21,6 +22,7 @@ import com.qg.pojo.entity.BizItemImage;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
 import com.qg.pojo.vo.BizItemDetailVO;
+import com.qg.server.event.ItemAiGenerateEvent;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizItemImageDao;
@@ -28,6 +30,7 @@ import com.qg.server.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +49,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final BizItemImageDao bizItemImageDao;
     private final BizItemAiResultDao bizItemAiResultDao;
     private final RedisTemplate<String, Object> redisTemplate;
-
+    private final ApplicationEventPublisher applicationEventPublisher;
     /**
      * 详情缓存 key 前缀
      * 示例：item:detail:1001
@@ -83,7 +86,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         save(bizItem);  // 使用 IService 提供的 save 方法
         saveItemImages(bizItem.getId(), lostBizItemDTO.getImageUrls());  // 保存物品图片
-
+        applicationEventPublisher.publishEvent(
+                new ItemAiGenerateEvent(this,bizItem.getId(), ItemTriggerType.CREATE)
+        );
         // 新增后清理首页热点缓存
         evictItemCaches(bizItem.getId());
 
@@ -112,7 +117,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         bizItem.setCurrentAiResultId(null);
         save(bizItem);  // 使用 IService 提供的 save 方法
         saveItemImages(bizItem.getId(), lostBizItemDTO.getImageUrls());  // 保存物品图片
-
+        applicationEventPublisher.publishEvent(
+                new ItemAiGenerateEvent(this,bizItem.getId(), ItemTriggerType.CREATE)
+        );
         // 新增后清理首页热点缓存
         evictItemCaches(bizItem.getId());
 
@@ -173,7 +180,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                         .eq(BizItemImage::getItemId, id)
         );
         saveItemImages(id, updateBizItemDTO.getImageUrls());  // 保存更新后的物品图片
-
+        applicationEventPublisher.publishEvent(
+                new ItemAiGenerateEvent(this,bizItem.getId(), ItemTriggerType.CREATE)
+        );
         // 修改后清理缓存
         evictItemCaches(id);
 
