@@ -2,6 +2,7 @@ package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
@@ -26,22 +27,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CommentServiceImpl implements CommentService {
+public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> implements CommentService {
 
-    private final BizCommentDao bizCommentDao;
-    private final BizItemDao bizItemDao;
-    private final UserDao UserDao;
-    private final NotificationService notificationService;
+    private final BizItemDao bizItemDao;  // 物品数据访问层
+    private final UserDao userDao;  // 用户数据访问层
+    private final NotificationService notificationService;  // 通知服务层
 
     /**
      * 新增留言
-     *
-     * 说明：
-     * 1. 仅允许对存在的物品留言
-     * 2. 默认新增一级留言，parentId 为空时按 0 处理
-     * 3. 留言成功后默认标记为未读，供后续“未读提示”功能使用
-     *
-     * @param commentAddDTO 留言参数
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -49,12 +42,14 @@ public class CommentServiceImpl implements CommentService {
         Long userId = BaseContext.getCurrentId();
         log.info("新增留言开始，userId={}, itemId={}", userId, commentAddDTO.getItemId());
 
+        // 校验物品是否存在
         BizItem bizItem = bizItemDao.selectById(commentAddDTO.getItemId());
         if (bizItem == null) {
             log.warn("新增留言失败，物品不存在，itemId={}, userId={}", commentAddDTO.getItemId(), userId);
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
 
+        // 创建新的留言
         BizComment bizComment = new BizComment();
         bizComment.setItemId(commentAddDTO.getItemId());
         bizComment.setUserId(userId);
@@ -62,12 +57,16 @@ public class CommentServiceImpl implements CommentService {
         bizComment.setParentId(commentAddDTO.getParentId() == null ? 0L : commentAddDTO.getParentId());
         bizComment.setIsRead(0);
 
-        bizCommentDao.insert(bizComment);
+        // 保存留言
+        save(bizComment); // 使用 IService 提供的 save 方法
 
         log.info("新增留言成功，commentId={}, userId={}, itemId={}",
                 bizComment.getId(), userId, commentAddDTO.getItemId());
     }
 
+    /**
+     * 获取物品留言列表（分页）
+     */
     @Override
     public PageResult<CommentStatVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize) {
         log.info("查询物品留言，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
@@ -75,48 +74,54 @@ public class CommentServiceImpl implements CommentService {
         Page<CommentStatVO> page = new Page<>(pageNum, pageSize);
 
         // 查询留言
-        Page<CommentStatVO> commentPage = bizCommentDao.selectCommentList(page, itemId);
+        Page<CommentStatVO> commentPage = baseMapper.selectCommentList(page, itemId); // 使用 baseMapper 来替代 bizCommentDao
 
         // 返回结果
         return new PageResult<>(commentPage.getRecords(), commentPage.getTotal(), pageNum, pageSize);
     }
 
-
+    /**
+     * 删除留言（逻辑删除）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteComment(Long commentId){
-        Long userId=BaseContext.getCurrentId();
+    public void deleteComment(Long commentId) {
+        Long userId = BaseContext.getCurrentId();
         log.info("删除留言开始，userId={}, commentId={}", userId, commentId);
 
-        BizComment comment=bizCommentDao.selectById(commentId);
-        if(comment==null){
+        BizComment comment = getById(commentId);  // 使用 IService 提供的 getById 方法
+        if (comment == null) {
             log.warn("删除留言失败，留言不存在，commentId={}, userId={}", commentId, userId);
             throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
         }
 
-        //判断留言拥有者或管理员是否进行删除
-        if(!comment.getUserId().equals(userId)&&!BaseContext.getCurrentRole().equals("admin")){
+        // 判断留言是否是留言拥有者或管理员进行删除
+        if (!comment.getUserId().equals(userId) && !BaseContext.getCurrentRole().equals("admin")) {
             log.warn("删除留言失败，非留言拥有者或管理员，commentId={}, userId={}", commentId, userId);
             throw new DeletionNotAllowedException(MessageConstant.DELETE_NOT_ALLOWED);
         }
 
-        bizCommentDao.deleteById(commentId);
+        // 删除留言
+        removeById(commentId);  // 使用 IService 提供的 removeById 方法
         log.info("删除留言成功，commentId={}, userId={}", commentId, userId);
     }
 
+    /**
+     * 获取留言详情
+     */
     @Override
     public CommentDetailVO getCommentDetail(Long commentId) {
         log.info("查询留言详情，commentId={}", commentId);
 
         // 查询留言
-        BizComment comment = bizCommentDao.selectById(commentId);
+        BizComment comment = getById(commentId);  // 使用 IService 提供的 getById 方法
         if (comment == null) {
             log.warn("留言不存在，commentId={}", commentId);
             throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
         }
 
         // 获取留言的用户信息
-        SysUser user = UserDao.selectById(comment.getUserId());
+        SysUser user = userDao.selectById(comment.getUserId());
         if (user == null) {
             log.warn("用户信息不存在，userId={}", comment.getUserId());
             throw new AbsentException(MessageConstant.USER_NOT_FOUND);
@@ -137,13 +142,16 @@ public class CommentServiceImpl implements CommentService {
         return vo;
     }
 
+    /**
+     * 标记留言为已读
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void markAsRead(Long commentId) {
         Long userId = BaseContext.getCurrentId();
         log.info("将留言标记为已读，commentId={}, userId={}", commentId, userId);
 
-        BizComment comment = bizCommentDao.selectById(commentId);
+        BizComment comment = getById(commentId);  // 使用 IService 提供的 getById 方法
         if (comment == null) {
             log.warn("留言不存在，commentId={}", commentId);
             throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
@@ -155,42 +163,52 @@ public class CommentServiceImpl implements CommentService {
             return;
         }
 
+        // 标记为已读
         BizComment updateComment = new BizComment();
         updateComment.setId(commentId);
-        updateComment.setIsRead(1); // 更新为已读
-        bizCommentDao.updateById(updateComment);
+        updateComment.setIsRead(1);  // 设置为已读
+        updateById(updateComment);  // 使用 IService 提供的 updateById 方法
 
         log.info("留言标记为已读成功，commentId={}", commentId);
     }
 
+    /**
+     * 获取物品下未读留言数量
+     */
     @Override
     public Long getUnreadCount(Long itemId) {
         log.info("查询物品下未读留言数量，itemId={}", itemId);
 
-        Long count = bizCommentDao.selectCount(
+        Long count = count(
                 new LambdaQueryWrapper<BizComment>()
                         .eq(BizComment::getItemId, itemId)
                         .eq(BizComment::getIsRead, 0)
-        );
+        );  // 使用 IService 提供的 count 方法
 
         log.info("查询物品下未读留言数量成功，itemId={}, count={}", itemId, count);
         return count;
     }
 
+    /**
+     * 获取用户未读留言数量
+     */
     @Override
     public Long getUserUnreadCount(Long userId) {
         log.info("查询用户未读留言数量，userId={}", userId);
 
-        Long count = bizCommentDao.selectCount(
+        Long count = count(
                 new LambdaQueryWrapper<BizComment>()
                         .eq(BizComment::getUserId, userId)
                         .eq(BizComment::getIsRead, 0)
-        );
+        );  // 使用 IService 提供的 count 方法
 
         log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
         return count;
     }
 
+    /**
+     * 回复留言
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void replyComment(CommentAddDTO commentAddDTO) {
@@ -205,7 +223,7 @@ public class CommentServiceImpl implements CommentService {
 
         // 父留言验证
         if (commentAddDTO.getParentId() != 0) {
-            BizComment parentComment = bizCommentDao.selectById(commentAddDTO.getParentId());
+            BizComment parentComment = getById(commentAddDTO.getParentId());  // 使用 IService 提供的 getById 方法
             if (parentComment == null) {
                 log.warn("回复留言失败，父留言不存在，parentId={}", commentAddDTO.getParentId());
                 throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
@@ -223,15 +241,11 @@ public class CommentServiceImpl implements CommentService {
         bizComment.setUserId(userId);
         bizComment.setContent(commentAddDTO.getContent());
         bizComment.setParentId(commentAddDTO.getParentId());
-        bizComment.setIsRead(0);
+        bizComment.setIsRead(0);  // 设置为未读
 
-        bizCommentDao.insert(bizComment);
+        save(bizComment);  // 使用 IService 提供的 save 方法
 
         log.info("回复留言成功，commentId={}, userId={}, itemId={}",
                 bizComment.getId(), userId, commentAddDTO.getItemId());
     }
-
-
-
-
 }

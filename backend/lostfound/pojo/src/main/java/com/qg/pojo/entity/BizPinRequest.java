@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.qg.common.enums.PinRequestStatusEnum;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("bin_pin_request")
-public class BizPinRequest {
+public class BizPinRequest implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @TableId(type= IdType.AUTO)
     private Long id;

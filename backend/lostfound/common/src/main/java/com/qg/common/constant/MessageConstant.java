@@ -35,4 +35,5 @@ public interface MessageConstant {
     String COMMENT_NOT_FOUND = "留言不存在";
     String USER_NOT_FOUND = "用户不存在";
     String PARENT_COMMENT_NOT_FOUND = "父留言不存在";
+    String NOTIFICATION_NOT_FOUND = "通知不存在";
 }

@@ -3,6 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.BizItemStatus;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.PinConstant;
@@ -30,31 +31,33 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-public class PinServiceImpl implements PinService {
-    private final BizItemDao bizItemDao;
-    private final BizPinRequestDao bizPinRequestDao;
+@RequiredArgsConstructor
+public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest> implements PinService {  // 继承 ServiceImpl 和实现 PinService
+
+    private final BizItemDao bizItemDao;  // 物品数据访问层
+    private final BizPinRequestDao bizPinRequestDao;  // 置顶请求数据访问层
 
     @Override
     public void apply(PinApplyDTO pinApplyDTO) {
-        Long userId= BaseContext.getCurrentId();
+        Long userId = BaseContext.getCurrentId();
 
-        BizItem item=bizItemDao.selectById(pinApplyDTO.getItemId());
-        if(item==null){
+        BizItem item = bizItemDao.selectById(pinApplyDTO.getItemId());
+        if (item == null) {
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
-        if(!item.getUserId().equals(userId)){
+        if (!item.getUserId().equals(userId)) {
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
         // 检查物品状态
-        if(!item.getStatus().equals(BizItemStatus.OPEN)&&!item.getStatus().equals(BizItemStatus.MATCHED)){
-            throw new BaseException(400, MessageConstant. ITEM_STATUS_INVALID);
+        if (!item.getStatus().equals(BizItemStatus.OPEN) && !item.getStatus().equals(BizItemStatus.MATCHED)) {
+            throw new BaseException(400, MessageConstant.ITEM_STATUS_INVALID);
         }
 
         // 不允许重复申请（未处理）
@@ -67,18 +70,17 @@ public class PinServiceImpl implements PinService {
         if (count != null && count > 0) {
             throw new BaseException(400, "已有待审核的置顶申请");
         }
+
+        // 创建置顶请求
         BizPinRequest request = new BizPinRequest();
         request.setItemId(pinApplyDTO.getItemId());
         request.setApplicantId(userId);
         request.setReason(pinApplyDTO.getReason());
         request.setStatus(PinRequestStatus.PENDING);
 
-        bizPinRequestDao.insert(request);
-
-
+        save(request); // 使用 IService 提供的 save 方法
 
         log.info("提交置顶申请成功，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
-
     }
 
     @Override
@@ -88,7 +90,7 @@ public class PinServiceImpl implements PinService {
         String currentRole = BaseContext.getCurrentRole(); // RBAC 获取角色
 
         // 查询置顶申请
-        BizPinRequest pinRequest = bizPinRequestDao.selectById(pinRequestId);
+        BizPinRequest pinRequest = getById((Serializable) pinRequestId);  // 使用 IService 提供的 getById 方法
         if (pinRequest == null) {
             throw new AbsentException("置顶申请不存在");
         }
@@ -102,7 +104,7 @@ public class PinServiceImpl implements PinService {
                 throw new BaseException(400, "已处理的申请无法取消");
             }
             pinRequest.setStatus(PinRequestStatus.CANCELED);
-            bizPinRequestDao.updateById(pinRequest);
+            updateById(pinRequest);  // 使用 IService 提供的 updateById 方法
             log.info("学生取消自己的置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
@@ -119,7 +121,7 @@ public class PinServiceImpl implements PinService {
                 }
             }
             pinRequest.setStatus(PinRequestStatus.CANCELED);
-            bizPinRequestDao.updateById(pinRequest);
+            updateById(pinRequest);  // 使用 IService 提供的 updateById 方法
             log.info("管理员取消置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
@@ -131,7 +133,7 @@ public class PinServiceImpl implements PinService {
     public void audit(PinAuditDTO pinAuditDTO) {
         Long adminId = BaseContext.getCurrentId();
 
-        BizPinRequest request = bizPinRequestDao.selectById(pinAuditDTO.getRequestId());
+        BizPinRequest request = getById((Serializable) pinAuditDTO.getRequestId());  // 使用 IService 提供的 getById 方法
         if (request == null) {
             throw new AbsentException("置顶申请不存在");
         }
@@ -148,7 +150,7 @@ public class PinServiceImpl implements PinService {
         update.setAuditRemark(pinAuditDTO.getRemark());
         update.setAuditTime(LocalDateTime.now());
 
-        bizPinRequestDao.updateById(update);
+        updateById(update);  // 使用 IService 提供的 updateById 方法
 
         // 审核通过 → 真正置顶
         if (PinRequestStatus.APPROVED.equals(pinAuditDTO.getStatus())) {
@@ -157,13 +159,11 @@ public class PinServiceImpl implements PinService {
             item.setIsPinned(1);
             item.setPinExpireTime(LocalDateTime.now().plusHours(PinConstant.PIN_EXPIRE_HOURS));
 
-            bizItemDao.updateById(item);
+            bizItemDao.updateById(item);  // 使用 bizItemDao 的 updateById 方法
         }
 
         log.info("置顶审核完成，requestId={}, status={}", request.getId(), update.getStatus());
-
     }
-
 
     @Override
     public PageResult<PinRequestStatVO> queryPinRequests(PinRequestQueryDTO queryDTO) {
@@ -171,9 +171,9 @@ public class PinServiceImpl implements PinService {
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
         if (queryDTO.getApplicantId() != null) wrapper.eq(BizPinRequest::getApplicantId, queryDTO.getApplicantId());
         if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizPinRequest::getStatus, queryDTO.getStatus());
-        bizPinRequestDao.selectPage(page, wrapper);
-        PageResult pageResult=convertToVOPage(page);
-        return pageResult;
+        baseMapper.selectPage(page, wrapper);  // 使用 baseMapper 进行分页查询
+
+        return convertToVOPage(page);
     }
 
     @Override
@@ -182,21 +182,21 @@ public class PinServiceImpl implements PinService {
         BizPinRequest request = null;
         PinRequestDetailVO vo = new PinRequestDetailVO();
         if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
-             request=bizPinRequestDao.selectById(id);
-             if (request == null) {
-                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
-             }
+            request = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
+            if (request == null) {
+                throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
+            }
 
-             BeanUtils.copyProperties(request, vo);
-             vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
-             return vo;
+            BeanUtils.copyProperties(request, vo);
+            vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
+            return vo;
         }
         if ("STUDENT".equals(role)) {
-             request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
+            request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
                     .eq(BizPinRequest::getId, id));
             if (request == null) {
                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
-            }else if (!request.getApplicantId().equals(BaseContext.getCurrentId())) {
+            } else if (!request.getApplicantId().equals(BaseContext.getCurrentId())) {
                 throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
             }
             vo = new PinRequestDetailVO();
@@ -209,10 +209,9 @@ public class PinServiceImpl implements PinService {
 
     @Override
     public List<PinRequestStatVO> myList() {
-
         Long currentUserId = BaseContext.getCurrentId();
         List<PinRequestStatVO> list = bizPinRequestDao.selectList(new LambdaQueryWrapper<BizPinRequest>()
-                .eq(BizPinRequest::getApplicantId, currentUserId))
+                        .eq(BizPinRequest::getApplicantId, currentUserId))
                 .stream()
                 .map(item -> {
                     PinRequestStatVO vo = new PinRequestStatVO();

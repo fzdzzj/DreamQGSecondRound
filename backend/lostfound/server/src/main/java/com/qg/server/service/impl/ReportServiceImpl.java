@@ -3,6 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.BizItemStatus;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.ReportStatus;
@@ -16,7 +17,6 @@ import com.qg.pojo.dto.ReportAuditDTO;
 import com.qg.pojo.dto.ReportDTO;
 import com.qg.pojo.dto.ReportPageQueryDTO;
 import com.qg.pojo.entity.BizItem;
-import com.qg.pojo.entity.BizPinRequest;
 import com.qg.pojo.entity.BizReport;
 import com.qg.pojo.vo.ReportDetailVO;
 import com.qg.pojo.vo.ReportListVO;
@@ -29,6 +29,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,18 +37,13 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ReportServiceImpl implements ReportService {
+public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> implements ReportService {  // 继承 ServiceImpl 和实现 ReportService
 
-    private final BizItemDao itemDao;
-    private final BizReportDao reportDao;
+    private final BizItemDao itemDao;  // 物品数据访问层
+    private final BizReportDao reportDao;  // 举报请求数据访问层
 
     /**
      * 提交举报
-     *
-     * 设计说明：
-     * 1. 同一用户不能重复举报同一物品
-     * 2. 举报后状态为 PENDING
-     * 3. 举报成功不直接删除数据，而是进入审核流程
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -78,8 +74,8 @@ public class ReportServiceImpl implements ReportService {
         report.setReason(dto.getReason());
         report.setDetail(dto.getDetail());
         report.setStatus(ReportStatus.PENDING);
-        log.info("写入举报记录，report={}", report);
-        reportDao.insert(report);
+
+        save(report);  // 使用 IService 提供的 save 方法
 
         log.info("举报提交成功，itemId={}, userId={}", dto.getItemId(), userId);
     }
@@ -87,13 +83,13 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditReport(ReportAuditDTO reportAuditDTO) {
-        Long adminId=BaseContext.getCurrentId();
+        Long adminId = BaseContext.getCurrentId();
         log.info("管理员审核举报，reportId={}, adminId={}", reportAuditDTO.getReportId(), adminId);
-        BizReport report=reportDao.selectById(reportAuditDTO.getReportId());
-        if(report==null){
+        BizReport report = getById((Serializable) reportAuditDTO.getReportId());  // 使用 IService 提供的 getById 方法
+        if (report == null) {
             throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
         }
-        if(!report.getStatus().equals(ReportStatus.PENDING)){
+        if (!report.getStatus().equals(ReportStatus.PENDING)) {
             throw new BaseException(400, MessageConstant.REPORT_NOT_PENDING);
         }
 
@@ -103,19 +99,20 @@ public class ReportServiceImpl implements ReportService {
         report.setAuditRemark(reportAuditDTO.getRemark());
         report.setAuditTime(LocalDateTime.now());
 
-        reportDao.updateById(report);
+        updateById(report);  // 使用 IService 提供的 updateById 方法
 
-        if(report.getStatus().equals(ReportStatus.APPROVED)){
+        if (report.getStatus().equals(ReportStatus.APPROVED)) {
             log.info("举报审核通过，删除物品，itemId={}", report.getItemId());
             BizItem item = new BizItem();
             item.setId(report.getItemId());
             item.setStatus(BizItemStatus.REPORTED);
-            itemDao.updateById(item);
-            itemDao.deleteById(report.getItemId());
-            log.info("物品删除成功，itemId={}", report.getItemId());
+            itemDao.updateById(item);  // 更新物品状态为已举报
+            itemDao.deleteById(report.getItemId());  // 删除物品
 
+            log.info("物品删除成功，itemId={}", report.getItemId());
         }
-        log.info("举报审核完成，reportId={}, result={}",reportAuditDTO.getReportId(), reportAuditDTO.getStatus());
+
+        log.info("举报审核完成，reportId={}, result={}", reportAuditDTO.getReportId(), reportAuditDTO.getStatus());
     }
 
     @Override
@@ -124,25 +121,24 @@ public class ReportServiceImpl implements ReportService {
         LambdaQueryWrapper<BizReport> wrapper = new LambdaQueryWrapper<>();
         if (queryDTO.getReporterId() != null) wrapper.eq(BizReport::getReporterId, queryDTO.getReporterId());
         if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizReport::getStatus, queryDTO.getStatus());
-        reportDao.selectPage(page, wrapper);
-        PageResult<ReportListVO> pageResult=convertToVOPage(page);
-        return pageResult;
+        page(page, wrapper);  // 使用 IService 提供的 page 方法
+        return convertToVOPage(page);
     }
 
     @Override
     public ReportDetailVO getById(Long id) {
         String role = BaseContext.getCurrentRole();
         ReportDetailVO vo = new ReportDetailVO();
-        if ("ADMIN".equals(role)||"SYSTEM".equals(role)) {
-            BizReport report = reportDao.selectById(id);
-            if(report==null){
+        if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
+            BizReport report = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
+            if (report == null) {
                 throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
             }
             BeanUtils.copyProperties(report, vo);
             vo.setStatusDesc(ReportStatusEnum.getDescByCode(report.getStatus()));
-        }else if ("USER".equals(role)) {
-            BizReport report = reportDao.selectById(id);
-            if(report==null){
+        } else if ("USER".equals(role)) {
+            BizReport report = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
+            if (report == null) {
                 throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
             }
             if (!report.getReporterId().equals(BaseContext.getCurrentId())) {

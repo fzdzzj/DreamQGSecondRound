@@ -4,12 +4,13 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.ReportAuditDTO;
 import com.qg.pojo.dto.ReportDTO;
 import com.qg.pojo.dto.ReportPageQueryDTO;
+import com.qg.pojo.entity.BizReport;
 import com.qg.pojo.vo.ReportDetailVO;
 import com.qg.pojo.vo.ReportListVO;
+import com.baomidou.mybatisplus.extension.service.IService;
 
-import java.util.List;
+public interface ReportService extends IService<BizReport> {  // 继承 IService
 
-public interface ReportService {
     void submitReport(ReportDTO reportDTO);
 
     void auditReport(ReportAuditDTO reportAuditDTO);
