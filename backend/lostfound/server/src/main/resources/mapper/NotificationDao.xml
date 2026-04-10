@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.qg.server.mapper.NotificationDao">
-    <select id="selectUserNotifications" resultMap="NotificationResultMap">
+    <select id="selectUserNotifications"  resultType="com.qg.pojo.vo.NotificationVO">
         SELECT
             n.id, n.comment_id AS commentId, n.content, n.is_read AS isRead,
             n.create_time AS createTime, n.update_time AS updateTime

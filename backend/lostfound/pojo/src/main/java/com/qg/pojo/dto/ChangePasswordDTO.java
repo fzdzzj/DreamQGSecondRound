@@ -28,8 +28,9 @@ public class ChangePasswordDTO implements Serializable {
     @Pattern(regexp = RegexConstant.PASSWORD, message = "确认密码格式错误")
     private String confirmPassword;
 
-    @AssertTrue(message = "密码和确认密码不相等")
-    public boolean isPasswordMatch() {
+    @AssertTrue(message = "密码和确认密码不相等", groups = {ChangePasswordDTO.class})
+    @Schema(description = "密码和确认密码是否相等")
+        public boolean isPasswordMatch() {
         return newPassword != null && newPassword.equals(confirmPassword);
     }
 }

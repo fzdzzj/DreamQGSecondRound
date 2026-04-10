@@ -17,103 +17,64 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.stream.Collectors;
 
-/**
- * 全局异常处理器
- * 统一捕获所有 Controller 层异常，返回标准化响应，保护接口安全，便于排查问题
- */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * 从配置文件读取最大上传大小
-     */
     @Value("${aliyun.oss.max-file-size}")
     private DataSize maxFileSize;
 
-    /**
-     * 处理 JSON 请求体参数校验异常（@RequestBody + @Valid 失败）
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<Void> handleValidationException(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ":" + error.getDefaultMessage())
-                .collect(Collectors.joining(", "));
+    private static final String DEFAULT_ERROR = "系统繁忙，请稍后重试";
+
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    public Result<Void> handleValidation(Exception e) {
+        String message;
+        if (e instanceof MethodArgumentNotValidException manv) {
+            message = manv.getBindingResult().getFieldErrors().stream()
+                    .map(err -> err.getField() + ":" + err.getDefaultMessage())
+                    .collect(Collectors.joining(", "));
+        } else if (e instanceof BindException be) {
+            message = be.getFieldErrors().stream()
+                    .map(err -> err.getField() + ":" + err.getDefaultMessage())
+                    .collect(Collectors.joining(", "));
+        } else {
+            message = "参数错误";
+        }
         log.warn("参数校验失败：{}", message);
         return Result.error(400, message);
     }
 
-    /**
-     * 处理表单参数/路径参数绑定异常
-     */
-    @ExceptionHandler(BindException.class)
-    public Result<Void> handleBindException(BindException e) {
-        String message = e.getFieldErrors().stream()
-                .map(error -> error.getField() + ":" + error.getDefaultMessage())
-                .collect(Collectors.joining(", "));
-        log.warn("参数绑定失败：{}", message);
-        return Result.error(400, message);
-    }
-
-    /**
-     * 处理自定义业务异常
-     */
     @ExceptionHandler(BaseException.class)
-    public Result<Void> handleBusinessException(BaseException e, HttpServletResponse response) {
+    public Result<Void> handleBusiness(BaseException e, HttpServletResponse response) {
         log.warn("业务异常：{}", e.getMessage(), e);
-        // 设置 HTTP 状态码
-        if (e.getCode() != null) {
-            response.setStatus(e.getCode());
-        } else {
-            response.setStatus(500);
-        }
-        return Result.error(e.getCode(), e.getMessage());
-    }
-    /**
-     * 处理SQL异常
-     * @param ex
-     * @return
-     */@ExceptionHandler
-    public Result exceptionHandler(SQLIntegrityConstraintViolationException ex){
-        //Duplicate entry 'zhangsan' for key 'employee.idx_username'
-        String message = ex.getMessage();
-        if(message.contains("Duplicate entry")){
-            String[] split = message.split(" ");
-            String username = split[2];
-            String msg = username + MessageConstant.ALREADY_EXISTS;
-            return Result.error(msg);
-        }else{
-            return Result.error(MessageConstant.UNKNOWN_ERROR);
-        }
+        response.setStatus(e.getCode() != null ? e.getCode() : 500);
+        return Result.error(e.getCode(), e.getMessage() != null ? e.getMessage() : DEFAULT_ERROR);
     }
 
+    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
+    public Result<Void> handleSql(SQLIntegrityConstraintViolationException ex) {
+        log.error("数据库约束异常：", ex);
+        String msg = ex.getMessage() != null && ex.getMessage().contains("Duplicate entry") ?
+                ex.getMessage().split(" ")[2] + MessageConstant.ALREADY_EXISTS :
+                DEFAULT_ERROR;
+        return Result.error(msg);
+    }
 
-    /**
-     * 处理 JWT 认证异常（未登录、token过期、无效）
-     */
     @ExceptionHandler(JwtException.class)
-    public Result<Void> handleJwtException(JwtException e) {
+    public Result<Void> handleJwt(JwtException e) {
         log.warn("JWT异常：{}", e.getMessage(), e);
-        return Result.error(e.getCode(), e.getMessage());
+        return Result.error(e.getCode(), e.getMessage() != null ? e.getMessage() : "Token验证失败");
     }
 
-    /**
-     * 处理文件上传大小超限异常
-     */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public Result<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+    public Result<Void> handleFile(MaxUploadSizeExceededException e) {
         log.error("文件上传大小超限：", e);
-        String msg = "文件大小不能超过 " + maxFileSize.toMegabytes() + "MB";
-        return Result.error(400, msg);
+        return Result.error(400, "文件大小不能超过 " + maxFileSize.toMegabytes() + "MB");
     }
 
-    /**
-     * 兜底：处理所有未捕获的系统异常
-     * 避免暴露敏感信息，记录完整异常栈
-     */
     @ExceptionHandler(Exception.class)
-    public Result<Void> handleException(Exception e) {
-        log.error("服务器未知异常：", e); // 必须输出完整堆栈
-        return Result.error(500, "系统繁忙，请稍后重试");
+    public Result<Void> handleUnknown(Exception e) {
+        log.error("服务器未知异常：", e);
+        return Result.error(500, DEFAULT_ERROR);
     }
 }

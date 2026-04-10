@@ -10,6 +10,7 @@ import com.qg.pojo.vo.PinRequestDetailVO;
 import com.qg.pojo.vo.PinRequestStatVO;
 import com.qg.server.service.PinService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequestMapping("/pin")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "置顶申请接口")
 public class PinController {
     private final PinService pinService;
 

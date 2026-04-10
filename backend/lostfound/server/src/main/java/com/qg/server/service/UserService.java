@@ -3,6 +3,7 @@ package com.qg.server.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.qg.pojo.dto.*;
 import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ public interface UserService extends IService<SysUser> {
      * @param loginDTO 登录请求的DTO
      * @return 登录后的用户信息和 token
      */
-    Map<String, Object> login(LoginDTO loginDTO);
+    LoginResponseVO login(LoginDTO loginDTO);
 
     /**
      * 用户注册，完成用户信息的注册操作

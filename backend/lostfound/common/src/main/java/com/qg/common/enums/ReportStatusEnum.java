@@ -5,9 +5,9 @@ import lombok.Getter;
 @Getter
 public enum ReportStatusEnum {
 
-    PENDING("PENDING", "待审核"),
-    APPROVED("APPROVED", "审核通过"),
-    REJECTED("REJECTED", "审核驳回");
+    PENDING("1", "待审核"),
+    APPROVED("2", "审核通过"),
+    REJECTED("3", "审核驳回");
 
     private final String code;
     private final String desc;
@@ -23,6 +23,6 @@ public enum ReportStatusEnum {
                 return item.desc;
             }
         }
-        return code;
+        return "未知";
     }
 }

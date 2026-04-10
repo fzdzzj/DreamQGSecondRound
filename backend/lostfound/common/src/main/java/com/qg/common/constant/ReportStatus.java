@@ -11,15 +11,15 @@ public class ReportStatus {
     /**
      * 待审核
      */
-    public static final String PENDING = "PENDING";
+    public static final String PENDING = "1";
 
     /**
      * 审核通过
      */
-    public static final String APPROVED = "APPROVED";
+    public static final String APPROVED = "2";
 
     /**
      * 审核驳回
      */
-    public static final String REJECTED = "REJECTED";
+    public static final String REJECTED = "3";
 }

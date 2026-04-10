@@ -5,8 +5,8 @@ import lombok.Getter;
 @Getter
 public enum BizItemTypeEnum {
 
-    LOST("LOST", "丢失物品"),
-    FOUND("FOUND", "拾取物品");
+    LOST("1", "丢失物品"),
+    FOUND("2", "拾取物品");
 
     private final String code;
     private final String desc;
@@ -22,6 +22,6 @@ public enum BizItemTypeEnum {
                 return item.desc;
             }
         }
-        return code;
+        return "未知";
     }
 }

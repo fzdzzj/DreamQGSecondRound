@@ -5,9 +5,9 @@ import lombok.Getter;
 @Getter
 public enum UserRoleEnum {
 
-    STUDENT("STUDENT", "学生"),
-    ADMIN("ADMIN", "管理员"),
-    SYSTEM("SYSTEM", "系统");
+    STUDENT("1", "学生"),
+    ADMIN("2", "管理员"),
+    SYSTEM("3", "系统");
 
     private final String code;
     private final String desc;
@@ -23,6 +23,6 @@ public enum UserRoleEnum {
                 return item.desc;
             }
         }
-        return code;
+        return "未知";
     }
 }

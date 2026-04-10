@@ -87,7 +87,7 @@ public class JwtUtil {
         claims.put(JwtClaimsConstant.TYPE, type);
 
         // 只有 accessToken 才存权限
-        if (!TokenConstant.ACCESS.equals(type) && permissions != null && !permissions.isEmpty()) {
+        if (TokenConstant.ACCESS.equals(type) && permissions != null && !permissions.isEmpty()) {
             claims.put(JwtClaimsConstant.PERMISSIONS, permissions);
         }
 

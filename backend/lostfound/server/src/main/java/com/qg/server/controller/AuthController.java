@@ -3,6 +3,7 @@ package com.qg.server.controller;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.LoginDTO;
 import com.qg.pojo.dto.RegisterDTO;
+import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.server.anno.OperationLog;
 import com.qg.server.service.TokenRefreshService;
 import com.qg.server.service.UserService;
@@ -37,9 +38,9 @@ public class AuthController {
     @PostMapping("/login")
     @OperationLog("用户登录")
     @Operation(summary = "用户登录", description = "用户登录，返回用户信息及 token")
-    public Result<Map<String, Object>> login(@Validated @RequestBody LoginDTO loginDTO) {
+    public Result<LoginResponseVO> login(@Validated @RequestBody LoginDTO loginDTO) {
         log.info("用户登录尝试，账号={}", loginDTO.getIdentifier());
-        Map<String, Object> response = userService.login(loginDTO);
+        LoginResponseVO response = userService.login(loginDTO);
         log.info("用户登录成功，账号={}", loginDTO.getIdentifier());
         return Result.success(response);
     }

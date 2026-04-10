@@ -1,10 +1,10 @@
 package com.qg.common.enums;
 
 public enum PinRequestStatusEnum {
-    PENDING("PENDING", "待审核"),
-    APPROVED("APPROVED", "审核通过"),
-    REJECTED("REJECTED", "审核驳回"),
-    CANCELED("CANCELED", "已取消");
+    PENDING("1", "待审核"),
+    APPROVED("2", "审核通过"),
+    REJECTED("3", "审核驳回"),
+    CANCELED("4", "已取消");
 
 
     private final String code;
@@ -21,6 +21,6 @@ public enum PinRequestStatusEnum {
                 return item.desc;
             }
         }
-        return code;
+        return "未知";
     }
 }

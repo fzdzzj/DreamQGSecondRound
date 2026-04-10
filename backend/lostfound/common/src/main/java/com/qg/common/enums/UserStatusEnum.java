@@ -22,6 +22,6 @@ public enum UserStatusEnum {
                 return item.desc;
             }
         }
-        return String.valueOf(code);
+        return "未知";
     }
 }

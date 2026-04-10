@@ -11,10 +11,10 @@ public class BizItemType {
     /**
      * 丢失物品
      */
-    public static final String LOST = "LOST";
+    public static final String LOST = "1";
 
     /**
      * 拾取物品
      */
-    public static final String FOUND = "FOUND";
+    public static final String FOUND = "2";
 }

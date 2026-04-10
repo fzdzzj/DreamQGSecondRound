@@ -9,7 +9,9 @@ import com.qg.common.util.JwtUtil;
 import com.qg.common.util.PasswordUtil;
 import com.qg.pojo.dto.*;
 import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.pojo.vo.SysUserDetailVO;
+import com.qg.pojo.vo.UserLoginVO;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.PermissionService;
 import com.qg.server.service.UserService;
@@ -39,7 +41,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      * @return 登录后的 token 和用户信息
      */
     @Override
-    public Map<String, Object> login(LoginDTO loginDTO) {
+    public LoginResponseVO login(LoginDTO loginDTO) {
         String identifier = loginDTO.getIdentifier();  // 用户标识（邮箱或手机）
         String password = loginDTO.getPassword();  // 用户密码
         log.info("用户发起登录请求，账号={}", identifier);
@@ -86,21 +88,21 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole());
 
         // 返回登录信息，包括 Token 和用户信息
-        Map<String, Object> data = new HashMap<>();
-        data.put("accessToken", accessToken);
-        data.put("refreshToken", refreshToken);
+        LoginResponseVO loginResponseVO = new LoginResponseVO();
+        loginResponseVO.setAccessToken(accessToken);
+        loginResponseVO.setRefreshToken(refreshToken);
 
-        Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("id", user.getId());
-        userInfo.put("username", user.getUsername());
-        userInfo.put("role", user.getRole());
-        userInfo.put("nickname", user.getNickname());
-        userInfo.put("avatar", user.getAvatar());
+        UserLoginVO userInfo = new UserLoginVO();
+        userInfo.setId(user.getId());
+        userInfo.setUsername(user.getUsername());
+        userInfo.setRole(user.getRole());
+        userInfo.setNickname(user.getNickname());
+        userInfo.setAvatar(user.getAvatar());
 
-        data.put("user", userInfo);
+        loginResponseVO.setUser(userInfo);
 
         log.info("用户登录成功，账号={}", identifier);
-        return data;
+        return loginResponseVO;
     }
 
     /**
@@ -110,6 +112,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      */
     @Override
     public void register(RegisterDTO registerDTO) {
+        log.info("用户发起注册请求，用户名：{}", registerDTO.getUsername());
         String username = registerDTO.getUsername();
         String email = registerDTO.getEmail();
         String phone = registerDTO.getPhone();
@@ -121,7 +124,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
                 .eq(SysUser::getPhone, phone)
                 .or()
                 .eq(SysUser::getEmail, email));
-
+        log.info("查询到的用户数量：{}", count);
         if (count > 0) {
             log.warn("用户名或手机号或邮箱已存在，用户名：{}", username);
             throw new RegisterFailedException(MessageConstant.USERNAME_OR_PHONE_OR_EMAIL_EXISTS);

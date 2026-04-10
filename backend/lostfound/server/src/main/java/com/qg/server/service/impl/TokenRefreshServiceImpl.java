@@ -66,7 +66,6 @@ public class TokenRefreshServiceImpl implements TokenRefreshService {
         Set<String> permissions = permissionService.getPermissionsByRole(role);
 
         String newAccessToken = jwtUtil.generateAccessToken(userId, username, role, permissions);
-
         Map<String, String> tokens = new HashMap<>();
         tokens.put("accessToken", newAccessToken);
         return tokens;
