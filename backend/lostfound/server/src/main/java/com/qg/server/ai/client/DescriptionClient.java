@@ -30,26 +30,22 @@ public class DescriptionClient {
         AiUtils.incrementUserAiCount(userId, redisTemplate);
 
         String prompt = buildPrompt(title, description, location);
-
         ImageAiResponseVO response = new ImageAiResponseVO();
         try {
             String aiResponse = chatClient.prompt().user(prompt).call().content();
-            // JSON解析
             response = objectMapper.readValue(aiResponse, ImageAiResponseVO.class);
-
-            // 安全处理字段
             response.setAiCategory(AiUtils.filterSensitiveWords(response.getAiCategory()));
             response.setAiTags(AiUtils.filterSensitiveWords(response.getAiTags()));
             response.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(response.getAiDescription())));
-
         } catch (Exception e) {
-            log.error("AI生成描述失败, title={}, location={}", title, location, e);
+            log.error("AI生成描述失败", e);
             response.setAiCategory("未知");
             response.setAiTags("");
             response.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title));
         }
         return response;
     }
+
 
     private String buildPrompt(String title, String description, String location) {
         return String.format(

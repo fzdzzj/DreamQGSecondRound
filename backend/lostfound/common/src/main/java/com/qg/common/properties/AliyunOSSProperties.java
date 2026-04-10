@@ -14,4 +14,6 @@ public class AliyunOSSProperties {
     private String baseUrl;
     private String accessKeyId;
     private String accessKeySecret;
+    private String maxFileSize;
+    private String allowedTypes;
 }

@@ -4,25 +4,20 @@ import java.util.List;
 
 public class AiPromptConstant {
 
-    public static final String DEFAULT_IMAGE_CLASSIFICATION_TEMPLATE = """
-你是失物多模态智能助手。
-请根据提供的图片和物品信息生成分类、标签和描述。
-
-输入信息：
-图片URL：%s
-物品名称：%s
-用户描述：%s
-丢失/拾取地点：%s
-
-要求：
-1. 输出JSON格式，包含以下字段：
-   - aiCategory：物品分类，例如“手机”、“校卡”等；
-   - aiTags：物品标签，包括颜色（如红色、蓝色）、材质（如皮革、塑料）、类型特征（如钥匙、钱包、手机）、场景特征（如学生、公园、教室）；
-   - aiDescription：物品描述，例如“这是一个红色的手机，对学生很重要”；
-2. aiDescription 语言自然简洁，不超过 100 字；
-3. 禁止生成任何敏感信息；
-4. 不要输出多余解释。
-""";
+    /**
+     * 多模态物品描述提示词
+     * 占位符顺序：
+     * 1. 物品名称
+     * 2. 用户原始描述
+     * 3. 丢失地点
+     */
+    public static final String IMAGE_DESCRIPTION_PROMPT =
+            "你是校园失物多模态智能助手，请根据以下信息生成分类和标签，并生成物品描述，输出JSON格式。\n" +
+                    "字段包括：aiCategory, aiTags, aiDescription，禁止生成敏感信息。\n" +
+                    "物品名称：%s\n" +
+                    "用户描述：%s\n" +
+                    "丢失地点：%s\n" +
+                    "请根据图片内容和文字描述生成结果。";
 
 
     private AiPromptConstant() {

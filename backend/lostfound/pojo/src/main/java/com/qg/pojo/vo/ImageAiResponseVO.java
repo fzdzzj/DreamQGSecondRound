@@ -2,10 +2,16 @@ package com.qg.pojo.vo;
 
 import lombok.Data;
 
+import java.io.Serializable;
+import java.util.List;
+
 @Data
-public class ImageAiResponseVO {
-    private String aiCategory;    // AI 生成分类
-    private String aiTags;        // AI 生成标签
-    private String aiDescription; // 可选：辅助生成描述
-    private String status;        // SUCCESS / FAILED
+public class ImageAiResponseVO implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private String aiCategory; // 逗号分隔
+    private String aiTags;     // 逗号分隔
+    private String aiDescription;
+    private String status;     // SUCCESS / FAILURE
+    private List<String> imageUrls;
 }

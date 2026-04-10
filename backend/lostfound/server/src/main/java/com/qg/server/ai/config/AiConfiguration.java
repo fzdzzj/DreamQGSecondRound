@@ -3,7 +3,7 @@ package com.qg.server.ai.config;
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.properties.AIProperties;
 import com.qg.server.ai.client.DescriptionClient;
-import com.qg.server.ai.client.ImageClassificationClient;
+import com.qg.server.ai.client.ImageDescriptionClient;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -35,19 +35,11 @@ public class AiConfiguration {
                                                AIProperties aiProperties) {
         return new DescriptionClient(descriptionChatClient, redisTemplate, aiProperties);
     }
-
     @Bean
-    public ChatClient imageClassificationChatClient(OpenAiChatModel chatModel) {
-        return ChatClient.builder(chatModel)
-                .defaultSystem(AiPromptConstant.DEFAULT_IMAGE_CLASSIFICATION_TEMPLATE)
-                .defaultAdvisors(new SimpleLoggerAdvisor())
-                .build();
+    public ImageDescriptionClient imageDescriptionClient(AIProperties aiProperties,
+                                                         RedisTemplate<String, Object> redisTemplate) {
+        return new ImageDescriptionClient(aiProperties, redisTemplate);
     }
 
-    @Bean
-    public ImageClassificationClient imageClassificationClient(ChatClient imageClassificationChatClient,
-                                                               RedisTemplate<String, Object> redisTemplate,
-                                                               AIProperties aiProperties) {
-        return new ImageClassificationClient(imageClassificationChatClient, aiProperties, redisTemplate);
-    }
+
 }

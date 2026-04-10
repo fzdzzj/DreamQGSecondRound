@@ -1,84 +1,33 @@
 package com.qg.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * 物品AI结果表
- */
 @Data
+@TableName("biz_item_ai_result")
 public class BizItemAiResult implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 物品ID
-     */
-    private Long itemId;
-
-    /**
-     * 结果版本号
-     */
-    private Integer resultVersion;
-
-    /**
-     * 来源类型（AUTO/REGENERATE）
-     */
-    private String sourceType;
-
-    /**
-     * AI请求prompt
-     */
-    private String promptText;
-
-    /**
-     * 用户原始描述
-     */
-    private String originText;
-
-    /**
-     * AI生成描述
-     */
+    private Long itemId; // 对应 BizItem
+    private Integer resultVersion; // 版本号
+    private String sourceType; // AUTO/REGENERATE
+    private String originText; // 用户原始描述
+    private String promptText; // AI Prompt
     private String aiDescription;
-
-    /**
-     * AI分类
-     */
-    private String aiCategory;
-
-    /**
-     * AI标签
-     */
-    private String aiTags;
-
-    /**
-     * 模型名称
-     */
+    private String aiCategory; // 多分类逗号分隔
+    private String aiTags;     // 多标签逗号分隔
+    private List<String> imageUrls; // 多图片
     private String modelName;
-
-    /**
-     * 状态（PENDING/SUCCESS/FAILED）
-     */
-    private String status;
-
-    /**
-     * 错误信息
-     */
-    private String errorMessage;
-
-    /**
-     * 是否删除（0否 1是）
-     */
+    private String status; // SUCCESS/FAILURE
     private Integer isDeleted;
-
     private Long createUser;
-
     private Long updateUser;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

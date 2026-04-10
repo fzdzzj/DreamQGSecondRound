@@ -2,12 +2,13 @@ package com.qg.server.service.impl;
 
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.constant.BizItemAiResultStatus;
-import com.qg.common.constant.RedisConstant;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
+import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.client.DescriptionClient;
-import com.qg.server.ai.prompt.ItemAiPromptBuilder;
+import com.qg.server.ai.client.ImageDescriptionClient;
+import com.qg.server.ai.client.ImageDescriptionClient.ImageItem;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.service.AiAsyncService;
@@ -17,9 +18,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -27,39 +27,54 @@ import java.util.concurrent.TimeUnit;
 public class AiAsyncServiceImpl implements AiAsyncService {
 
     private final DescriptionClient descriptionClient;
-
+    private final ImageDescriptionClient imageDescriptionClient;
     private final BizItemAiResultDao aiResultDao;
-
     private final BizItemDao itemDao;
-
     private final AIProperties aiProperties;
     private final RedisTemplate<String, Object> redisTemplate;
 
-
-    @Transactional
+    /**
+     * 文本生成
+     */
     @Override
-    public void generateItemDescription(String title, String description, String location,Long userId,Long itemId){
-        String generatedDesc;
+    @Transactional
+    public void generateItemDescription(String title, String description, String location, Long userId, Long itemId) {
+        ImageAiResponseVO generatedDesc = descriptionClient.generateDescriptionVo(title, description, location, userId);
 
-        try {
-            generatedDesc = descriptionClient.generateDescription(
-                    title,
-                    description,
-                    location,userId
-                           );
+        String status = BizItemAiResultStatus.SUCCESS.equals(generatedDesc.getStatus())
+                ? BizItemAiResultStatus.SUCCESS
+                : BizItemAiResultStatus.FAILURE;
 
-            persistAiDescription(title, location, userId, itemId, generatedDesc, description, BizItemAiResultStatus.SUCCESS);
+        Long resultId = persistAiDescription(title, location, userId, itemId, generatedDesc.getAiDescription(), description, status);
+        updateItemCurrentAiResultId(itemId, resultId);
+    }
 
+    /**
+     * 图片多模态生成
+     */
+    @Override
+    @Transactional
+    public void generateItemImageDescription(String title, String description, String location, Long userId, Long itemId, List<ImageItem> imageItems) {
+        List<ImageAiResponseVO> results = imageDescriptionClient.generateDescriptionVo(title, description, location, userId, imageItems);
 
+        Long lastResultId = null;
+        for (ImageAiResponseVO vo : results) {
+            Long resultId = persistAiDescription(title, location, userId, itemId, vo.getAiDescription(), description, vo.getStatus());
+            lastResultId = resultId;
+        }
 
-        } catch(Exception e){
-            log.warn("AI生成异常, 使用默认描述, itemId={}, userId={}", itemId, userId, e);
-            generatedDesc = String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title);
-            persistAiDescription(title, location, userId, itemId, generatedDesc, description, BizItemAiResultStatus.FAILURE);
+        if (lastResultId != null) {
+            updateItemCurrentAiResultId(itemId, lastResultId);
         }
     }
 
-    private void persistAiDescription(String title,String location,Long userId, Long itemId, String generatedDesc,String originDesc, String status){
+    /**
+     * 持久化 AI 结果
+     */
+    @Override
+    @Transactional
+    public Long persistAiDescription(String title, String location, Long userId, Long itemId, String generatedDesc, String originDesc, String status) {
+
         BizItemAiResult lastResult = aiResultDao.selectLatestByItemId(itemId);
         int newVersion = (lastResult == null ? 1 : lastResult.getResultVersion() + 1);
 
@@ -67,48 +82,40 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         result.setItemId(itemId);
         result.setResultVersion(newVersion);
         result.setSourceType(lastResult == null ? "AUTO" : "REGENERATE");
-        result.setPromptText(title + " " + location+" "+originDesc);
+        result.setPromptText(title + " " + location + " " + originDesc);
         result.setOriginText(originDesc);
         result.setAiDescription(generatedDesc);
         result.setModelName(aiProperties.getModel());
         result.setStatus(status);
         result.setIsDeleted(0);
-        if(lastResult== null){
-        result.setCreateUser(userId);
-        }
-        result.setUpdateUser(userId);
-        if(lastResult== null){
+        if (lastResult == null) {
             result.setCreateUser(userId);
         }
         result.setUpdateUser(userId);
-        aiResultDao.insert(result);
 
-        // 同步更新 BizItem
+        aiResultDao.insert(result);
+        return result.getId();
+    }
+
+    /**
+     * 更新 item 的 currentAiResultId
+     */
+    @Override
+    @Transactional
+    public void updateItemCurrentAiResultId(Long itemId, Long aiResultId) {
         BizItem item = itemDao.selectById(itemId);
-        if(item != null){
-            item.setCurrentAiResultId(result.getId());
-            item.setAiStatus(status);
-            item.setAiTags(result.getAiTags());
+        if (item != null) {
+            item.setCurrentAiResultId(aiResultId);
             itemDao.updateById(item);
         }
+        // 清理缓存
         evictItemCaches(itemId);
-
-    }
-    /**
-     * 处理 null 字符串，避免缓存 key 中出现 null 文本干扰判断
-     */
-    private String safe(String value) {
-        return value == null ? "" : value;
     }
 
-    /**
-     * 清理物品相关缓存
-     */
     private void evictItemCaches(Long itemId) {
-        redisTemplate.delete(RedisConstant.ITEM_DETAIL_KEY + itemId);
-
-        Set<String> keys = redisTemplate.keys(RedisConstant.ITEM_PAGE_KEY + "*");
-        if (!keys.isEmpty()) {
+        redisTemplate.delete("ITEM_DETAIL_KEY:" + itemId);
+        Set<String> keys = redisTemplate.keys("ITEM_PAGE_KEY:*");
+        if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
     }
