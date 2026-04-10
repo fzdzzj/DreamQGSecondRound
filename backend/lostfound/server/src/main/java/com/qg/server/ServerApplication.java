@@ -8,11 +8,14 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Slf4j
-@ComponentScan("com.qg")
+@ComponentScan(basePackages = "com.qg", excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.qg\\.server\\.mapper\\..*")
+})
 @ServletComponentScan       // 扫描Servlet、Filter、Listener
 @MapperScan("com.qg.server.mapper")  // MyBatis Mapper接口扫描
 @SpringBootApplication(exclude = {

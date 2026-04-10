@@ -55,10 +55,12 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     @Override
     @Transactional
     public void generateItemImageDescription(String title, String description, String location, Long userId, Long itemId, List<ImageItem> imageItems) {
+        log.info("收到图片多模态生成事件, itemId={}, imageItems={}", itemId, imageItems);
         List<ImageAiResponseVO> results = imageDescriptionClient.generateDescriptionVo(title, description, location, userId, imageItems);
 
         Long lastResultId = null;
         for (ImageAiResponseVO vo : results) {
+            log.info("图片多模态生成结果, itemId={}, result={}", itemId, vo);
             Long resultId = persistAiDescription(title, location, userId, itemId, vo.getAiDescription(), description, vo.getStatus());
             lastResultId = resultId;
         }
@@ -88,6 +90,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         result.setModelName(aiProperties.getModel());
         result.setStatus(status);
         result.setIsDeleted(0);
+        result.setAiCategory();
         if (lastResult == null) {
             result.setCreateUser(userId);
         }

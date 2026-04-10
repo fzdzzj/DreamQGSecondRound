@@ -33,6 +33,9 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     auto-mapping-behavior: FULL
+    use-generated-keys: true
+    cache-enabled: true
+
 
 jwt:
   sign-key: ${JWT_SIGN_KEY}

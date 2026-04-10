@@ -37,7 +37,7 @@ public class TokenFilter extends OncePerRequestFilter {
             "/auth/login", "/auth/register", "/auth/refresh",
             "/swagger-ui.html", "/swagger-ui/**",
             "/v3/api-docs/**", "/error",
-            "/api/file/upload", "/item/page", "/item/*"
+            "/api/file/upload", "/item/page"
     );
 
     @Override
@@ -71,9 +71,13 @@ public class TokenFilter extends OncePerRequestFilter {
                 return;
             }
 
-            Claims claims = jwtUtil.parseToken(token);
-            if (claims == null) {
-                writeJson(response, 401, "令牌不合法");
+            Claims claims;
+            try {
+                claims = jwtUtil.parseToken(token);
+            } catch (Exception e) {
+                // 捕获解析异常，返回 JSON，而不是抛异常
+                log.warn("Token 解析失败：{}", e.getMessage());
+                writeJson(response, 401, "Token无效或已过期");
                 return;
             }
 
@@ -95,7 +99,6 @@ public class TokenFilter extends OncePerRequestFilter {
             }
 
             BaseContext.setCurrentUser(userId, role);
-            if(!tokenRefreshService.isBlacklisted(token)){
 
             // 2. RBAC 权限校验
             if (!hasPermission(uri, method, role, permissions)) {
@@ -103,18 +106,19 @@ public class TokenFilter extends OncePerRequestFilter {
                 writeJson(response, 403, "权限不足");
                 return;
             }
-            if(uri.equals("/auth/refresh")){
+
+            if (uri.equals("/auth/refresh")) {
                 tokenRefreshService.addTokenToBlacklist(token);
             }
-                filterChain.doFilter(request, response);
-            }
 
-
+            // 放行请求
+            filterChain.doFilter(request, response);
 
         } finally {
             BaseContext.remove();
         }
     }
+
 
     private boolean hasPermission(String uri, String method, String role, Set<String> permissions) {
         if ("ADMIN".equals(role) || "SYSTEM".equals(role)) return true;

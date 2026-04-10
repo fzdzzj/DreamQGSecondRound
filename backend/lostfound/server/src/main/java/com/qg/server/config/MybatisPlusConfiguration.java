@@ -6,12 +6,17 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
+/**
+ * MyBatis-Plus 配置
+ * - 分页插件
+ * - 单条插入使用 SIMPLE 执行器
+ * - 批量操作使用 BATCH 执行器
+ */
 @Configuration
-@MapperScan("com.qg.server.mapper")
 public class MybatisPlusConfiguration {
 
     /**
@@ -25,12 +30,21 @@ public class MybatisPlusConfiguration {
     }
 
     /**
-     * 批量执行器配置
-     * 注意：设置 executorType = BATCH
-     * 在批量 insert/update/delete 时效率最高
+     * 默认 SqlSessionTemplate，用于单条插入/更新
+     * 保证自增主键回填正常
      */
     @Bean
-    public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory sqlSessionFactory) {
+    @Primary
+    public SqlSessionTemplate sqlSessionTemplateSimple(SqlSessionFactory sqlSessionFactory) {
+        return new SqlSessionTemplate(sqlSessionFactory, ExecutorType.SIMPLE);
+    }
+
+    /**
+     * 批量操作 SqlSessionTemplate
+     * 只在批量 insert/update/delete 时使用
+     */
+    @Bean("sqlSessionTemplateBatch")
+    public SqlSessionTemplate sqlSessionTemplateBatch(SqlSessionFactory sqlSessionFactory) {
         return new SqlSessionTemplate(sqlSessionFactory, ExecutorType.BATCH);
     }
 }

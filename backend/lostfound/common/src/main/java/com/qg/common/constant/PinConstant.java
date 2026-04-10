@@ -16,7 +16,6 @@ public class PinConstant {
      */
     public static final Integer NOT_PINNED = 0;
     public static final long PIN_EXPIRE_HOURS = 24;
-
     /**
      * 已置顶
      */

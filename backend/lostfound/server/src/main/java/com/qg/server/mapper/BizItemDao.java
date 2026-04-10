@@ -6,4 +6,5 @@ import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface BizItemDao extends BaseMapper<BizItem> {
+    // 不需要写 insert()，BaseMapper 自带
 }

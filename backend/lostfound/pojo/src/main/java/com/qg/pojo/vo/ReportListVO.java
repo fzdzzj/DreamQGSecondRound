@@ -23,18 +23,22 @@ public class ReportListVO implements Serializable {
     /**
      * 举报人ID
      */
+    @Schema(description = "举报人ID", example = "5")
     private Long reporterId;
 
     /**
      * 状态
      */
-    @Schema(description = "状态", example = "PENDING")
+    @Schema(description = "状态,1:待处理,2:已处理,3:已拒绝", example = "PENDING")
     private String status;
     /**
      * 状态描述
      */
     @Schema(description = "状态描述", example = "待处理")
     private String statusDesc;
-
+    /**
+     * 创建时间
+     */
+    @Schema(description = "创建时间", example = "2021-01-01 00:00:00")
     private LocalDateTime createTime;
 }

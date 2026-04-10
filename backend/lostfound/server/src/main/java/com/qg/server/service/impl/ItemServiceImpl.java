@@ -49,6 +49,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final BizItemAiResultDao bizItemAiResultDao;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final BizItemDao bizItemDao;
     private final ImageDescriptionClient imageDescriptionClient;
     private final AIProperties aiProperties;
 
@@ -59,7 +60,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         log.info("发布丢失物品开始，userId={}", userId);
 
         BizItem item = new BizItem();
-        BeanUtils.copyProperties(dto, item);
         item.setUserId(userId);
         item.setType(BizItemType.LOST);
         item.setStatus(BizItemStatus.OPEN);
@@ -67,14 +67,40 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setAiStatus("PENDING");
         item.setCurrentAiResultId(null);
 
-        save(item);
+        // 必填字段
+        item.setTitle(dto.getTitle());
+        item.setDescription(dto.getDescription());
+        item.setLocation(dto.getLocation());
+        item.setHappenTime(dto.getHappenTime());
+
+        // ⚡ 使用 BaseMapper 插入并回写自增主键
+        int rows = bizItemDao.insert(item);
+        log.info("insert 返回 rows={}, itemId={}", rows, item.getId());
+
+        if (rows <= 0 || item.getId() == null) {
+            throw new IllegalStateException("插入失物记录失败，itemId 为 null");
+        }
+
+        // 保存图片
         saveItemImages(item.getId(), dto.getImageUrls());
 
-        applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(this, item.getId(), dto.getTitle(), dto.getDescription(), dto.getLocation(), userId, buildImageItems(dto.getImageUrls())));
+        // 发布 AI 事件（事务提交后触发）
+        applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
+                this,
+                item.getId(),
+                item.getTitle(),
+                item.getDescription(),
+                item.getLocation(),
+                userId,
+                buildImageItems(dto.getImageUrls())
+        ));
 
+        // 清理缓存
         evictItemCaches(item.getId());
         log.info("发布丢失物品成功，itemId={}, userId={}", item.getId(), userId);
     }
+
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)

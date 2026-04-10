@@ -36,8 +36,8 @@ public class AiUtils {
     /**
      * 检查用户是否超过每日调用次数
      */
-    public static void checkUserLimit(Long userId, RedisTemplate<String, Object> redisTemplate, long dailyLimit) {
-        Long limit = (Long) redisTemplate.opsForValue().get(RedisConstant.USER_AI_LIMIT_KEY + userId);
+    public static void checkUserLimit(Long userId, RedisTemplate<String, Object> redisTemplate, int dailyLimit) {
+        Integer limit = Integer.parseInt(redisTemplate.opsForValue().get(RedisConstant.USER_AI_LIMIT_KEY + userId).toString());
         if (limit != null && limit >= dailyLimit) {
             throw new AiGenerateException("您今日的AI调用次数已用完");
         }
@@ -48,7 +48,7 @@ public class AiUtils {
      */
     public static void incrementUserAiCount(Long userId, RedisTemplate<String, Object> redisTemplate) {
         String key = RedisConstant.USER_AI_LIMIT_KEY + userId;
-        Long count = redisTemplate.opsForValue().increment(key, 1);
+        Integer count = Integer.parseInt(redisTemplate.opsForValue().increment(key, 1).toString());
         if (count != null && count == 1) {
             redisTemplate.expire(key, 24, TimeUnit.HOURS);
         }

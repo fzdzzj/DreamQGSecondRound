@@ -18,9 +18,9 @@ public class PinRequestStatVO implements Serializable {
     private Long itemId;
     @Schema(description = "申请人ID")
     private Long applicantId;
-    @Schema(description = "置顶请求状态描述")
+    @Schema(description = "置顶请求状态描述", example = "待处理")
     private String statusDesc;
-    @Schema(description = "置顶请求状态")
+    @Schema(description = "置顶请求状态,1:待处理,2:已处理,3:已拒绝", example = "1")
     private String status;
     @Schema(description = "创建时间")
     private LocalDateTime createTime;

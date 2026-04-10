@@ -37,11 +37,14 @@ public class ImageDescriptionClient {
      * @return List<ImageAiResponseVO> 每张图片或每类图片对应一个 VO
      */
     public List<ImageAiResponseVO> generateDescriptionVo(String title, String description, String location, Long userId, List<ImageItem> imageItems) {
+        log.info("client generateDescriptionVo, userId={}, imageItems={}", userId, imageItems);
         AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
         AiUtils.incrementUserAiCount(userId, redisTemplate);
         List<ImageAiResponseVO> results = new ArrayList<>();
+        log.info("client generateDescriptionVo, userId={}, imageItems={}", userId, imageItems);
 
         try {
+            log.info("client generateDescriptionVo, userId={}, imageItems={}", userId, imageItems);
             MultiModalConversation conv = new MultiModalConversation();
             List<MultiModalMessage> messages = new ArrayList<>();
 
@@ -76,10 +79,11 @@ public class ImageDescriptionClient {
                 ImageAiResponseVO vo = new ImageAiResponseVO();
                 vo.setAiCategory("未知");
                 vo.setAiTags("");
-                vo.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title));
+                vo.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title, description, location));
                 results.add(vo);
             }
         }
+        log.info("client generateDescriptionVo, userId={}, imageItems={}, results={}", userId, imageItems, results);
         return results;
     }
 

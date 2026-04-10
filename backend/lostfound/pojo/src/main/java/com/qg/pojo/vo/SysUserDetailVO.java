@@ -38,13 +38,13 @@ public class SysUserDetailVO implements Serializable {
     /**
      * 昵称
      */
-    @Schema(description = "昵称", example = "哈基米哈基米")
+    @Schema(description = "昵称", example = "哈基米哈基米", nullable = true)
     private String nickname;
 
     /**
      * 头像
      */
-    @Schema(description = "头像URL", example = "https://example.com/avatar.png")
+    @Schema(description = "头像URL", example = "https://example.com/avatar.png", nullable = true)
     private String avatar;
 
     /**
@@ -62,7 +62,7 @@ public class SysUserDetailVO implements Serializable {
     /**
      * 状态
      */
-    @Schema(description = "状态", example = "1")
+    @Schema(description = "状态,1:正常,0:禁用", example = "1")
     private Integer status;
 
     /**
@@ -74,13 +74,13 @@ public class SysUserDetailVO implements Serializable {
     /**
      * 最后登录IP
      */
-    @Schema(description = "最后登录IP", example = "192.168.1.1")
+    @Schema(description = "最后登录IP", example = "192.168.1.1", nullable = true)
     private String lastLoginIp;
 
     /**
      * 最后登录时间
      */
-    @Schema(description = "最后登录时间", example = "2021-01-01 00:00:00")
+    @Schema(description = "最后登录时间", example = "2021-01-01 00:00:00", nullable = true)
     private LocalDateTime lastLoginTime;
 
     /**

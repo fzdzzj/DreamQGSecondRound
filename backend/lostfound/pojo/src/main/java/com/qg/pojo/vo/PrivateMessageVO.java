@@ -40,12 +40,12 @@ public class PrivateMessageVO implements Serializable {
     /**
      * 消息状态
      */
-    @Schema(description = "消息状态")
+    @Schema(description = "消息状态,1:已读,0:未读", example = "1")
     private String status;
 
     /**
      * 发送时间
      */
-    @Schema(description = "发送时间")
+    @Schema(description = "发送时间", example = "2021-01-01 00:00:00")
     private LocalDateTime createTime;
 }

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -137,6 +138,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         user.setPhone(phone);
         user.setPasswordHash(PasswordUtil.encrypt(registerDTO.getPassword()));
         user.setRole("STUDENT");  // 默认角色为学生
+        user.setStatus(UserStatus.ENABLE);
+        user.setAvatar(registerDTO.getAvatar());
+        user.setNickname(registerDTO.getNickname());
         userDao.insert(user);  // 保存用户到数据库
     }
 
@@ -224,7 +228,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      * 修改密码操作
      *
      * @param userId 用户ID
-     * @param changePasswordDTO 修改密码的DTO
+     * @param dto 修改密码的DTO
      */
     @Override
     public void changePassword(Long userId, ChangePasswordDTO dto) {

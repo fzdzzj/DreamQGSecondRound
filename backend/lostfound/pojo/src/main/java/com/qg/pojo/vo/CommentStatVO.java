@@ -32,7 +32,7 @@ public class CommentStatVO implements Serializable {
     /**
      * 用户头像
      */
-    @Schema(description = "用户头像")
+    @Schema(description = "用户头像",nullable = true)
     private String avatar;
 
     /**
@@ -50,6 +50,6 @@ public class CommentStatVO implements Serializable {
     /**
      * 是否已读
      */
-    @Schema(description = "是否已读")
+    @Schema(description = "是否已读,0:未读,1:已读", example = "0")
     private Integer isRead;
 }

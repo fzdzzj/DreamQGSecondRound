@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "ai.openai")
+@ConfigurationProperties(prefix = "spring.ai.openai")
 public class AIProperties {
-    private String apiKey;       // 对应 yml: ai.openai.api-key
-    private String model;        // 对应 yml: ai.openai.chat.options.model
+    private String apiKey;       // 对应 yml: spring.ai.openai.api-key
+    private String model;        // 对应 yml: spring.ai.openai.chat.options.model
     private int timeoutMs = 5000;
     private int dailyLimit = 20;
 }

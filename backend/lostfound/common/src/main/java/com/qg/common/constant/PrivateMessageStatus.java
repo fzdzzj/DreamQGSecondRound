@@ -1,6 +1,6 @@
 package com.qg.common.constant;
 
 public class PrivateMessageStatus {
-    public static final String UNREAD = "1";
-    public static final String READ = "2";
+    public static final String UNREAD = "0";
+    public static final String READ = "1";
 }
