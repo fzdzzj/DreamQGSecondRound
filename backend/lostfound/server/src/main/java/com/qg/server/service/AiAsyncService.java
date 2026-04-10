@@ -26,13 +26,17 @@ public interface AiAsyncService {
      * 持久化 AI 结果到数据库
      * @return 新增结果 ID
      */
-    Long persistAiDescription(String title,
-                              String location,
-                              Long userId,
-                              Long itemId,
-                              String generatedDesc,
-                              String originDesc,
-                              String status);
+    public Long persistAiDescription(
+            String title,
+            String location,
+            Long userId,
+            Long itemId,
+            String generatedDesc,
+            String originDesc,
+            String status,
+            String aiCategory,  // 新增参数
+            String aiTags       // 可选
+    );
 
     /**
      * 更新 item 的 currentAiResultId

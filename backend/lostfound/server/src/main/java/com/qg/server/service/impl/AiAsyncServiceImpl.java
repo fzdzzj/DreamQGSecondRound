@@ -45,7 +45,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
                 ? BizItemAiResultStatus.SUCCESS
                 : BizItemAiResultStatus.FAILURE;
 
-        Long resultId = persistAiDescription(title, location, userId, itemId, generatedDesc.getAiDescription(), description, status);
+        Long resultId = persistAiDescription(title, location, userId, itemId, generatedDesc.getAiDescription(), description, status, generatedDesc.getAiCategory(), generatedDesc.getAiTags());
         updateItemCurrentAiResultId(itemId, resultId);
     }
 
@@ -60,10 +60,20 @@ public class AiAsyncServiceImpl implements AiAsyncService {
 
         Long lastResultId = null;
         for (ImageAiResponseVO vo : results) {
-            log.info("图片多模态生成结果, itemId={}, result={}", itemId, vo);
-            Long resultId = persistAiDescription(title, location, userId, itemId, vo.getAiDescription(), description, vo.getStatus());
+            Long resultId = persistAiDescription(
+                    title,
+                    location,
+                    userId,
+                    itemId,
+                    vo.getAiDescription(),
+                    description,
+                    vo.getStatus(),
+                    vo.getAiCategory(),
+                    vo.getAiTags()
+            );
             lastResultId = resultId;
         }
+
 
         if (lastResultId != null) {
             updateItemCurrentAiResultId(itemId, lastResultId);
@@ -75,7 +85,9 @@ public class AiAsyncServiceImpl implements AiAsyncService {
      */
     @Override
     @Transactional
-    public Long persistAiDescription(String title, String location, Long userId, Long itemId, String generatedDesc, String originDesc, String status) {
+    public Long persistAiDescription(String title, String location, Long userId, Long itemId,
+                                     String generatedDesc, String originDesc, String status,
+                                     String aiCategory, String aiTags) {
 
         BizItemAiResult lastResult = aiResultDao.selectLatestByItemId(itemId);
         int newVersion = (lastResult == null ? 1 : lastResult.getResultVersion() + 1);
@@ -90,7 +102,11 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         result.setModelName(aiProperties.getModel());
         result.setStatus(status);
         result.setIsDeleted(0);
-        result.setAiCategory();
+
+        // ✅ 设置分类和标签，保证不为空
+        result.setAiCategory(aiCategory != null ? aiCategory : "未知");
+        result.setAiTags(aiTags != null ? aiTags : "");
+
         if (lastResult == null) {
             result.setCreateUser(userId);
         }
@@ -99,6 +115,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         aiResultDao.insert(result);
         return result.getId();
     }
+
 
     /**
      * 更新 item 的 currentAiResultId

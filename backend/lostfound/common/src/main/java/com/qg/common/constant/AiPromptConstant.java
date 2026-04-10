@@ -11,13 +11,20 @@ public class AiPromptConstant {
      * 2. 用户原始描述
      * 3. 丢失地点
      */
-    public static final String IMAGE_DESCRIPTION_PROMPT =
-            "你是校园失物多模态智能助手，请根据以下信息生成分类和标签，并生成物品描述，输出JSON格式。\n" +
-                    "字段包括：aiCategory, aiTags, aiDescription，禁止生成敏感信息。\n" +
-                    "物品名称：%s\n" +
-                    "用户描述：%s\n" +
-                    "丢失地点：%s\n" +
-                    "请根据图片内容和文字描述生成结果。";
+    public static final String IMAGE_DESCRIPTION_PROMPT = """
+                        "你是校园失物多模态智能助手，请根据以下信息生成分类和标签，并生成物品描述。\\n" +
+                                "请严格返回 JSON 格式，字段必须包括：\\n" +
+                                "  - aiCategory：物品分类，例如“手机”、“校卡”等；\\n" +
+                                "  - aiTags：物品标签，包括颜色、材质、类型特征、场景特征；\\n" +
+                                "  - aiDescription：物品描述，语言自然简洁，不超过100字。\\n" +
+                                "禁止生成敏感信息，如身份证、学号等。\\n" +
+                                "请确保输出是有效 JSON，且不要输出任何额外文字或解释。\\n" +
+                                "物品名称：%s\\n" +
+                                "用户描述：%s\\n" +
+                                "丢失地点：%s\\n"
+            """;
+
+
 
 
     private AiPromptConstant() {
