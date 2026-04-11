@@ -4,6 +4,7 @@ import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.client.ImageDescriptionClient.ImageItem;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AiAsyncService {
 
@@ -26,20 +27,12 @@ public interface AiAsyncService {
      * 持久化 AI 结果到数据库
      * @return 新增结果 ID
      */
-    public Long persistAiDescription(
-            String title,
-            String location,
-            Long userId,
-            Long itemId,
-            String generatedDesc,
-            String originDesc,
-            String status,
-            String aiCategory,  // 新增参数
-            String aiTags       // 可选
-    );
+    public Map<String, String> persistAiDescription(String title, String location, Long userId, Long itemId,
+                                                    String generatedDesc, String originDesc, String status,
+                                                    String aiCategory);
 
     /**
      * 更新 item 的 currentAiResultId
      */
-    void updateItemCurrentAiResultId(Long itemId, Long aiResultId);
+    void updateItemCurrentAiResultId(Long itemId, Long aiResultId, String aiStatus);
 }

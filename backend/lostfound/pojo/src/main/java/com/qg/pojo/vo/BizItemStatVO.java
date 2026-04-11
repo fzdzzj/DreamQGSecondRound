@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 public class BizItemStatVO implements Serializable {
     @Schema(description = "物品ID")
     private Long id;
-    @Schema(description = "物品类型")
-    private String type;
     @Schema(description = "物品标题")
     private String title;
     @Schema(description = "物品位置")
@@ -23,6 +21,8 @@ public class BizItemStatVO implements Serializable {
     private String status;
     @Schema(description = "物品状态描述")
     private String statusDesc;
+    @Schema(description = "物品描述")
+    private String description;
     @Schema(description = "物品AI分类")
     private String aiCategory;
 }

@@ -14,7 +14,7 @@ public class ImageAiResponseVO implements Serializable {
     @Schema(description = "图片AI分类")
     private String aiCategory; // 逗号分隔
     @Schema(description = "图片AIT标签")
-    private String aiTags;     // 逗号分隔
+    private List<String> aiTags;
     @Schema(description = "图片AI描述")
     private String aiDescription;
     @Schema(description = "图片AI状态,1:成功,2:失败", example = "1")

@@ -22,7 +22,6 @@ public class BizItemAiResult implements Serializable {
     private String promptText; // AI Prompt
     private String aiDescription;
     private String aiCategory; // 多分类逗号分隔
-    private String aiTags;     // 多标签逗号分隔
     private List<String> imageUrls; // 多图片
     private String modelName;
     private String status; // SUCCESS/FAILURE

@@ -5,7 +5,10 @@ import com.qg.common.constant.RedisConstant;
 import com.qg.common.exception.AiGenerateException;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * AI 工具类：包含敏感词过滤、字段长度限制、用户调用次数管理
@@ -21,6 +24,15 @@ public class AiUtils {
             text = text.replaceAll(word, "***");
         }
         return text;
+    }
+    /**
+     * 过滤敏感词 - List<String> 重载版本
+     */
+    public static List<String> filterSensitiveWords(List<String> texts) {
+        if (texts == null || texts.isEmpty()) return Collections.emptyList();
+        return texts.stream()
+                .map(AiUtils::filterSensitiveWords) // 调用 String 版本
+                .collect(Collectors.toList());
     }
 
     /**

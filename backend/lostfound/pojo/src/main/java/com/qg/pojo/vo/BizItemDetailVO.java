@@ -33,7 +33,7 @@ public class BizItemDetailVO implements Serializable {
     @Schema(description = "物品AI分类")
     private String aiCategory;
     @Schema(description = "物品AIT标签")
-    private String aiTags;
+    private List<String> aiTags;
     @Schema(description = "物品AI描述")
     private String aiDescription;
 }

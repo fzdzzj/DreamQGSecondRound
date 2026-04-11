@@ -3,6 +3,8 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.BizItemStatusEnum;
@@ -10,9 +12,9 @@ import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.result.PageResult;
+import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.dto.LostBizItemDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
-import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemImage;
@@ -22,10 +24,11 @@ import com.qg.server.event.ItemAiGenerateEvent;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizItemImageDao;
+import com.qg.server.mapper.BizItemAiTagDao;
 import com.qg.server.service.ItemService;
+import com.qg.pojo.entity.BizItemAiTag;
 import com.qg.server.ai.client.ImageDescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient.ImageItem;
-import com.qg.server.ai.util.AiUtils;
 import com.qg.common.properties.AIProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +40,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * 物品服务实现类
+ * <p>
+ * 支持：
+ * 1. 发布/更新丢失/拾取物品
+ * 2. AI多模态生成（文本/图片）并记录版本
+ * 3. 多标签、多照片支持
+ * 4. 详情页和分页搜索支持 AI 分类与标签
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -50,41 +61,41 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final BizItemDao bizItemDao;
+    private final BizItemAiTagDao bizItemAiTagDao;
+     private  final ObjectMapper objectMapper;
     private final ImageDescriptionClient imageDescriptionClient;
     private final AIProperties aiProperties;
 
+    // ===================== 发布/更新物品 =====================
+
+    /**
+     * 发布丢失物品
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional
     public void publishLostItem(LostBizItemDTO dto) {
         Long userId = BaseContext.getCurrentId();
-        log.info("发布丢失物品开始，userId={}", userId);
 
+        // 构造物品实体
         BizItem item = new BizItem();
         item.setUserId(userId);
         item.setType(BizItemType.LOST);
         item.setStatus(BizItemStatus.OPEN);
         item.setIsPinned(0);
-        item.setAiStatus("PENDING");
+        item.setAiStatus(BizItemAiResultStatus.PENDING); // AI 处理状态
         item.setCurrentAiResultId(null);
-
-        // 必填字段
         item.setTitle(dto.getTitle());
         item.setDescription(dto.getDescription());
         item.setLocation(dto.getLocation());
         item.setHappenTime(dto.getHappenTime());
 
-        // ⚡ 使用 BaseMapper 插入并回写自增主键
-        int rows = bizItemDao.insert(item);
-        log.info("insert 返回 rows={}, itemId={}", rows, item.getId());
+        // 插入数据库
+        bizItemDao.insert(item);
 
-        if (rows <= 0 || item.getId() == null) {
-            throw new IllegalStateException("插入失物记录失败，itemId 为 null");
-        }
-
-        // 保存图片
+        // 保存图片列表
         saveItemImages(item.getId(), dto.getImageUrls());
 
-        // 发布 AI 事件（事务提交后触发）
+        // 发布 AI 生成事件（异步执行）
         applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
                 this,
                 item.getId(),
@@ -97,17 +108,15 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         // 清理缓存
         evictItemCaches(item.getId());
-        log.info("发布丢失物品成功，itemId={}, userId={}", item.getId(), userId);
     }
 
-
-
+    /**
+     * 发布拾取物品（逻辑同丢失物品）
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional
     public void publishFoundItem(LostBizItemDTO dto) {
         Long userId = BaseContext.getCurrentId();
-        log.info("发布拾取物品开始，userId={}", userId);
-
         BizItem item = new BizItem();
         BeanUtils.copyProperties(dto, item);
         item.setUserId(userId);
@@ -120,24 +129,31 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         save(item);
         saveItemImages(item.getId(), dto.getImageUrls());
 
-        applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(this, item.getId(), dto.getTitle(), dto.getDescription(), dto.getLocation(), userId, buildImageItems(dto.getImageUrls())));
+        applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
+                this,
+                item.getId(),
+                dto.getTitle(),
+                dto.getDescription(),
+                dto.getLocation(),
+                userId,
+                buildImageItems(dto.getImageUrls())
+        ));
 
         evictItemCaches(item.getId());
-        log.info("发布拾取物品成功，itemId={}, userId={}", item.getId(), userId);
     }
 
+    /**
+     * 更新物品信息
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional
     public void updateItem(Long id, UpdateBizItemDTO dto) {
         Long userId = BaseContext.getCurrentId();
-        log.info("修改物品开始，itemId={}, userId={}", id, userId);
-
         BizItem oldItem = getById(id);
         if (oldItem == null) throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         if (!oldItem.getUserId().equals(userId)) throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
-        if (BizItemStatus.REPORTED.equals(oldItem.getStatus()) || BizItemStatus.CLOSED.equals(oldItem.getStatus()))
-            throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
 
+        // 构造新的物品实体
         BizItem item = new BizItem();
         BeanUtils.copyProperties(dto, item);
         item.setId(id);
@@ -153,49 +169,211 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         updateById(item);
 
+        // 删除旧图片并重新保存
         bizItemImageDao.delete(new LambdaQueryWrapper<BizItemImage>().eq(BizItemImage::getItemId, id));
         saveItemImages(id, dto.getImageUrls());
 
-        applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(this, id, dto.getTitle(), dto.getDescription(), dto.getLocation(), userId, buildImageItems(dto.getImageUrls())));
-        evictItemCaches(id);
+        // 发布 AI 生成事件
+        applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
+                this,
+                id,
+                dto.getTitle(),
+                dto.getDescription(),
+                dto.getLocation(),
+                userId,
+                buildImageItems(dto.getImageUrls())
+        ));
 
-        log.info("修改物品成功，itemId={}, userId={}", id, userId);
+        evictItemCaches(id);
     }
 
-    @Override
+    // ===================== 查看详情 =====================
+
+    /**
+     * 获取物品详情
+     * 支持：
+     * 1. 多照片
+     * 2. 最新 version 的 AI 分类和标签
+     * 3. 缓存 30 分钟
+     */
     public BizItemDetailVO getItem(Long id) {
-        String cacheKey = RedisConstant.ITEM_DETAIL_KEY + id;
-        Object cache = redisTemplate.opsForValue().get(cacheKey);
-        if (cache instanceof BizItemDetailVO vo) return vo;
+        BizItem item = bizItemDao.selectById(id);
+        if (item == null) throw new AbsentException("物品不存在");
 
-        BizItem item = getById(id);
-        if (item == null || BizItemStatus.REPORTED.equals(item.getStatus()))
-            throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
-        if (BizItemStatus.CLOSED.equals(item.getStatus()) && !item.getUserId().equals(BaseContext.getCurrentId()))
-            throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
+        BizItemDetailVO vo = new BizItemDetailVO();
+        BeanUtils.copyProperties(item, vo);
 
-        BizItemDetailVO detail = new BizItemDetailVO();
-        BeanUtils.copyProperties(item, detail);
+        // 图片
+        List<String> images = bizItemImageDao.selectList(
+                new LambdaQueryWrapper<BizItemImage>().eq(BizItemImage::getItemId, id)
+        ).stream().map(BizItemImage::getUrl).toList();
+        vo.setImageUrls(images);
 
-        List<String> images = bizItemImageDao.selectList(new LambdaQueryWrapper<BizItemImage>().eq(BizItemImage::getItemId, id).orderByAsc(BizItemImage::getId))
-                .stream().map(BizItemImage::getUrl).toList();
-        detail.setImageUrls(images);
+        // 最新 version AI结果
+        List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
+        int latestVersion = aiResults.stream().mapToInt(BizItemAiResult::getResultVersion).max().orElse(1);
+        List<BizItemAiResult> latestResults = aiResults.stream()
+                .filter(r -> r.getResultVersion() == latestVersion)
+                .toList();
 
-        if (item.getCurrentAiResultId() != null) {
-            BizItemAiResult aiResult = bizItemAiResultDao.selectById(item.getCurrentAiResultId());
-            if (aiResult != null) {
-                detail.setAiCategory(aiResult.getAiCategory());
-                detail.setAiTags(aiResult.getAiTags());
-                detail.setAiDescription(aiResult.getAiDescription());
-                detail.setAiStatus(aiResult.getStatus());
-            }
+        String aiCategory = latestResults.stream()
+                .map(BizItemAiResult::getAiCategory)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(","));
+        vo.setAiCategory(aiCategory);
+
+        List<BizItemAiTag> tags = bizItemAiTagDao.selectByItemIdAndVersion(id, latestVersion);
+        List<String> tagList = tags.stream()
+                .flatMap(t -> {
+                    try {
+                        // 反序列化 JSON 字符串成 List<String>
+                        return objectMapper.readValue(t.getAiTags(), new TypeReference<List<String>>() {}).stream();
+                    } catch (Exception e) {
+                        return Collections.<String>emptyList().stream();
+                    }
+                })
+                .toList();
+        vo.setAiTags(tagList);
+
+
+
+
+
+
+
+        // AI描述也可以合并最新 version 的结果
+        String aiDescription = latestResults.stream()
+                .map(BizItemAiResult::getAiDescription)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("\n"));
+        vo.setAiDescription(aiDescription);
+
+        vo.setAiStatus(item.getAiStatus());
+
+        return vo;
+    }
+
+
+    // ===================== 分页搜索 =====================
+
+    /**
+     * 分页查询物品（公开列表）
+     * 支持：
+     * - title/description/aiCategory/tag 关键词搜索
+     * - 分页缓存
+     */
+    @Override
+    public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
+        Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
+
+        // 基础条件
+        wrapper.eq(query.getType() != null, BizItem::getType, query.getType())
+                .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
+                .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
+                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
+                .eq(query.getAiStatus() != null, BizItem::getAiStatus, query.getAiStatus())
+                .eq(BizItem::getStatus, BizItemStatus.OPEN)
+                .orderByDesc(BizItem::getIsPinned)
+                .orderByDesc(BizItem::getPinExpireTime)
+                .orderByDesc(BizItem::getCreateTime);
+
+        // 关键词搜索 title/description/aiCategory/tag
+        if (query.getKeyword() != null) {
+            String kw = query.getKeyword();
+            wrapper.and(w -> w.like(BizItem::getTitle, kw)
+                    .or().like(BizItem::getDescription, kw)
+                    .or().inSql(BizItem::getId,
+                            "SELECT item_id FROM biz_item_ai_tag WHERE tag LIKE '%" + kw + "%'")
+            );
         }
 
-        detail.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
-        redisTemplate.opsForValue().set(cacheKey, detail, 30, TimeUnit.MINUTES);
-        return detail;
+
+        page(page, wrapper);
+
+        // VO 转换并回填最新 AI 结果
+        List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
+            BizItemStatVO vo = new BizItemStatVO();
+            BeanUtils.copyProperties(item, vo);
+            vo.setStatus(BizItemStatusEnum.getDescByCode(item.getStatus()));
+            vo.setDescription(item.getDescription());
+
+            // 获取最新 version 的 AI 分类和 tags
+            List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
+            if (!aiResults.isEmpty()) {
+                int latestVersion = aiResults.stream()
+                        .mapToInt(BizItemAiResult::getResultVersion)
+                        .max().orElse(1);
+                List<BizItemAiResult> latestResults = aiResults.stream()
+                        .filter(r -> r.getResultVersion() == latestVersion)
+                        .toList();
+
+                vo.setAiCategory(latestResults.stream()
+                        .map(BizItemAiResult::getAiCategory)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse("未知"));
+            }
+            return vo;
+        }).toList();
+
+        return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 
+    /**
+     * 分页查询我的物品（只查询自己发布的）
+     */
+    @Override
+    public PageResult<BizItemStatVO> myPageList(ItemPageQueryDTO query) {
+        Long userId = BaseContext.getCurrentId();
+        query.setPageNum(query.getPageNum() != null ? query.getPageNum() : 1);
+        query.setPageSize(query.getPageSize() != null ? query.getPageSize() : 10);
+
+        Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(BizItem::getUserId, userId)
+                .eq(query.getType() != null, BizItem::getType, query.getType())
+                .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
+                .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
+                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
+                .eq(query.getAiStatus() != null, BizItem::getAiStatus, query.getAiStatus());
+
+        if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
+            String kw = query.getKeyword();
+            wrapper.and(w -> w.like(BizItem::getTitle, kw)
+                    .or().like(BizItem::getDescription, kw)
+                    .or().inSql(BizItem::getId,
+                            "SELECT item_id FROM biz_item_ai_tag WHERE tag LIKE '%" + kw + "%'"));
+        }
+
+        page(page, wrapper);
+        // VO 转换并回填最新 AI 结果
+        List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
+            BizItemStatVO vo = new BizItemStatVO();
+            BeanUtils.copyProperties(item, vo);
+            vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
+            vo.setDescription(item.getDescription());
+
+            // 获取最新 version 的 AI 分类和 tags
+            List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
+            if (!aiResults.isEmpty()) {
+                int latestVersion = aiResults.stream()
+                        .mapToInt(BizItemAiResult::getResultVersion)
+                        .max().orElse(1);
+                List<BizItemAiResult> latestResults = aiResults.stream()
+                        .filter(r -> r.getResultVersion() == latestVersion)
+                        .toList();
+
+                vo.setAiCategory(latestResults.stream()
+                        .map(BizItemAiResult::getAiCategory)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse("未知"));
+            }
+            return vo;
+        }).toList();
+        return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+    }
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteItem(Long id) {
@@ -223,98 +401,18 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         }
     }
 
-    @Override
-    public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
-        boolean cacheable = query.getPageNum() != null && query.getPageNum() == 1
-                && query.getPageSize() != null && query.getPageSize() <= 10;
+    // ===================== 工具方法 =====================
 
-        String cacheKey = cacheable ? buildPageCacheKey(query) : null;
-        Object cache = cacheKey != null ? redisTemplate.opsForValue().get(cacheKey) : null;
-        if (cache instanceof PageResult<?> pageResult) {
-            @SuppressWarnings("unchecked")
-            PageResult<BizItemStatVO> cached = (PageResult<BizItemStatVO>) pageResult;
-            log.info("命中物品分页缓存，key={}", cacheKey);
-            return cached;
-        }
-
-        Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
-        LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
-
-        wrapper.eq(query.getType() != null, BizItem::getType, query.getType())
-                .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
-                .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
-                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
-                .eq(query.getAiStatus() != null, BizItem::getAiStatus, query.getAiStatus())
-                .eq(BizItem::getStatus, BizItemStatus.OPEN)
-                .orderByDesc(BizItem::getIsPinned)
-                .orderByDesc(BizItem::getPinExpireTime)
-                .orderByDesc(BizItem::getCreateTime);
-
-        if (query.getKeyword() != null) {
-            wrapper.and(w -> w.like(BizItem::getTitle, query.getKeyword())
-                    .or()
-                    .like(BizItem::getDescription, query.getKeyword()));
-        }
-
-        page(page, wrapper);
-
-        // VO 转换并回填最新 AI 结果
-        List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
-            BizItemStatVO vo = new BizItemStatVO();
-            BeanUtils.copyProperties(item, vo);
-            vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
-
-            if (item.getCurrentAiResultId() != null) {
-                BizItemAiResult aiResult = bizItemAiResultDao.selectById(item.getCurrentAiResultId());
-                if (aiResult != null) {
-                    vo.setAiCategory(aiResult.getAiCategory());
-                }
-            }
-            return vo;
-        }).collect(Collectors.toList());
-
-        PageResult<BizItemStatVO> result = new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
-
-        if (cacheable && cacheKey != null) {
-            redisTemplate.opsForValue().set(cacheKey, result, 5, TimeUnit.MINUTES);
-            log.info("写入物品分页缓存，key={}", cacheKey);
-        }
-
-        return result;
-    }
-
-
-    @Override
-    public PageResult<BizItemStatVO> myPageList(ItemPageQueryDTO query) {
-        Long userId = BaseContext.getCurrentId();
-        Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
-        LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BizItem::getUserId, userId)
-                .eq(query.getType() != null, BizItem::getType, query.getType())
-                .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
-                .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
-                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
-                .eq(query.getAiStatus() != null, BizItem::getAiStatus, query.getAiStatus());
-
-        if (query.getKeyword() != null) {
-            wrapper.and(w -> w.like(BizItem::getTitle, query.getKeyword())
-                    .or()
-                    .like(BizItem::getDescription, query.getKeyword()));
-        }
-
-        page(page, wrapper);
-        return convertToVOPage(page);
-    }
-
-    private PageResult<BizItemStatVO> convertToVOPage(Page<BizItem> page) {
-        List<BizItemStatVO> list = page.getRecords().stream().map(item -> {
-            BizItemStatVO vo = new BizItemStatVO();
-            BeanUtils.copyProperties(item, vo);
-            vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
-            return vo;
-        }).collect(Collectors.toList());
-        return new PageResult<>(list, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
-    }
+//    private PageResult<BizItemStatVO> convertToVOPage(Page<BizItem> page) {
+//        List<BizItemStatVO> list = page.getRecords().stream().map(item -> {
+//            BizItemStatVO vo = new BizItemStatVO();
+//            BeanUtils.copyProperties(item, vo);
+//            vo.setStatus(BizItemStatusEnum.getDescByCode(item.getStatus()));
+//            vo.setDescription(item.getDescription());
+//            return vo;
+//        }).toList();
+//        return new PageResult<>(list, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+//    }
 
     private void saveItemImages(Long itemId, List<String> urls) {
         if (urls == null || urls.isEmpty()) return;
@@ -329,33 +427,12 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
     private List<ImageItem> buildImageItems(List<String> urls) {
         if (urls == null) return Collections.emptyList();
-        List<ImageItem> items = new ArrayList<>();
-        for (String u : urls) items.add(new ImageItem(u, "主图"));
-        return items;
+        return urls.stream().map(u -> new ImageItem(u, "主图")).toList();
     }
 
-    private String buildPageCacheKey(ItemPageQueryDTO query) {
-        return RedisConstant.ITEM_PAGE_KEY
-                + ":type=" + safe(query.getType())
-                + ":location=" + safe(query.getLocation())
-                + ":keyword=" + safe(query.getKeyword())
-                + ":aiStatus=" + safe(query.getAiStatus())
-                + ":aiCategory=" + safe(query.getAiCategory())
-                + ":start=" + (query.getStartTime() != null ? query.getStartTime().toString() : "")
-                + ":end=" + (query.getEndTime() != null ? query.getEndTime().toString() : "")
-                + ":page=" + query.getPageNum()
-                + ":size=" + query.getPageSize();
-    }
-
-    private String safe(String s) {
-        return s == null ? "" : s;
-    }
     private void evictItemCaches(Long itemId) {
         redisTemplate.delete("ITEM_DETAIL_KEY:" + itemId);
         Set<String> keys = redisTemplate.keys("ITEM_PAGE_KEY:*");
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
+        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
     }
-
 }

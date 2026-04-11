@@ -14,11 +14,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
+
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * AI 图片描述客户端
+ * 多图片生成 AI 分类、标签和描述
+ * 说明：
+ *  - 生成的 aiTags 不再存 BizItemAiResult 表，而是单独插入 BizItemAiTag 表
+ *  - 支持多图片输入，每张图片单独生成一个 VO
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class ImageDescriptionClient {
@@ -28,11 +37,12 @@ public class ImageDescriptionClient {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 多图片、多类型物品生成描述
+     * 多图片生成描述
      */
     public List<ImageAiResponseVO> generateDescriptionVo(
             String title, String description, String location, Long userId, List<ImageItem> imageItems) {
 
+        // 用户限制检查
         AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
         AiUtils.incrementUserAiCount(userId, redisTemplate);
 
@@ -42,6 +52,7 @@ public class ImageDescriptionClient {
             MultiModalConversation conv = new MultiModalConversation();
             List<MultiModalMessage> messages = new ArrayList<>();
 
+            // 构建每张图片的 prompt
             for (ImageItem item : imageItems) {
                 MultiModalMessage userMessage = MultiModalMessage.builder()
                         .role(Role.USER.getValue())
@@ -68,36 +79,65 @@ public class ImageDescriptionClient {
 
             MultiModalConversationResult result = conv.call(param);
 
+            List<?> choices = result.getOutput() != null ? result.getOutput().getChoices() : Collections.emptyList();
+
             for (int i = 0; i < messages.size(); i++) {
-                List<?> contentList = result.getOutput().getChoices().get(i).getMessage().getContent();
-                if (contentList == null || contentList.isEmpty()) {
-                    log.warn("AI返回内容为空, 使用默认值, item index={}", i);
+                if (i >= choices.size() || choices.get(i) == null) {
+                    // AI 没有返回对应图片的结果
                     results.add(buildFallbackVO(title, description, location));
                     continue;
                 }
 
-                String aiText;
-                if (contentList.get(0) instanceof Map) {
-                    aiText = ((Map<?, ?>) contentList.get(0)).get("text").toString();
+                Object choiceObj = choices.get(i);
+
+                // 这里假设每个 choiceObj 实际是 Map 或可通过 get("message") 获取内容
+                Map<?, ?> choiceMap;
+                if (choiceObj instanceof Map) {
+                    choiceMap = (Map<?, ?>) choiceObj;
                 } else {
-                    aiText = contentList.get(0).toString();
+                    results.add(buildFallbackVO(title, description, location));
+                    continue;
                 }
 
-                // 清理前缀或首尾符号
-                aiText = cleanAiText(aiText);
+                Object messageObj = choiceMap.get("message"); // ⚡ 根据 SDK 实际结构获取
+                if (!(messageObj instanceof Map)) {
+                    results.add(buildFallbackVO(title, description, location));
+                    continue;
+                }
+
+                Map<?, ?> messageMap = (Map<?, ?>) messageObj;
+                List<?> contentList = (List<?>) messageMap.get("content");
+
+                if (contentList == null || contentList.isEmpty()) {
+                    results.add(buildFallbackVO(title, description, location));
+                    continue;
+                }
+
+                // 拼接文本
+                StringBuilder aiTextBuilder = new StringBuilder();
+                for (Object o : contentList) {
+                    if (o instanceof Map) {
+                        Object textObj = ((Map<?, ?>) o).get("text");
+                        if (textObj != null) aiTextBuilder.append(textObj.toString());
+                    } else {
+                        aiTextBuilder.append(o.toString());
+                    }
+                }
+
+                String aiText = cleanAiText(aiTextBuilder.toString());
 
                 try {
                     ImageAiResponseVO vo = objectMapper.readValue(aiText, ImageAiResponseVO.class);
                     vo.setAiCategory(AiUtils.filterSensitiveWords(vo.getAiCategory()));
-                    vo.setAiTags(AiUtils.filterSensitiveWords(vo.getAiTags()));
+                    vo.setAiTags(vo.getAiTags() != null ? AiUtils.filterSensitiveWords(vo.getAiTags()) : Collections.emptyList());
                     vo.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(vo.getAiDescription())));
                     vo.setStatus("SUCCESS");
                     results.add(vo);
                 } catch (Exception parseEx) {
-                    log.warn("AI解析 JSON 失败, 使用默认值, 原始返回: {}", aiText, parseEx);
                     results.add(buildFallbackVO(title, description, location));
                 }
             }
+
 
         } catch (Exception e) {
             log.error("AI图片生成描述失败", e);
@@ -109,9 +149,10 @@ public class ImageDescriptionClient {
         return results;
     }
 
-    /**
-     * 清理 AI 返回文本中的多余符号
-     */
+
+
+
+    /** 清理 AI 文本 */
     private String cleanAiText(String aiText) {
         aiText = aiText.trim();
         if (aiText.startsWith("```json")) {
@@ -126,21 +167,17 @@ public class ImageDescriptionClient {
         return aiText;
     }
 
-    /**
-     * 生成 fallback VO
-     */
+    /** fallback VO */
     private ImageAiResponseVO buildFallbackVO(String title, String description, String location) {
         ImageAiResponseVO vo = new ImageAiResponseVO();
         vo.setAiCategory("未知");
-        vo.setAiTags("");
-        vo.setAiDescription(String.format(AiPromptConstant.DDEFAULT_DESCRIPTION, title, description, location));
+        vo.setAiTags(Collections.emptyList());  // tag 不存 BizItemAiResult
+        vo.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title, description, location));
         vo.setStatus("FAILURE");
         return vo;
     }
 
-    /**
-     * 图片对象
-     */
+    /** 图片对象 */
     public static class ImageItem {
         private String url;
         private String type;

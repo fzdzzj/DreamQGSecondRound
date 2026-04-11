@@ -11,6 +11,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,12 +37,19 @@ public class DescriptionClient {
             String aiResponse = chatClient.prompt().user(prompt).call().content();
             response = objectMapper.readValue(aiResponse, ImageAiResponseVO.class);
             response.setAiCategory(AiUtils.filterSensitiveWords(response.getAiCategory()));
-            response.setAiTags(AiUtils.filterSensitiveWords(response.getAiTags()));
+            // 对每个 tag 也过滤敏感词
+            if (response.getAiTags() != null) {
+                response.setAiTags(
+                        response.getAiTags().stream()
+                                .map(AiUtils::filterSensitiveWords)
+                                .toList()
+                );
+            }
             response.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(response.getAiDescription())));
         } catch (Exception e) {
             log.error("AI生成描述失败", e);
             response.setAiCategory("未知");
-            response.setAiTags("");
+            response.setAiTags(Collections.emptyList());
             response.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title));
         }
         return response;
