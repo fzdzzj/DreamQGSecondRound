@@ -61,79 +61,67 @@ public class PrivateMessageController {
     /**
      * 获取聊天记录
      */
-    @GetMapping("/history/{peerId}")
+    @GetMapping("/history/{id}")
     @Operation(summary = "获取聊天记录")
-    public Result<PageResult<PrivateMessageVO>> getChatHistory(@PathVariable Long peerId,
+    public Result<PageResult<PrivateMessageVO>> getChatHistory(@PathVariable Long id,
                                                                @RequestParam(defaultValue = "1") Integer pageNum,
                                                                @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
         log.info("获取聊天记录，userId={}, peerId={}, pageNum={}, pageSize={}",
-                userId, peerId, pageNum, pageSize);
+                userId, id, pageNum, pageSize);
 
-        PageResult<PrivateMessageVO> pageResult = privateMessageService.getChatHistory(peerId, pageNum, pageSize);
 
-        log.info("获取聊天记录成功，userId={}, peerId={}, total={}",
-                userId, peerId, pageResult.getTotal());
+        PageResult<PrivateMessageVO> pageResult = privateMessageService.getChatHistory(id, pageNum, pageSize);
+
+
+        log.info("获取聊天记录成功，userId={}, id={}, total={}",
+                userId, id, pageResult.getTotal());
         return Result.success(pageResult);
     }
 
-    /**
-     * 标记单条消息为已读
-     */
-    @PutMapping("/{messageId}/read")
-    @Operation(summary = "标记单条消息为已读")
-    public Result<Void> markAsRead(@PathVariable Long messageId) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("标记单条消息为已读，userId={}, messageId={}", userId, messageId);
-
-        privateMessageService.markAsRead(messageId);
-
-        log.info("标记单条消息为已读成功，userId={}, messageId={}", userId, messageId);
-        return Result.success();
-    }
 
     /**
      * 将与某人的会话全部标记为已读
      */
-    @PutMapping("/conversation/{peerId}/read")
+    @PutMapping("/{id}/read")
     @Operation(summary = "将会话全部标记为已读")
-    public Result<Void> markConversationAsRead(@PathVariable Long peerId) {
+    public Result<Void> markConversationAsRead(@PathVariable Long id) {
         Long userId = BaseContext.getCurrentId();
-        log.info("将会话全部标记为已读，userId={}, peerId={}", userId, peerId);
+        log.info("将会话全部标记为已读，userId={}, id={}", userId, id);
 
-        privateMessageService.markConversationAsRead(peerId);
+        privateMessageService.markConversationAsRead(id);
 
-        log.info("将会话全部标记为已读成功，userId={}, peerId={}", userId, peerId);
+        log.info("将会话全部标记为已读成功，userId={}, id={}", userId, id);
         return Result.success();
     }
 
     /**
      * 删除单条消息
      */
-    @DeleteMapping("/{messageId}")
+    @DeleteMapping("/{id}")
     @Operation(summary = "删除单条消息")
-    public Result<Void> deleteMessage(@PathVariable Long messageId) {
+    public Result<Void> deleteMessage(@PathVariable Long id) {
         Long userId = BaseContext.getCurrentId();
-        log.info("删除单条消息，userId={}, messageId={}", userId, messageId);
+        log.info("删除单条消息，userId={}, id={}", userId, id);
 
-        privateMessageService.deleteMessage(messageId);
+        privateMessageService.deleteMessage(id);
 
-        log.info("删除单条消息成功，userId={}, messageId={}", userId, messageId);
+        log.info("删除单条消息成功，userId={}, id={}", userId, id);
         return Result.success();
     }
 
     /**
      * 删除会话
      */
-    @DeleteMapping("/conversation/{peerId}")
+    @DeleteMapping("/conversation/{id}")
     @Operation(summary = "删除会话")
-    public Result<Void> deleteConversation(@PathVariable Long peerId) {
+    public Result<Void> deleteConversation(@PathVariable Long id) {
         Long userId = BaseContext.getCurrentId();
-        log.info("删除会话，userId={}, peerId={}", userId, peerId);
+        log.info("删除会话，userId={}, id={}", userId, id);
 
-        privateMessageService.deleteConversation(peerId);
+        privateMessageService.deleteConversation(id);
 
-        log.info("删除会话成功，userId={}, peerId={}", userId, peerId);
+        log.info("删除会话成功，userId={}, id={}", userId, id);
         return Result.success();
     }
 

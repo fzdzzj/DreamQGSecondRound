@@ -25,10 +25,12 @@ import com.qg.server.service.CommentService;
 import com.qg.server.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -89,11 +91,12 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         Page<CommentStatVO> page = new Page<>(pageNum, pageSize);
 
         // 查询留言
-        Page<CommentStatVO> commentPage = baseMapper.selectCommentList(page, itemId); // 使用 baseMapper 来替代 bizCommentDao
+        Page<CommentStatVO> commentPage = baseMapper.selectCommentList(page, itemId);
 
-        // 返回结果
+        // 直接返回结果
         return new PageResult<>(commentPage.getRecords(), commentPage.getTotal(), pageNum, pageSize);
     }
+
 
     /**
      * 删除留言（逻辑删除）

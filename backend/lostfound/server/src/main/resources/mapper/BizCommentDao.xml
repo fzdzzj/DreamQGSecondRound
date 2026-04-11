@@ -13,16 +13,20 @@
 
     <select id="selectCommentList" resultMap="CommentStatVO">
         SELECT
-            c.id, c.item_id AS itemId, u.nickname, u.avatar, c.content, c.parent_id AS parentId, c.create_time AS createTime
-        FROM
-            biz_comment c
-                LEFT JOIN sys_user u ON c.user_id = u.id
-        WHERE
-            c.item_id = #{itemId}
+            c.id,
+            c.item_id,
+            u.nickname,
+            u.avatar,
+            c.content,
+            c.create_time,
+            c.is_read
+        FROM biz_comment c
+                 LEFT JOIN sys_user u ON c.user_id = u.id
+        WHERE c.item_id = #{itemId}
           AND c.deleted = 0
-        ORDER BY
-            c.create_time DESC
+        ORDER BY c.create_time DESC
     </select>
+
 
 
 </mapper>

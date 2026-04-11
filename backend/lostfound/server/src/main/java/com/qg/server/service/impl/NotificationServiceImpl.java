@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
+import com.qg.common.constant.ReadStatus;
+import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.entity.Notification;
@@ -49,7 +51,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
         return count(
                 new LambdaQueryWrapper<Notification>()
                         .eq(Notification::getUserId, userId)
-                        .eq(Notification::getIsRead, 0)
+                        .eq(Notification::getIsRead, ReadStatus.UNREAD)
         );  // 使用 IService 提供的 count 方法
     }
 
@@ -101,6 +103,10 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
         if (notification == null) {
             log.warn("通知不存在，notificationId={}", notificationId);
             throw new AbsentException(MessageConstant.NOTIFICATION_NOT_FOUND);
+        }
+        if(!notification.getUserId().equals(BaseContext.getCurrentId())){
+            log.warn("用户无权限删除该通知，notificationId={}", notificationId);
+            throw new AbsentException(MessageConstant.NO_PERMISSION);
         }
 
         // 逻辑删除通知

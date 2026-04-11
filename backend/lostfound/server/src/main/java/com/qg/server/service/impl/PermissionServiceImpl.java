@@ -55,7 +55,28 @@ public class PermissionServiceImpl implements PermissionService {
                     "POST:/pin/page",
                     "POST:/pin/audit",
                     "POST:/pin/cancel/{id}",
-                    "GET:/pin/{id}"
+                    "GET:/pin/{id}",
+
+                    "POST:/comment",
+                    "POST:/comment/reply",
+                    "PUT:/comment/{id}/read",
+                    "GET:/comment/{id}",
+                    "DELETE:/comment/{id}",
+                    "GET:/comment/user/unread",
+                    "GET:/comment/item/{id}",
+                    "GET:/comment/item/{id}/unread",
+
+                    "GET:/notification/user/unread",
+                    "GET:/notification/user",
+                    "PUT:/notification/{id}/read",
+                    "DELETE:/notification/{id}",
+
+                    "POST:/message",
+                    "GET:/message/conversations",
+                    "GET:/message/history/{id}",
+                    "PUT:/message/{id}/read",
+                    "DELETE:/message/{id}",
+                    "GET:/message/unread/count"
             );
         }
 
@@ -104,7 +125,20 @@ public class PermissionServiceImpl implements PermissionService {
                 "DELETE:/comment/{id}",
                 "GET:/comment/user/unread",
                 "GET:/comment/item/{id}",
-                "GET:/comment/item/{id}/unread"
+                "GET:/comment/item/{id}/unread",
+
+                "GET:/notification/user/unread",
+                "GET:/notification/user",
+                "PUT:/notification/{id}/read",
+                "DELETE:/notification/{id}",
+
+                "POST:/message",
+                "GET:/message/conversations",
+                "GET:/message/history/{id}",
+                "PUT:/message/{id}/read",
+                "DELETE:/message/{id}",
+                "GET:/message/unread/count"
+
 
         );
     }
