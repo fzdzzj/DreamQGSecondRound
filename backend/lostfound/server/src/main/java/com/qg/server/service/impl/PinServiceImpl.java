@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qg.common.constant.BizItemStatus;
-import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.PinConstant;
-import com.qg.common.constant.PinRequestStatus;
+import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.PinRequestStatusEnum;
 import com.qg.common.exception.AbsentException;
@@ -24,6 +21,7 @@ import com.qg.pojo.vo.PinRequestDetailVO;
 import com.qg.pojo.vo.PinRequestStatVO;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.BizPinRequestDao;
+import com.qg.server.service.NotificationService;
 import com.qg.server.service.PinService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +41,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
 
     private final BizItemDao bizItemDao;  // 物品数据访问层
     private final BizPinRequestDao bizPinRequestDao;  // 置顶请求数据访问层
+    private final NotificationService notificationService;
 
     @Override
     public void apply(PinApplyDTO pinApplyDTO) {
@@ -161,6 +160,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
 
             bizItemDao.updateById(item);  // 使用 bizItemDao 的 updateById 方法
         }
+        notificationService.createNotification(request.getApplicantId(), request.getId(), MessageConstant.PIN_REQUEST_AUDIT_PASS);
 
         log.info("置顶审核完成，requestId={}, status={}", request.getId(), update.getStatus());
     }
@@ -181,7 +181,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         String role = BaseContext.getCurrentRole();
         BizPinRequest request = null;
         PinRequestDetailVO vo = new PinRequestDetailVO();
-        if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
+        if (Role.ADMIN.equals(role) || Role.SYSTEM.equals(role)) {
             request = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
             if (request == null) {
                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);

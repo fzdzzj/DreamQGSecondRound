@@ -1,5 +1,6 @@
 package com.qg.server.service.impl;
 
+import com.qg.common.constant.Role;
 import com.qg.server.service.PermissionService;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +18,8 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public Set<String> getPermissionsByRole(String role) {
 
-        // 管理员：默认拥有更高权限，后续可扩展举报审核、用户管理、统计分析等接口
-        if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
+        // 管理员：默认拥有更高权限，后续可用户管理、统计用户管理、统计分析等接口
+        if (Role.ADMIN.equals(role) || Role.SYSTEM.equals(role)) {
             return Set.of(
                     "GET:/common/personal-info",
                     "PUT:/common/personal-info",
