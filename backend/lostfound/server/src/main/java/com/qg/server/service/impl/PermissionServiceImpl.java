@@ -21,6 +21,9 @@ public class PermissionServiceImpl implements PermissionService {
         // 管理员：默认拥有更高权限，后续可用户管理、统计用户管理、统计分析等接口
         if (Role.ADMIN.equals(role) || Role.SYSTEM.equals(role)) {
             return Set.of(
+                    "PUT:/admin/user/{id}/disable",
+                    "PUT:/admin/user/{id}/enable",
+
                     "GET:/common/personal-info",
                     "PUT:/common/personal-info",
                     "PUT:/common/password",
@@ -41,8 +44,8 @@ public class PermissionServiceImpl implements PermissionService {
                     // 预留管理员接口权限
                     "POST:/report",
                     "POST:/report/audit",
-                    "GET:/report/list",
-                    "PUT:/admin/report/{id}",
+                    "POST:/report/list",
+                    "GET:/report/{id}",
 
                     "POST:/pin/page",
                     "POST:/pin/audit",
@@ -81,11 +84,13 @@ public class PermissionServiceImpl implements PermissionService {
 
                 "POST:/pin/apply",
 
-                // 普通用户可举报
-                "POST:/report",
+
                 "POST:/pin/cancel/{id}",
                 "GET:/pin/{id}",
-                "GET:/pin/mylist"
+                "GET:/pin/mylist",
+
+                "POST:/report",
+                "GET:/report/{id}"
         );
     }
 }

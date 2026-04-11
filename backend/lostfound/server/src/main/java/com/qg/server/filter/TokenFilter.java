@@ -1,8 +1,14 @@
 package com.qg.server.filter;
 
+import com.qg.common.constant.Role;
+import com.qg.common.constant.UserStatus;
 import com.qg.common.context.BaseContext;
+import com.qg.common.enums.UserStatusEnum;
 import com.qg.common.util.JwtUtil;
+import com.qg.pojo.entity.SysUser;
+import com.qg.server.mapper.UserDao;
 import com.qg.server.service.TokenRefreshService;
+import com.qg.server.service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,6 +33,7 @@ public class TokenFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final TokenRefreshService tokenRefreshService;
+    private final UserDao userDao;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -99,6 +106,13 @@ public class TokenFilter extends OncePerRequestFilter {
             }
 
             BaseContext.setCurrentUser(userId, role);
+            if(Role.ADMIN.equals(role) || Role.USER.equals(role)){
+                SysUser user = userDao.selectById(userId);
+                if(UserStatus.DISABLE.equals(user.getStatus())){
+                    writeJson(response, 403, "用户已被禁用");
+                    return;
+                }
+            }
 
             // 2. RBAC 权限校验
             if (!hasPermission(uri, method, role, permissions)) {

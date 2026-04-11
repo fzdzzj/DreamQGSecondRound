@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.BizItemStatus;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.ReportStatus;
+import com.qg.common.constant.Role;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.ReportStatusEnum;
 import com.qg.common.exception.AbsentException;
@@ -121,6 +122,10 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
         LambdaQueryWrapper<BizReport> wrapper = new LambdaQueryWrapper<>();
         if (queryDTO.getReporterId() != null) wrapper.eq(BizReport::getReporterId, queryDTO.getReporterId());
         if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizReport::getStatus, queryDTO.getStatus());
+        if (queryDTO.getItemId() != null) wrapper.eq(BizReport::getItemId, queryDTO.getItemId());
+        if(queryDTO.getStatus() != null) wrapper.eq(BizReport::getStatus, queryDTO.getStatus());
+        if (queryDTO.getStartTime() != null) wrapper.ge(BizReport::getCreateTime, queryDTO.getStartTime());
+        if (queryDTO.getEndTime() != null) wrapper.le(BizReport::getCreateTime, queryDTO.getEndTime());
         page(page, wrapper);  // 使用 IService 提供的 page 方法
         return convertToVOPage(page);
     }
@@ -129,14 +134,14 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
     public ReportDetailVO getById(Long id) {
         String role = BaseContext.getCurrentRole();
         ReportDetailVO vo = new ReportDetailVO();
-        if ("ADMIN".equals(role) || "SYSTEM".equals(role)) {
+        if (Role.ADMIN.equals(role) || Role.SYSTEM.equals(role)) {
             BizReport report = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
             if (report == null) {
                 throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
             }
             BeanUtils.copyProperties(report, vo);
             vo.setStatusDesc(ReportStatusEnum.getDescByCode(report.getStatus()));
-        } else if ("USER".equals(role)) {
+        } else if (Role.USER.equals(role)) {
             BizReport report = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
             if (report == null) {
                 throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);

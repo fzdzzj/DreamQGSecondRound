@@ -87,7 +87,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
     public void cancelPin(Long pinRequestId) {
         Long currentUserId = BaseContext.getCurrentId();
         String currentRole = BaseContext.getCurrentRole(); // RBAC 获取角色
-
+        log.info("取消置顶申请，userId={}, pinRequestId={}", currentUserId, pinRequestId);
         // 查询置顶申请
         BizPinRequest pinRequest = getById((Serializable) pinRequestId);  // 使用 IService 提供的 getById 方法
         if (pinRequest == null) {
@@ -95,7 +95,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         }
 
         // 用户角色逻辑：只能取消自己的申请，且状态为 PENDING
-        if ("STUDENT".equals(currentRole)) {
+        if (Role.USER.equals(currentRole)) {
             if (!pinRequest.getApplicantId().equals(currentUserId)) {
                 throw new BaseException(403, "不能取消他人申请");
             }
@@ -109,7 +109,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         }
 
         // 管理员逻辑：可以取消任意申请
-        if ("ADMIN".equals(currentRole) || "SYSTEM".equals(currentRole)) {
+        if (Role.ADMIN.equals(currentRole) || Role.SYSTEM.equals(currentRole)) {
             if (PinRequestStatus.APPROVED.equals(pinRequest.getStatus())) {
                 // 如果管理员取消已批准的申请，同时撤销物品置顶
                 BizItem item = bizItemDao.selectById(pinRequest.getItemId());
@@ -125,7 +125,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             return;
         }
 
-        throw new BaseException(403, "无权限操作");
+        throw new BaseException(403, MessageConstant.NO_PERMISSION);
     }
 
     @Override
@@ -191,7 +191,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
             return vo;
         }
-        if ("STUDENT".equals(role)) {
+        if (Role.USER.equals(role)) {
             request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
                     .eq(BizPinRequest::getId, id));
             if (request == null) {

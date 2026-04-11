@@ -17,7 +17,7 @@ public class ReportPageQueryDTO implements Serializable {
     @Schema(description = "每页数量", example = "10")
     private Integer pageSize = 10;
 
-    @Schema(description = "举报状态: PENDING/APPROVED/REJECTED")
+    @Schema(description = "举报状态: PENDING/APPROVED/REJECTED,1:待审核,2:已审核,3:已拒绝")
     private String status;
 
     @Schema(description = "举报开始时间")
@@ -28,4 +28,6 @@ public class ReportPageQueryDTO implements Serializable {
 
     @Schema(description = "举报人ID")
     private Long reporterId;
+    @Schema(description = "物品ID")
+    private Long itemId;
 }

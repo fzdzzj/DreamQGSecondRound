@@ -47,4 +47,6 @@ public interface MessageConstant {
     String DAILY_LIMIT_EXCEEDED = "今日生成次数已用完";
     String AI_GENERATE_FAILED = "AI生成失败";
     String PIN_REQUEST_AUDIT_PASS = "置顶申请审核通过";
+    String NO_PERMISSION = "无权限操作";
+    String USER_NOT_AUTHORIZED = "不能封禁管理员或系统用户";
 }

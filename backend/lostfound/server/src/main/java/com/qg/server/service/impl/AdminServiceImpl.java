@@ -3,9 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qg.common.constant.BizItemStatus;
-import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.UserStatus;
+import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.UserRoleEnum;
 import com.qg.common.enums.UserStatusEnum;
@@ -110,6 +108,10 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
             log.info("用户当前已为禁用状态，无需重复封禁，userId={}", userId);
             return;
         }
+        if (Role.ADMIN.equals(user.getRole())|| Role.SYSTEM.equals(user.getRole())) {
+            log.warn("用户无权限操作此用户，userId={}", userId);
+            throw new AbsentException(MessageConstant.USER_NOT_AUTHORIZED);
+        }
 
         SysUser updateUser = new SysUser();
         updateUser.setId(userId);
@@ -140,6 +142,10 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         if (UserStatus.ENABLE.equals(user.getStatus())) {
             log.info("用户当前已为启用状态，无需重复解封，userId={}", userId);
             return;
+        }
+        if (Role.ADMIN.equals(user.getRole())|| Role.SYSTEM.equals(user.getRole())) {
+            log.warn("用户无权限操作此用户，userId={}", userId);
+            throw new AbsentException(MessageConstant.USER_NOT_AUTHORIZED);
         }
 
         SysUser updateUser = new SysUser();
