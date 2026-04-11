@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
+import com.qg.common.constant.ReadStatus;
+import com.qg.common.constant.Role;
 import com.qg.common.context.BaseContext;
+import com.qg.common.enums.ReadStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.result.PageResult;
@@ -64,7 +67,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
 
         }
         bizComment.setParentId(commentAddDTO.getParentId() == null ? 0L : commentAddDTO.getParentId());
-        bizComment.setIsRead(0);
+        bizComment.setIsRead(ReadStatus.UNREAD);
 
         // 保存留言
         save(bizComment); // 使用 IService 提供的 save 方法
@@ -105,7 +108,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         }
 
         // 判断留言是否是留言拥有者或管理员进行删除
-        if (!comment.getUserId().equals(userId) && !BaseContext.getCurrentRole().equals("admin")) {
+        if (!comment.getUserId().equals(userId) && !BaseContext.getCurrentRole().equals(Role.ADMIN)) {
             log.warn("删除留言失败，非留言拥有者或管理员，commentId={}, userId={}", commentId, userId);
             throw new DeletionNotAllowedException(MessageConstant.DELETE_NOT_ALLOWED);
         }
@@ -146,6 +149,9 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         vo.setContent(comment.getContent());
         vo.setParentId(comment.getParentId());
         vo.setCreateTime(comment.getCreateTime());
+        vo.setIsRead(comment.getIsRead());
+        vo.setDeleted(comment.getDeleted());
+        vo.setUpdateTime(comment.getUpdateTime());
 
         log.info("查询留言详情成功，commentId={}", commentId);
         return vo;
@@ -242,14 +248,11 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
             Long parentUserId = parentComment.getUserId();
             if (parentUserId.equals(userId)) {
                 log.info("回复自己留言不用通知，parentId={}", commentAddDTO.getParentId());
-            }else if (parentUserId.equals(bizItem.getUserId())) {
-                log.info("回复物品发布者不用通知，itemId={}", commentAddDTO.getItemId());
-            } else {
+            }else{
                 log.info("回复留言通知父留言用户，parentId={}", commentAddDTO.getParentId());
                 String content = "您的留言有新的回复：" + commentAddDTO.getContent();
                 notificationService.createNotification(parentUserId, commentAddDTO.getParentId(), content); // 创建通知
             }
-
         }
 
         // 创建回复留言
@@ -258,7 +261,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         bizComment.setUserId(userId);
         bizComment.setContent(commentAddDTO.getContent());
         bizComment.setParentId(commentAddDTO.getParentId());
-        bizComment.setIsRead(0);  // 设置为未读
+        bizComment.setIsRead(ReadStatus.UNREAD);  // 设置为未读
 
         save(bizComment);  // 使用 IService 提供的 save 方法
 
