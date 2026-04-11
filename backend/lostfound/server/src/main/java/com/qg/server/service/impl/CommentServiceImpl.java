@@ -61,6 +61,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
                 log.warn("新增留言失败，父留言不存在，parentId={}, userId={}", commentAddDTO.getParentId(), userId);
                 throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
             }
+
         }
         bizComment.setParentId(commentAddDTO.getParentId() == null ? 0L : commentAddDTO.getParentId());
         bizComment.setIsRead(0);
@@ -239,8 +240,16 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
 
             // 创建通知：通知父留言的用户
             Long parentUserId = parentComment.getUserId();
-            String content = "您的留言有新的回复：" + commentAddDTO.getContent();
-            notificationService.createNotification(parentUserId, commentAddDTO.getParentId(), content); // 创建通知
+            if (parentUserId.equals(userId)) {
+                log.info("回复自己留言不用通知，parentId={}", commentAddDTO.getParentId());
+            }else if (parentUserId.equals(bizItem.getUserId())) {
+                log.info("回复物品发布者不用通知，itemId={}", commentAddDTO.getItemId());
+            } else {
+                log.info("回复留言通知父留言用户，parentId={}", commentAddDTO.getParentId());
+                String content = "您的留言有新的回复：" + commentAddDTO.getContent();
+                notificationService.createNotification(parentUserId, commentAddDTO.getParentId(), content); // 创建通知
+            }
+
         }
 
         // 创建回复留言
