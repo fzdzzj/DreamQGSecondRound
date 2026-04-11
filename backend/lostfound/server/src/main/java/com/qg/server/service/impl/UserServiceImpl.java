@@ -139,7 +139,6 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         user.setPasswordHash(PasswordUtil.encrypt(registerDTO.getPassword()));
         user.setRole("STUDENT");  // 默认角色为学生
         user.setStatus(UserStatus.ENABLE);
-        user.setAvatar(registerDTO.getAvatar());
         user.setNickname(registerDTO.getNickname());
         userDao.insert(user);  // 保存用户到数据库
     }

@@ -74,9 +74,7 @@ public class RegisterDTO implements Serializable {
     @NotBlank(message = "确认密码不能为空")
     @Pattern(regexp = RegexConstant.PASSWORD, message = "确认密码格式错误")
     private String passwordConfirm;
-    @Schema(description = "头像")
-    @NotBlank(message = "头像不能为空")
-    private String avatar;
+
     @Schema(description = "昵称")
     @NotBlank(message = "昵称不能为空")
     private String nickname;

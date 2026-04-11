@@ -54,31 +54,49 @@ public class AiAsyncServiceImpl implements AiAsyncService {
      */
     @Override
     @Transactional
-    public void generateItemImageDescription(String title, String description, String location, Long userId, Long itemId, List<ImageItem> imageItems) {
+    public void generateItemImageDescription(String title, String description, String location,
+                                             Long userId, Long itemId, List<ImageItem> imageItems) {
         log.info("收到图片多模态生成事件, itemId={}, imageItems={}", itemId, imageItems);
-        List<ImageAiResponseVO> results = imageDescriptionClient.generateDescriptionVo(title, description, location, userId, imageItems);
+        List<ImageAiResponseVO> results = imageDescriptionClient.generateDescriptionVo(
+                title, description, location, userId, imageItems
+        );
+
+        if (results.isEmpty()) return;
+
+        // ✅ 获取最新 version + 1，所有图片使用同一版本
+        BizItemAiResult lastResult = aiResultDao.selectLatestByItemId(itemId);
+        int newVersion = (lastResult == null ? 1 : lastResult.getResultVersion() + 1);
 
         Long lastResultId = null;
         for (ImageAiResponseVO vo : results) {
-            Long resultId = persistAiDescription(
-                    title,
-                    location,
-                    userId,
-                    itemId,
-                    vo.getAiDescription(),
-                    description,
-                    vo.getStatus(),
-                    vo.getAiCategory(),
-                    vo.getAiTags()
-            );
-            lastResultId = resultId;
-        }
+            BizItemAiResult result = new BizItemAiResult();
+            result.setItemId(itemId);
+            result.setResultVersion(newVersion); // 同一批共用 version
+            result.setSourceType(lastResult == null ? "AUTO" : "REGENERATE");
+            result.setPromptText(title + " " + location + " " + description);
+            result.setOriginText(description);
+            result.setAiDescription(vo.getAiDescription());
+            result.setModelName(aiProperties.getModel());
+            result.setStatus(vo.getStatus());
+            result.setIsDeleted(0);
+            result.setAiCategory(vo.getAiCategory() != null ? vo.getAiCategory() : "未知");
+            result.setAiTags(vo.getAiTags() != null ? vo.getAiTags() : "");
+            if (lastResult == null) {
+                result.setCreateUser(userId);
+            } else {
+                result.setCreateUser(lastResult.getCreateUser());
+            }
+            result.setUpdateUser(userId);
 
+            aiResultDao.insert(result);
+            lastResultId = result.getId();
+        }
 
         if (lastResultId != null) {
             updateItemCurrentAiResultId(itemId, lastResultId);
         }
     }
+
 
     /**
      * 持久化 AI 结果
@@ -109,6 +127,8 @@ public class AiAsyncServiceImpl implements AiAsyncService {
 
         if (lastResult == null) {
             result.setCreateUser(userId);
+        }else{
+            result.setCreateUser(lastResult.getCreateUser());
         }
         result.setUpdateUser(userId);
 

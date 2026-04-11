@@ -330,7 +330,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private List<ImageItem> buildImageItems(List<String> urls) {
         if (urls == null) return Collections.emptyList();
         List<ImageItem> items = new ArrayList<>();
-        for (String u : urls) items.add(new ImageItem(u, "default"));
+        for (String u : urls) items.add(new ImageItem(u, "主图"));
         return items;
     }
 
