@@ -10,6 +10,7 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.enums.ReadStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.DeletionNotAllowedException;
+import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
@@ -173,11 +174,28 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         }
 
         // 只允许修改未读留言
-        if (comment.getIsRead() == 1) {
+        if (comment.getIsRead() == ReadStatus.READ) {
             log.warn("留言已经是已读状态，commentId={}", commentId);
             return;
         }
-
+        if(comment.getParentId() == 0){
+            Long itemId = comment.getItemId();
+            if (!bizItemDao.selectById(itemId).getUserId().equals(userId)) {
+                log.warn("非物品拥有者，itemId={}, userId={}", itemId, userId);
+                throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
+            }
+            return;
+        }else {
+            BizComment parentComment = getById(comment.getParentId());
+            if(parentComment == null){
+                log.warn("父留言不存在，parentId={}", comment.getParentId());
+                throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
+            }
+            if (!parentComment.getUserId().equals(userId)) {
+                log.warn("非父留言拥有者，parentId={}, userId={}", comment.getParentId(), userId);
+                throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
+            }
+        }
         // 标记为已读
         BizComment updateComment = new BizComment();
         updateComment.setId(commentId);
