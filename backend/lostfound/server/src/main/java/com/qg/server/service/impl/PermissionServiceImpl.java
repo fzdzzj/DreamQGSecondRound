@@ -102,7 +102,7 @@ public class PermissionServiceImpl implements PermissionService {
                 "PUT:/comment/{id}/read",
                 "GET:/comment/{id}",
                 "DELETE:/comment/{id}",
-                "GET:/comment/user/{id}/unread",
+                "GET:/comment/user/unread",
                 "GET:/comment/item/{id}",
                 "GET:/comment/item/{id}/unread"
 

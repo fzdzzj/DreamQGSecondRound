@@ -172,36 +172,16 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
             log.warn("留言不存在，commentId={}", commentId);
             throw new AbsentException(MessageConstant.COMMENT_NOT_FOUND);
         }
-
-        // 只允许修改未读留言
-        if (comment.getIsRead() == ReadStatus.READ) {
-            log.warn("留言已经是已读状态，commentId={}", commentId);
-            return;
-        }
-        if(comment.getParentId() == 0){
-            Long itemId = comment.getItemId();
-            if (!bizItemDao.selectById(itemId).getUserId().equals(userId)) {
-                log.warn("非物品拥有者，itemId={}, userId={}", itemId, userId);
-                throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
-            }
-            return;
-        }else {
-            BizComment parentComment = getById(comment.getParentId());
-            if(parentComment == null){
-                log.warn("父留言不存在，parentId={}", comment.getParentId());
-                throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
-            }
-            if (!parentComment.getUserId().equals(userId)) {
-                log.warn("非父留言拥有者，parentId={}, userId={}", comment.getParentId(), userId);
-                throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
-            }
+        Long itemId = comment.getItemId();
+        if (!bizItemDao.selectById(itemId).getUserId().equals(userId)) {
+            log.warn("非物品拥有者，无法将留言标记为已读，commentId={}, userId={}", commentId, userId);
+            throw new AbsentException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
         // 标记为已读
         BizComment updateComment = new BizComment();
         updateComment.setId(commentId);
-        updateComment.setIsRead(1);  // 设置为已读
+        updateComment.setIsRead(ReadStatus.READ);  // 设置为已读
         updateById(updateComment);  // 使用 IService 提供的 updateById 方法
-
         log.info("留言标记为已读成功，commentId={}", commentId);
     }
 
@@ -211,11 +191,15 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
     @Override
     public Long getUnreadCount(Long itemId) {
         log.info("查询物品下未读留言数量，itemId={}", itemId);
-
+        Long userId = BaseContext.getCurrentId();
+        if (!bizItemDao.selectById(itemId).getUserId().equals(userId)) {
+            log.warn("非物品拥有者，无法获取物品下未读留言数量，itemId={}, userId={}", itemId, userId);
+            throw new AbsentException(MessageConstant.UPDATE_NOT_ALLOWED);
+        }
         Long count = count(
                 new LambdaQueryWrapper<BizComment>()
                         .eq(BizComment::getItemId, itemId)
-                        .eq(BizComment::getIsRead, 0)
+                        .eq(BizComment::getIsRead, ReadStatus.UNREAD)
         );  // 使用 IService 提供的 count 方法
 
         log.info("查询物品下未读留言数量成功，itemId={}, count={}", itemId, count);
@@ -232,7 +216,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         Long count = count(
                 new LambdaQueryWrapper<BizComment>()
                         .eq(BizComment::getUserId, userId)
-                        .eq(BizComment::getIsRead, 0)
+                        .eq(BizComment::getIsRead, ReadStatus.UNREAD)
         );  // 使用 IService 提供的 count 方法
 
         log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
