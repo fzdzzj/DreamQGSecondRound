@@ -23,10 +23,15 @@ public class PermissionServiceImpl implements PermissionService {
             return Set.of(
                     "PUT:/admin/user/{id}/disable",
                     "PUT:/admin/user/{id}/enable",
+                    "POST:/admin/user/list",
+                    "GET:/admin/user/{id}",
+                    "GET:/admin/statistics",
+                    "DELETE:/admin/item/{id}",
 
                     "GET:/common/personal-info",
                     "PUT:/common/personal-info",
                     "PUT:/common/password",
+
 
                     "POST:/item/lost",
                     "POST:/item/found",
@@ -90,7 +95,17 @@ public class PermissionServiceImpl implements PermissionService {
                 "GET:/pin/mylist",
 
                 "POST:/report",
-                "GET:/report/{id}"
+                "GET:/report/{id}",
+
+                "POST:/comment",
+                "POST:/comment/reply",
+                "PUT:/comment/{commentId}/read",
+                "GET:/comment/{commentId}",
+                "DELETE:/comment/{commentId}",
+                "GET:/comment/user/{userId}/unread",
+                "GET:/comment/item/{itemId}",
+                "GET:/comment/item/{itemId}/unread"
+
         );
     }
 }

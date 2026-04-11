@@ -32,6 +32,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
     private final BizItemDao bizItemDao;  // 物品数据访问层
     private final UserDao userDao;  // 用户数据访问层
     private final NotificationService notificationService;  // 通知服务层
+    private final BizCommentDao bizCommentDao;
 
     /**
      * 新增留言
@@ -54,6 +55,13 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         bizComment.setItemId(commentAddDTO.getItemId());
         bizComment.setUserId(userId);
         bizComment.setContent(commentAddDTO.getContent());
+        if(commentAddDTO.getParentId() !=0){
+            BizComment parentComment =getById(commentAddDTO.getParentId());
+            if(parentComment == null){
+                log.warn("新增留言失败，父留言不存在，parentId={}, userId={}", commentAddDTO.getParentId(), userId);
+                throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
+            }
+        }
         bizComment.setParentId(commentAddDTO.getParentId() == null ? 0L : commentAddDTO.getParentId());
         bizComment.setIsRead(0);
 
