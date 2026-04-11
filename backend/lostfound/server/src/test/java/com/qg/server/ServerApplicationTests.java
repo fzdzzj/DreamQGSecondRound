@@ -1,6 +1,7 @@
 package com.qg.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qg.common.constant.BizItemAiResultStatus;
 import com.qg.server.config.JacksonConfig;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.qg.common.constant.BizItemStatus;
@@ -36,7 +37,7 @@ class ServerApplicationTests {
         item.setHappenTime(LocalDateTime.now());
         item.setStatus("OPEN");
         item.setIsPinned(0);
-        item.setAiStatus("PENDING");
+        item.setAiStatus(BizItemAiResultStatus.PENDING);
 
         BizItem savedItem = itemService.publishLostItem(item);
         System.out.println("生成的 ID：" + savedItem.getId());

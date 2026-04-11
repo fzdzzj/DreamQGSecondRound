@@ -2,6 +2,7 @@ package com.qg.server.ai.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.AiPromptConstant;
+import com.qg.common.constant.BizItemAiResultStatus;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.util.AiUtils;
@@ -46,11 +47,13 @@ public class DescriptionClient {
                 );
             }
             response.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(response.getAiDescription())));
+            response.setStatus(BizItemAiResultStatus.SUCCESS);
         } catch (Exception e) {
             log.error("AI生成描述失败", e);
             response.setAiCategory("未知");
             response.setAiTags(Collections.emptyList());
             response.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title));
+            response.setStatus(BizItemAiResultStatus.FAILURE);
         }
         return response;
     }

@@ -1,4 +1,4 @@
-package com.qg.server.controller;
+package com.qg.server.controller.user;
 
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.Result;

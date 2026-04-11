@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("bin_pin_request")
+@TableName("biz_pin_request")
 public class BizPinRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 

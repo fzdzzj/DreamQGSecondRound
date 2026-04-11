@@ -1,4 +1,4 @@
-package com.qg.server.controller;
+package com.qg.server.controller.message;
 
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
@@ -13,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import javax.validation.executable.ValidateOnExecution;
 
 @RestController
 @RequestMapping("/comment")

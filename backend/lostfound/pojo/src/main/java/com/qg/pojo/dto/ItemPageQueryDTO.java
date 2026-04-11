@@ -19,7 +19,7 @@ public class ItemPageQueryDTO implements Serializable {
     @Max(100)
     @Schema(description = "页大小")
     private Integer pageSize;
-    @Schema(description = "物品类型")
+    @Schema(description = "物品类型 1:丢失物品 2:拾取物品",  example = "1")
     private String type;
     @Schema(description = "物品地点")
     private String location;
@@ -31,6 +31,4 @@ public class ItemPageQueryDTO implements Serializable {
     private String keyword;
     @Schema(description = "AI分类")
     private String aiCategory; // 可查询子表
-    @Schema(description = "AI状态")
-    private String aiStatus;
 }

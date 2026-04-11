@@ -1,12 +1,14 @@
 package com.qg.server.ai.client;
 
 import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversation;
+import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversationOutput;
 import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversationParam;
 import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversationResult;
 import com.alibaba.dashscope.common.MultiModalMessage;
 import com.alibaba.dashscope.common.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.AiPromptConstant;
+import com.qg.common.constant.BizItemAiResultStatus;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.util.AiUtils;
@@ -42,17 +44,16 @@ public class ImageDescriptionClient {
     public List<ImageAiResponseVO> generateDescriptionVo(
             String title, String description, String location, Long userId, List<ImageItem> imageItems) {
 
-        // 用户限制检查
         AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
         AiUtils.incrementUserAiCount(userId, redisTemplate);
 
         List<ImageAiResponseVO> results = new ArrayList<>();
+        boolean hasSuccess = false; // 标记是否有成功解析的条目
 
         try {
             MultiModalConversation conv = new MultiModalConversation();
             List<MultiModalMessage> messages = new ArrayList<>();
 
-            // 构建每张图片的 prompt
             for (ImageItem item : imageItems) {
                 MultiModalMessage userMessage = MultiModalMessage.builder()
                         .role(Role.USER.getValue())
@@ -60,7 +61,6 @@ public class ImageDescriptionClient {
                         .build();
 
                 String type = item.getType() != null ? item.getType() : "主图";
-
                 String textPrompt = String.format(
                         AiPromptConstant.IMAGE_DESCRIPTION_PROMPT,
                         title, description, location, type
@@ -78,69 +78,82 @@ public class ImageDescriptionClient {
                     .build();
 
             MultiModalConversationResult result = conv.call(param);
-
             List<?> choices = result.getOutput() != null ? result.getOutput().getChoices() : Collections.emptyList();
 
             for (int i = 0; i < messages.size(); i++) {
                 if (i >= choices.size() || choices.get(i) == null) {
-                    // AI 没有返回对应图片的结果
-                    results.add(buildFallbackVO(title, description, location));
-                    continue;
+                    log.warn("AI未返回对应图片结果，跳过，index={}", i);
+                    continue; // 跳过当前条
                 }
 
                 Object choiceObj = choices.get(i);
+                MultiModalMessage messageObj = null;
 
-                // 这里假设每个 choiceObj 实际是 Map 或可通过 get("message") 获取内容
-                Map<?, ?> choiceMap;
-                if (choiceObj instanceof Map) {
-                    choiceMap = (Map<?, ?>) choiceObj;
-                } else {
-                    results.add(buildFallbackVO(title, description, location));
+                try {
+                    if (choiceObj instanceof Map) {
+                        Map<?, ?> choiceMap = (Map<?, ?>) choiceObj;
+                        Object msg = choiceMap.get("message");
+                        if (msg instanceof MultiModalMessage) messageObj = (MultiModalMessage) msg;
+                    } else if (choiceObj instanceof MultiModalConversationOutput.Choice) {
+                        messageObj = ((MultiModalConversationOutput.Choice) choiceObj).getMessage();
+                    }
+                } catch (Exception ex) {
+                    log.warn("解析 choice 失败，跳过，index={}", i, ex);
                     continue;
                 }
 
-                Object messageObj = choiceMap.get("message"); // ⚡ 根据 SDK 实际结构获取
-                if (!(messageObj instanceof Map)) {
-                    results.add(buildFallbackVO(title, description, location));
+                if (messageObj == null) {
+                    log.warn("messageObj 为 null，跳过，index={}", i);
                     continue;
                 }
 
-                Map<?, ?> messageMap = (Map<?, ?>) messageObj;
-                List<?> contentList = (List<?>) messageMap.get("content");
-
+                List<?> contentList = messageObj.getContent();
                 if (contentList == null || contentList.isEmpty()) {
-                    results.add(buildFallbackVO(title, description, location));
+                    log.warn("content 为空，跳过，index={}", i);
                     continue;
                 }
 
-                // 拼接文本
-                StringBuilder aiTextBuilder = new StringBuilder();
+                // 遍历 content，只要有 text 就用
+                String aiText = null;
                 for (Object o : contentList) {
                     if (o instanceof Map) {
                         Object textObj = ((Map<?, ?>) o).get("text");
-                        if (textObj != null) aiTextBuilder.append(textObj.toString());
-                    } else {
-                        aiTextBuilder.append(o.toString());
+                        if (textObj != null) {
+                            aiText = textObj.toString();
+                            break;
+                        }
+                    } else if (o != null) {
+                        aiText = o.toString();
+                        break;
                     }
                 }
 
-                String aiText = cleanAiText(aiTextBuilder.toString());
+                if (aiText == null) {
+                    log.warn("未找到 text，跳过，index={}", i);
+                    continue;
+                }
+
+                aiText = cleanAiText(aiText);
 
                 try {
                     ImageAiResponseVO vo = objectMapper.readValue(aiText, ImageAiResponseVO.class);
                     vo.setAiCategory(AiUtils.filterSensitiveWords(vo.getAiCategory()));
                     vo.setAiTags(vo.getAiTags() != null ? AiUtils.filterSensitiveWords(vo.getAiTags()) : Collections.emptyList());
                     vo.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(vo.getAiDescription())));
-                    vo.setStatus("SUCCESS");
+                    vo.setStatus(BizItemAiResultStatus.SUCCESS);
                     results.add(vo);
+                    hasSuccess = true;
                 } catch (Exception parseEx) {
-                    results.add(buildFallbackVO(title, description, location));
+                    log.warn("JSON解析失败，跳过，index={}", i, parseEx);
                 }
             }
 
-
         } catch (Exception e) {
-            log.error("AI图片生成描述失败", e);
+            log.error("AI生成失败", e);
+        }
+
+        // 如果所有条都失败，才 fallback
+        if (!hasSuccess) {
             for (ImageItem item : imageItems) {
                 results.add(buildFallbackVO(title, description, location));
             }
@@ -152,28 +165,56 @@ public class ImageDescriptionClient {
 
 
 
+//
+//    {
+//        "output": {
+//        "choices": [
+//        {
+//            "finish_reason": "stop",
+//                "message": {
+//            "role": "assistant",
+//                    "content": [       // content 是一个 Array
+//            {
+//                "type": "output_text",
+//                    "text": "AI 生成的纯文本字符串"
+//            },
+//            {
+//                "type": "output_image",
+//                    "image": "https://..."
+//            }
+//          ]
+//        }
+//        }
+//    ]
+//    }
+//    }
+
+
+
+
+
+
     /** 清理 AI 文本 */
     private String cleanAiText(String aiText) {
+        if (aiText == null) return "";
         aiText = aiText.trim();
-        if (aiText.startsWith("```json")) {
-            aiText = aiText.substring(7).trim();
-        } else if (aiText.startsWith("```")) {
-            aiText = aiText.substring(3).trim();
-        }
-        while ((aiText.startsWith("`") && aiText.endsWith("`")) ||
-                (aiText.startsWith("\"") && aiText.endsWith("\""))) {
+        if (aiText.startsWith("```json")) aiText = aiText.substring(7).trim();
+        else if (aiText.startsWith("```")) aiText = aiText.substring(3).trim();
+        // 只去掉开头和结尾的单个 ` 或 "
+        while ((aiText.startsWith("`") && aiText.endsWith("`")) || (aiText.startsWith("\"") && aiText.endsWith("\""))) {
             aiText = aiText.substring(1, aiText.length() - 1).trim();
         }
         return aiText;
     }
+
 
     /** fallback VO */
     private ImageAiResponseVO buildFallbackVO(String title, String description, String location) {
         ImageAiResponseVO vo = new ImageAiResponseVO();
         vo.setAiCategory("未知");
         vo.setAiTags(Collections.emptyList());  // tag 不存 BizItemAiResult
-        vo.setAiDescription(String.format(AiPromptConstant.DEFAULT_DESCRIPTION_TEMPLATE, title, description, location));
-        vo.setStatus("FAILURE");
+        vo.setAiDescription(String.format(AiPromptConstant.DDEFAULT_DESCRIPTION, title, description, location));
+        vo.setStatus(BizItemAiResultStatus.FAILURE);
         return vo;
     }
 

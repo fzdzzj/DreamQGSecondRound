@@ -52,10 +52,16 @@ public class PermissionServiceImpl implements PermissionService {
 
         // 普通用户（学生）权限
         return Set.of(
+                // 刷新、登出接口
+                "POST:/auth/logout",
+                "POST:/auth/refresh",
+                // 个人信息接口
                 "GET:/common/personal-info",
                 "PUT:/common/personal-info",
                 "PUT:/common/password",
 
+
+                // 物品接口接口
                 "POST:/item/lost",
                 "POST:/item/found",
                 "PUT:/item/{id}",
@@ -65,10 +71,12 @@ public class PermissionServiceImpl implements PermissionService {
                 "PUT:/item/{id}/close",
                 "GET:/item/{id}",
 
+
+                "PUT:/item/pin/apply",
+
                 "POST:/api/file/upload",
 
-                "POST:/auth/logout",
-                "POST:/auth/refresh",
+
 
                 "POST:/pin/apply",
 

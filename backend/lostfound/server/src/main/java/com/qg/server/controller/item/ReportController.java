@@ -1,4 +1,4 @@
-package com.qg.server.controller;
+package com.qg.server.controller.item;
 
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
@@ -9,15 +9,12 @@ import com.qg.pojo.dto.ReportPageQueryDTO;
 import com.qg.pojo.vo.ReportDetailVO;
 import com.qg.pojo.vo.ReportListVO;
 import com.qg.server.service.ReportService;
-import com.qg.server.service.impl.ReportServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController

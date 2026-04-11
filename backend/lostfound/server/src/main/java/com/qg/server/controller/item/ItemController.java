@@ -1,4 +1,4 @@
-package com.qg.server.controller;
+package com.qg.server.controller.item;
 
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
@@ -107,14 +107,13 @@ public class ItemController {
         return Result.success();
     }
 
-    @PutMapping("/{id}/pin/apply")
+    @PutMapping("/pin/apply")
     @Operation(summary = "申请置顶")
-    public Result<Void> applyPin(@PathVariable Long id, @Validated @RequestBody PinApplyDTO pinApplyDTO){
+    public Result<Void> applyPin(@Validated @RequestBody PinApplyDTO pinApplyDTO){
         Long userId=BaseContext.getCurrentId();
-        log.info("申请置顶，itemId={}, userId={}", id, userId);
-        pinApplyDTO.setItemId(id);
+        log.info("申请置顶，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
         pinService.apply(pinApplyDTO);
-        log.info("申请置顶成功，itemId={}, userId={}", id, userId);
+        log.info("申请置顶成功，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
         return Result.success();
     }
 

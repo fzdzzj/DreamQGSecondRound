@@ -1,4 +1,4 @@
-package com.qg.server.controller;
+package com.qg.server.controller.item;
 
 import com.qg.common.result.Result;
 import com.qg.common.util.AliyunOSSOperator;

@@ -235,12 +235,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 .toList();
         vo.setAiTags(tagList);
 
-
-
-
-
-
-
         // AI描述也可以合并最新 version 的结果
         String aiDescription = latestResults.stream()
                 .map(BizItemAiResult::getAiDescription)
@@ -269,41 +263,59 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         // 基础条件
         wrapper.eq(query.getType() != null, BizItem::getType, query.getType())
-                .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
-                .eq(query.getAiStatus() != null, BizItem::getAiStatus, query.getAiStatus())
                 .eq(BizItem::getStatus, BizItemStatus.OPEN)
                 .orderByDesc(BizItem::getIsPinned)
                 .orderByDesc(BizItem::getPinExpireTime)
                 .orderByDesc(BizItem::getCreateTime);
 
-        // 关键词搜索 title/description/aiCategory/tag
-        if (query.getKeyword() != null) {
-            String kw = query.getKeyword();
-            wrapper.and(w -> w.like(BizItem::getTitle, kw)
-                    .or().like(BizItem::getDescription, kw)
-                    .or().inSql(BizItem::getId,
-                            "SELECT item_id FROM biz_item_ai_tag WHERE tag LIKE '%" + kw + "%'")
-            );
+        // -----------------关键词搜索-----------------
+        if ((query.getKeyword() != null && !query.getKeyword().isEmpty()) ||
+                (query.getLocation() != null && !query.getLocation().isEmpty()) ||
+                (query.getAiCategory() != null && !query.getAiCategory().isEmpty())) {
+
+            String kw = query.getKeyword() != null ? query.getKeyword() : "";
+            String loc = query.getLocation() != null ? query.getLocation() : "";
+            String aiCat = query.getAiCategory() != null ? query.getAiCategory() : "";
+
+            wrapper.and(w -> {
+                // 1️⃣ title + description 用 n-gram FULLTEXT
+                if (!kw.isEmpty()) {
+                    w.apply("MATCH(title, description) AGAINST({0} IN NATURAL LANGUAGE MODE)", kw);
+                }
+
+                // 2️⃣ location 用 REGEXP 支持非连续匹配
+                if (!loc.isEmpty()) {
+                    // 生成正则，例如 "西一" -> "西.*一"
+                    String regexpPattern = loc.replaceAll("", ".*");
+                    w.or().apply("location REGEXP {0}", regexpPattern);
+                }
+
+                // 3️⃣ 子表 ai_tags 用 n-gram FULLTEXT
+                if (!kw.isEmpty() || !aiCat.isEmpty()) {
+                    w.or().apply(
+                            "id IN (SELECT item_id FROM biz_item_ai_tag WHERE MATCH(ai_tags) AGAINST({0} IN NATURAL LANGUAGE MODE))",
+                            kw + " " + aiCat
+                    );
+                }
+            });
         }
 
-
+        // 执行分页
         page(page, wrapper);
 
-        // VO 转换并回填最新 AI 结果
+        // VO 转换 + 回填最新 AI 信息
         List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
             BizItemStatVO vo = new BizItemStatVO();
             BeanUtils.copyProperties(item, vo);
-            vo.setStatus(BizItemStatusEnum.getDescByCode(item.getStatus()));
+            vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
             vo.setDescription(item.getDescription());
 
-            // 获取最新 version 的 AI 分类和 tags
+            // 最新 AI 分类和标签
             List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
             if (!aiResults.isEmpty()) {
-                int latestVersion = aiResults.stream()
-                        .mapToInt(BizItemAiResult::getResultVersion)
-                        .max().orElse(1);
+                int latestVersion = aiResults.stream().mapToInt(BizItemAiResult::getResultVersion).max().orElse(1);
                 List<BizItemAiResult> latestResults = aiResults.stream()
                         .filter(r -> r.getResultVersion() == latestVersion)
                         .toList();
@@ -313,12 +325,17 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                         .filter(Objects::nonNull)
                         .findFirst()
                         .orElse("未知"));
+
             }
+
             return vo;
         }).toList();
 
         return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
+
+
+
 
     /**
      * 分页查询我的物品（只查询自己发布的）
@@ -335,31 +352,28 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 .eq(query.getType() != null, BizItem::getType, query.getType())
                 .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
-                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
-                .eq(query.getAiStatus() != null, BizItem::getAiStatus, query.getAiStatus());
+                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime());
 
         if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
             String kw = query.getKeyword();
             wrapper.and(w -> w.like(BizItem::getTitle, kw)
                     .or().like(BizItem::getDescription, kw)
                     .or().inSql(BizItem::getId,
-                            "SELECT item_id FROM biz_item_ai_tag WHERE tag LIKE '%" + kw + "%'"));
+                            "SELECT item_id FROM biz_item_ai_tag WHERE ai_tags LIKE '%" + kw + "%'"));
         }
 
         page(page, wrapper);
-        // VO 转换并回填最新 AI 结果
+        // VO 转换 + 回填最新 AI 信息
         List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
             BizItemStatVO vo = new BizItemStatVO();
             BeanUtils.copyProperties(item, vo);
             vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
             vo.setDescription(item.getDescription());
 
-            // 获取最新 version 的 AI 分类和 tags
+            // 最新 AI 分类和标签
             List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
             if (!aiResults.isEmpty()) {
-                int latestVersion = aiResults.stream()
-                        .mapToInt(BizItemAiResult::getResultVersion)
-                        .max().orElse(1);
+                int latestVersion = aiResults.stream().mapToInt(BizItemAiResult::getResultVersion).max().orElse(1);
                 List<BizItemAiResult> latestResults = aiResults.stream()
                         .filter(r -> r.getResultVersion() == latestVersion)
                         .toList();
@@ -369,9 +383,12 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                         .filter(Objects::nonNull)
                         .findFirst()
                         .orElse("未知"));
+
             }
+
             return vo;
         }).toList();
+
         return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
     @Override
@@ -398,6 +415,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
             item.setStatus(BizItemStatus.CLOSED);
             updateById(item);
             evictItemCaches(id);
+        }else{
+            throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
     }
 
