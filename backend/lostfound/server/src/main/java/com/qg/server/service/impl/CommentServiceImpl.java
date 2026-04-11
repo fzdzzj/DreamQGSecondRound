@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -212,13 +214,18 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
     @Override
     public Long getUserUnreadCount(Long userId) {
         log.info("查询用户未读留言数量，userId={}", userId);
-
-        Long count = count(
+        //先找出用户发布了的物品
+        List<BizItem> items = bizItemDao.selectList(
+                new LambdaQueryWrapper<BizItem>()
+                        .eq(BizItem::getUserId, userId)
+        );
+        //找出用户未读的留言
+        List<BizComment> comments = bizCommentDao.selectList(
                 new LambdaQueryWrapper<BizComment>()
-                        .eq(BizComment::getUserId, userId)
                         .eq(BizComment::getIsRead, ReadStatus.UNREAD)
-        );  // 使用 IService 提供的 count 方法
-
+                        .in(BizComment::getItemId, items)
+        );
+        Long count = (long) comments.size();
         log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
         return count;
     }
