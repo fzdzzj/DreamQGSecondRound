@@ -26,6 +26,8 @@ public class CommentStatVO {
     private String avatar;
     @Schema(description = "是否已读,0:未读,1:已读")
     private Integer isRead;
+    @Schema(description = "是否删除,0:未删除,1:已删除")
+    private Integer deleted;
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 

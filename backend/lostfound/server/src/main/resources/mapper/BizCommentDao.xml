@@ -10,9 +10,10 @@
         <result property="nickname" column="nickname"/>
         <result property="avatar" column="avatar"/>
         <result property="isRead" column="is_read"/>
+        <result property="deleted" column="deleted"/>
         <result property="createTime" column="create_time"/>
     </resultMap>
-    <!-- 一级评论分页 -->
+
     <select id="selectCommentList" resultMap="CommentStatVOMap">
         SELECT
             c.id,
@@ -21,37 +22,39 @@
             c.parent_id,
             c.content,
             c.is_read,
+            c.deleted,
             c.create_time,
             u.nickname,
             u.avatar
         FROM biz_comment c
                  LEFT JOIN sys_user u ON c.user_id = u.id
         WHERE c.item_id = #{itemId}
-          AND c.deleted = 0
           AND (c.parent_id IS NULL OR c.parent_id = 0)
         ORDER BY c.create_time DESC
     </select>
 
-    <!-- 当前物品下所有子评论 -->
-    <select id="selectChildCommentList" resultMap="CommentStatVOMap">
+    <select id="selectCommentsByParentIds" resultMap="CommentStatVOMap">
         SELECT
-            c.id,
-            c.item_id,
-            c.user_id,
-            c.parent_id,
-            c.content,
-            c.is_read,
-            c.create_time,
-            u.nickname,
-            u.avatar
+        c.id,
+        c.item_id,
+        c.user_id,
+        c.parent_id,
+        c.content,
+        c.is_read,
+        c.deleted,
+        c.create_time,
+        u.nickname,
+        u.avatar
         FROM biz_comment c
-                 LEFT JOIN sys_user u ON c.user_id = u.id
+        LEFT JOIN sys_user u ON c.user_id = u.id
         WHERE c.item_id = #{itemId}
-          AND c.deleted = 0
-          AND c.parent_id IS NOT NULL
-          AND c.parent_id != 0
+        AND c.parent_id IN
+        <foreach collection="parentIds" item="parentId" open="(" separator="," close=")">
+            #{parentId}
+        </foreach>
         ORDER BY c.create_time ASC
     </select>
+
 
 
 </mapper>

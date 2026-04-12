@@ -263,6 +263,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      */
     @Override
     public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
+
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
@@ -275,115 +276,115 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 .orderByDesc(BizItem::getPinExpireTime)
                 .orderByDesc(BizItem::getCreateTime);
 
-        // -----------------关键词搜索-----------------
-        boolean hasKeyword = query.getKeyword() != null && !query.getKeyword().trim().isEmpty();
-        boolean hasLocation = query.getLocation() != null && !query.getLocation().trim().isEmpty();
-        boolean hasAiCategory = query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty();
-        boolean hasCategory = query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty(); // 新的 category 查询条件
+        // ================= 统一安全变量（解决 lambda effectively final） =================
+        final String kw = (query.getKeyword() == null) ? "" : query.getKeyword().trim();
+        final String loc = (query.getLocation() == null) ? "" : query.getLocation().trim();
+        final String aiCat = (query.getAiCategory() == null) ? "" : query.getAiCategory().trim();
 
-        if (hasKeyword || hasLocation || hasAiCategory || hasCategory) {
-            String kw = hasKeyword ? query.getKeyword().trim() : "";
-            String loc = hasLocation ? query.getLocation().trim() : "";
-            String aiCat = hasAiCategory ? query.getAiCategory().trim() : "";
-            String category = hasCategory ? query.getAiCategory().trim() : ""; // 获取 aiCategory 参数
+        boolean hasKeyword = !kw.isEmpty();
+        boolean hasLocation = !loc.isEmpty();
+        boolean hasAiCategory = !aiCat.isEmpty();
+
+        if (hasKeyword || hasLocation || hasAiCategory) {
 
             wrapper.and(w -> {
-                boolean hasPrevCondition = false;
 
                 // 1. title + description 全文检索
                 if (hasKeyword) {
                     w.apply("MATCH(title, description) AGAINST({0} IN NATURAL LANGUAGE MODE)", kw);
-                    hasPrevCondition = true;
                 }
 
-                // 2. location 模糊匹配（改为 LIKE）
+                // 2. location 模糊匹配
                 if (hasLocation) {
-                    String likePattern = "%" + loc + "%"; // 使用 LIKE 替代 REGEXP
-                    if (hasPrevCondition) {
-                        w.or();
-                    }
-                    w.like(BizItem::getLocation, likePattern); // 使用 LIKE 可以优化查询
-                    hasPrevCondition = true;
+                    if (hasKeyword) w.or();
+                    w.like(BizItem::getLocation, "%" + loc + "%");
                 }
 
-                // 3. ai_category 全文检索与 item_id 匹配（修正为从 biz_item_ai_result 获取 ai_category）
+                // 3. ai_category（exists + fulltext + like 合并）
                 if (hasKeyword || hasAiCategory) {
-                    String aiSearchText = (kw + " " + aiCat).trim();
-                    if (hasPrevCondition) {
-                        w.or();
-                    }
-                    w.apply(
-                            "JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
-                                    "WHERE MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE)", aiSearchText
-                    );
-                }
 
-                // 4. category 查询条件（如果有 category 参数，则加入筛选）
-                if (hasCategory) {
-                    if (hasPrevCondition) {
-                        w.or();
-                    }
-                    String likeCategory = "%" + category + "%"; // 使用 LIKE 进行模糊匹配
-                    w.apply("JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
-                            "WHERE air.ai_category LIKE {0} ESCAPE '\\\\'", likeCategory); // 在 biz_item_ai_result 表中匹配 ai_category 字段
+                    if (hasKeyword || hasLocation) w.or();
+
+                    String aiSearchText = (kw + " " + aiCat).trim();
+
+                    w.exists(
+                            "SELECT 1 FROM biz_item_ai_result air " +
+                                    "WHERE air.item_id = biz_item.id " +
+                                    "AND (" +
+                                    " MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE) " +
+                                    " OR air.ai_category LIKE {1} ESCAPE '\\\\' " +
+                                    ")",
+                            aiSearchText,
+                            "%" + aiCat + "%"
+                    );
                 }
             });
         }
 
-        // 执行分页
         page(page, wrapper);
 
         return buildPageResult(page);
     }
+
+
+
 
 
     @Override
     public PageResult<BizItemStatVO> myPageList(ItemPageQueryDTO query) {
+
         Long userId = BaseContext.getCurrentId();
-        query.setPageNum(query.getPageNum() != null ? query.getPageNum() : 1);
-        query.setPageSize(query.getPageSize() != null ? query.getPageSize() : 10);
 
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
-        // 基础查询条件
+        // ================= 基础条件 =================
         wrapper.eq(BizItem::getUserId, userId)
                 .eq(query.getType() != null, BizItem::getType, query.getType())
-                .like(query.getLocation() != null && !query.getLocation().trim().isEmpty(),
-                        BizItem::getLocation, query.getLocation().trim())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime());
 
-        // 处理关键词搜索
-        if (query.getKeyword() != null && !query.getKeyword().trim().isEmpty()) {
-            String kw = query.getKeyword().trim();
-            String likeKw = "%" + escapeLike(kw) + "%"; // 转义 LIKE 特殊字符
+        // ================= lambda 安全变量（解决 effectively final） =================
+        final String kw = (query.getKeyword() == null) ? "" : query.getKeyword().trim();
+        final String aiCat = (query.getAiCategory() == null) ? "" : query.getAiCategory().trim();
 
-            // 关键词检索，避免使用IN子查询，使用JOIN替代
+        boolean hasKeyword = !kw.isEmpty();
+        boolean hasAiCategory = !aiCat.isEmpty();
+
+        // ================= keyword 搜索 =================
+        if (hasKeyword) {
+
+            String likeKw = "%" + escapeLike(kw) + "%";
+
             wrapper.and(w -> w.like(BizItem::getTitle, kw)
                     .or().like(BizItem::getDescription, kw)
-                    .or().apply(
-                            "JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
-                                    "WHERE air.ai_category LIKE {0} ESCAPE '\\\\'", likeKw
+                    .or().exists(
+                            "SELECT 1 FROM biz_item_ai_result air " +
+                                    "WHERE air.item_id = biz_item.id " +
+                                    "AND air.ai_category LIKE {0} ESCAPE '\\\\'",
+                            likeKw
                     ));
         }
 
-        // 处理 category 查询条件，使用 LIKE 进行模糊匹配
-        if (query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty()) {
-            String category = "%" + query.getAiCategory().trim() + "%"; // 使用 LIKE 进行模糊匹配
+        // ================= category 搜索 =================
+        if (hasAiCategory) {
 
-            // 使用 JOIN 替代子查询，通过 category 字段进行模糊匹配
-            wrapper.and(w -> w.apply(
-                    "JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
-                            "WHERE air.ai_category LIKE {0} ESCAPE '\\\\'", category
+            String categoryLike = "%" + aiCat + "%";
+
+            wrapper.and(w -> w.exists(
+                    "SELECT 1 FROM biz_item_ai_result air " +
+                            "WHERE air.item_id = biz_item.id " +
+                            "AND air.ai_category LIKE {0} ESCAPE '\\\\'",
+                    categoryLike
             ));
         }
 
-        // 执行分页
         page(page, wrapper);
 
         return buildPageResult(page);
     }
+
+
     /**
      * 转义 LIKE 特殊字符
      */

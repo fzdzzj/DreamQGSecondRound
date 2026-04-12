@@ -28,10 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -111,58 +108,92 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
     @Override
     public PageResult<CommentStatVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize) {
         log.info("查询物品留言，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
-        //1. 一级评论分页
+
         Page<CommentStatVO> page = new Page<>(pageNum, pageSize);
         Page<CommentStatVO> commentPage = baseMapper.selectCommentList(page, itemId);
-        List<CommentStatVO> rootList=commentPage.getRecords();
-        //2.没有一级评论，直接返回
-        if(rootList==null||rootList.isEmpty()){
+        List<CommentStatVO> rootList = commentPage.getRecords();
+
+        log.info("一级评论数量={}", rootList == null ? 0 : rootList.size());
+
+        if (rootList == null || rootList.isEmpty()) {
             return new PageResult<>(rootList, commentPage.getTotal(), pageNum, pageSize);
         }
 
-        //2.查询当前物品所有子评论
-        List<CommentStatVO> childList=baseMapper.selectChildCommentList(itemId);
+        Map<Long, CommentStatVO> commentMap = new HashMap<>();
+        List<Long> currentParentIds = new ArrayList<>();
+        Set<Long> visitedIds = new HashSet<>();
 
-        if(childList==null||childList.isEmpty()){
-            return new PageResult<>(rootList, commentPage.getTotal(), pageNum, pageSize);
-        }
-
-        //3.构建所有评论映射表:id->comment
-        Map<Long,CommentStatVO>commentMap=new HashMap<>();
-
-        //先放一级评论
-        for(CommentStatVO root:rootList){
-            if(root.getChildren()==null){
+        for (CommentStatVO root : rootList) {
+            if (root.getChildren() == null) {
                 root.setChildren(new ArrayList<>());
             }
-            commentMap.put(root.getId(),root);
+            normalizeDeletedComment(root);
+            commentMap.put(root.getId(), root);
+            currentParentIds.add(root.getId());
+            visitedIds.add(root.getId());
         }
 
-        //再放子评论
-        for(CommentStatVO child:childList){
-            if(child.getChildren()== null){
-                child.setChildren(new ArrayList<>());
+        List<CommentStatVO> allChildren = new ArrayList<>();
+
+        while (!currentParentIds.isEmpty()) {
+            List<CommentStatVO> nextLevelList = baseMapper.selectCommentsByParentIds(itemId, currentParentIds);
+
+            if (nextLevelList == null || nextLevelList.isEmpty()) {
+                break;
             }
-            commentMap.put(child.getId(),child);
+
+            List<Long> nextParentIds = new ArrayList<>();
+
+            for (CommentStatVO child : nextLevelList) {
+                if (child == null || child.getId() == null) {
+                    continue;
+                }
+
+                if (!visitedIds.add(child.getId())) {
+                    continue;
+                }
+
+                if (child.getChildren() == null) {
+                    child.setChildren(new ArrayList<>());
+                }
+
+                normalizeDeletedComment(child);
+
+                commentMap.put(child.getId(), child);
+                allChildren.add(child);
+                nextParentIds.add(child.getId());
+            }
+
+            currentParentIds = nextParentIds;
         }
 
-        //4.组建树
-        for(CommentStatVO child:childList){
-            Long parentId=child.getParentId();
-            if(parentId==null||parentId==0){
+        for (CommentStatVO child : allChildren) {
+            Long parentId = child.getParentId();
+            if (parentId == null || parentId.longValue() == 0L) {
                 continue;
             }
 
-            CommentStatVO parent=commentMap.get(parentId);
-            if(parent!=null){
+            CommentStatVO parent = commentMap.get(parentId);
+            if (parent != null) {
                 parent.getChildren().add(child);
+            } else {
+                log.warn("发现孤儿评论，childId={}, parentId={}", child.getId(), parentId);
             }
         }
 
-        //5.返回一级评论树
-        return new PageResult<>(rootList,commentPage.getTotal(),pageNum,pageSize);
-
+        return new PageResult<>(rootList, commentPage.getTotal(), pageNum, pageSize);
     }
+
+    private void normalizeDeletedComment(CommentStatVO comment) {
+        if (comment != null && comment.getDeleted() != null && comment.getDeleted() == 1) {
+            comment.setContent("该评论已删除");
+            comment.setNickname(null);
+            comment.setAvatar(null);
+        }
+    }
+
+
+
 
 
     /**
