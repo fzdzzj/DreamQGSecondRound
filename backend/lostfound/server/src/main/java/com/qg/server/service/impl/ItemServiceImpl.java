@@ -266,7 +266,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
-        // 基础条件
+        // 基础查询条件
         wrapper.eq(query.getType() != null, BizItem::getType, query.getType())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
@@ -279,43 +279,53 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         boolean hasKeyword = query.getKeyword() != null && !query.getKeyword().trim().isEmpty();
         boolean hasLocation = query.getLocation() != null && !query.getLocation().trim().isEmpty();
         boolean hasAiCategory = query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty();
+        boolean hasCategory = query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty(); // 新的 category 查询条件
 
-        if (hasKeyword || hasLocation || hasAiCategory) {
-
+        if (hasKeyword || hasLocation || hasAiCategory || hasCategory) {
             String kw = hasKeyword ? query.getKeyword().trim() : "";
             String loc = hasLocation ? query.getLocation().trim() : "";
             String aiCat = hasAiCategory ? query.getAiCategory().trim() : "";
+            String category = hasCategory ? query.getAiCategory().trim() : ""; // 获取 aiCategory 参数
 
             wrapper.and(w -> {
                 boolean hasPrevCondition = false;
 
-                // 1️⃣ title + description 用 n-gram FULLTEXT
+                // 1. title + description 全文检索
                 if (hasKeyword) {
                     w.apply("MATCH(title, description) AGAINST({0} IN NATURAL LANGUAGE MODE)", kw);
                     hasPrevCondition = true;
                 }
 
-                // 2️⃣ location 用 REGEXP 支持非连续匹配（安全转义，避免注入/特殊字符影响）
+                // 2. location 模糊匹配（改为 LIKE）
                 if (hasLocation) {
-                    String regexpPattern = buildSafeFuzzyRegexp(loc);
+                    String likePattern = "%" + loc + "%"; // 使用 LIKE 替代 REGEXP
                     if (hasPrevCondition) {
                         w.or();
                     }
-                    w.apply("location REGEXP {0}", regexpPattern);
+                    w.like(BizItem::getLocation, likePattern); // 使用 LIKE 可以优化查询
                     hasPrevCondition = true;
                 }
 
-                // 3️⃣ 子表 ai_tags 用 n-gram FULLTEXT
+                // 3. ai_category 全文检索与 item_id 匹配（修正为从 biz_item_ai_result 获取 ai_category）
                 if (hasKeyword || hasAiCategory) {
                     String aiSearchText = (kw + " " + aiCat).trim();
                     if (hasPrevCondition) {
                         w.or();
                     }
                     w.apply(
-                            "id IN (SELECT item_id FROM biz_item_ai_tag " +
-                                    "WHERE MATCH(ai_tags) AGAINST({0} IN NATURAL LANGUAGE MODE))",
-                            aiSearchText
+                            "JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
+                                    "WHERE MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE)", aiSearchText
                     );
+                }
+
+                // 4. category 查询条件（如果有 category 参数，则加入筛选）
+                if (hasCategory) {
+                    if (hasPrevCondition) {
+                        w.or();
+                    }
+                    String likeCategory = "%" + category + "%"; // 使用 LIKE 进行模糊匹配
+                    w.apply("JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
+                            "WHERE air.ai_category LIKE {0} ESCAPE '\\\\'", likeCategory); // 在 biz_item_ai_result 表中匹配 ai_category 字段
                 }
             });
         }
@@ -323,61 +333,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 执行分页
         page(page, wrapper);
 
-        // VO 转换 + 回填最新 AI 信息
-        List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
-            BizItemStatVO vo = new BizItemStatVO();
-            BeanUtils.copyProperties(item, vo);
-            vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
-            vo.setDescription(item.getDescription());
-
-            // 最新 AI 分类和标签
-            List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
-            if (!aiResults.isEmpty()) {
-                int latestVersion = aiResults.stream()
-                        .mapToInt(BizItemAiResult::getResultVersion)
-                        .max()
-                        .orElse(1);
-
-                List<BizItemAiResult> latestResults = aiResults.stream()
-                        .filter(r -> r.getResultVersion() == latestVersion)
-                        .toList();
-
-                vo.setAiCategory(latestResults.stream()
-                        .map(BizItemAiResult::getAiCategory)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse("未知"));
-            }
-
-            return vo;
-        }).toList();
-
-        return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
-    }
-
-    /**
-     * 将用户输入构造成“非连续模糊匹配”的安全正则
-     * 例如：西一 -> 西.*一
-     * 同时对正则特殊字符做转义，避免正则注入
-     */
-    private String buildSafeFuzzyRegexp(String input) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < input.length(); i++) {
-            if (i > 0) {
-                sb.append(".*");
-            }
-            sb.append(Pattern.quote(String.valueOf(input.charAt(i))));
-        }
-        return sb.toString();
+        return buildPageResult(page);
     }
 
 
-
-
-
-    /**
-     * 分页查询我的物品（只查询自己发布的）
-     */
     @Override
     public PageResult<BizItemStatVO> myPageList(ItemPageQueryDTO query) {
         Long userId = BaseContext.getCurrentId();
@@ -386,49 +345,115 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
+
+        // 基础查询条件
         wrapper.eq(BizItem::getUserId, userId)
                 .eq(query.getType() != null, BizItem::getType, query.getType())
-                .like(query.getLocation() != null, BizItem::getLocation, query.getLocation())
+                .like(query.getLocation() != null && !query.getLocation().trim().isEmpty(),
+                        BizItem::getLocation, query.getLocation().trim())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime());
 
-        if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
-            String kw = query.getKeyword();
+        // 处理关键词搜索
+        if (query.getKeyword() != null && !query.getKeyword().trim().isEmpty()) {
+            String kw = query.getKeyword().trim();
+            String likeKw = "%" + escapeLike(kw) + "%"; // 转义 LIKE 特殊字符
+
+            // 关键词检索，避免使用IN子查询，使用JOIN替代
             wrapper.and(w -> w.like(BizItem::getTitle, kw)
                     .or().like(BizItem::getDescription, kw)
-                    .or().inSql(BizItem::getId,
-                            "SELECT item_id FROM biz_item_ai_tag WHERE ai_tags LIKE '%" + kw + "%'"));
+                    .or().apply(
+                            "JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
+                                    "WHERE air.ai_category LIKE {0} ESCAPE '\\\\'", likeKw
+                    ));
         }
 
+        // 处理 category 查询条件，使用 LIKE 进行模糊匹配
+        if (query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty()) {
+            String category = "%" + query.getAiCategory().trim() + "%"; // 使用 LIKE 进行模糊匹配
+
+            // 使用 JOIN 替代子查询，通过 category 字段进行模糊匹配
+            wrapper.and(w -> w.apply(
+                    "JOIN biz_item_ai_result air ON air.item_id = biz_item.id " +
+                            "WHERE air.ai_category LIKE {0} ESCAPE '\\\\'", category
+            ));
+        }
+
+        // 执行分页
         page(page, wrapper);
-        // VO 转换 + 回填最新 AI 信息
-        List<BizItemStatVO> voList = page.getRecords().stream().map(item -> {
+
+        return buildPageResult(page);
+    }
+    /**
+     * 转义 LIKE 特殊字符
+     */
+    private String escapeLike(String input) {
+        // 如果输入为空，则返回空字符串
+        if (input == null) {
+            return "";
+        }
+        // 替换 % 和 _ 为转义字符
+        return input.replaceAll("([\\\\%_])", "\\\\$1");
+    }
+
+    /**
+     * 统一构造分页返回结果
+     * 保持返回结构和字段内容不变
+     */
+    private PageResult<BizItemStatVO> buildPageResult(Page<BizItem> page) {
+        List<BizItem> records = page.getRecords();
+        if (records == null || records.isEmpty()) {
+            return new PageResult<>(Collections.emptyList(), page.getTotal(),
+                    (int) page.getCurrent(), (int) page.getSize());
+        }
+
+        // 批量查询当前页所有 item 的 AI 结果，避免 N+1
+        List<Long> itemIds = records.stream()
+                .map(BizItem::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        Map<Long, String> itemIdToAiCategory = buildLatestAiCategoryMap(itemIds);
+
+        List<BizItemStatVO> voList = records.stream().map(item -> {
             BizItemStatVO vo = new BizItemStatVO();
             BeanUtils.copyProperties(item, vo);
             vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
             vo.setDescription(item.getDescription());
-
-            // 最新 AI 分类和标签
-            List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
-            if (!aiResults.isEmpty()) {
-                int latestVersion = aiResults.stream().mapToInt(BizItemAiResult::getResultVersion).max().orElse(1);
-                List<BizItemAiResult> latestResults = aiResults.stream()
-                        .filter(r -> r.getResultVersion() == latestVersion)
-                        .toList();
-
-                vo.setAiCategory(latestResults.stream()
-                        .map(BizItemAiResult::getAiCategory)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse("未知"));
-
-            }
-
+            vo.setAiCategory(itemIdToAiCategory.getOrDefault(item.getId(), "未知"));
             return vo;
         }).toList();
 
         return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
+
+    /**
+     * 批量构造 itemId -> 最新 aiCategory 映射
+     */
+    private Map<Long, String> buildLatestAiCategoryMap(List<Long> itemIds) {
+        if (itemIds == null || itemIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 批量查询 AI 结果，避免多次查询
+        List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemIds(itemIds);
+        if (aiResults == null || aiResults.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 使用流处理和分组来减少冗余查询
+        return aiResults.stream()
+                .collect(Collectors.groupingBy(
+                        BizItemAiResult::getItemId,
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy(Comparator.comparingInt(BizItemAiResult::getResultVersion)),
+                                aiResult -> aiResult.map(BizItemAiResult::getAiCategory).orElse("未知")
+                        )
+                ));
+    }
+
+
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteItem(Long id) {

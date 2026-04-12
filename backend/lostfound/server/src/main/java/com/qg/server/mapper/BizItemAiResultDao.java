@@ -16,4 +16,6 @@ public interface BizItemAiResultDao extends BaseMapper<BizItemAiResult> {
     BizItemAiResult selectLatestByItemId(Long itemId);
     @Select("SELECT * FROM biz_item_ai_result WHERE item_id = #{itemId}")
     List<BizItemAiResult> selectByItemId(Long itemId);
+
+    List<BizItemAiResult> selectByItemIds(List<Long> itemIds);
 }

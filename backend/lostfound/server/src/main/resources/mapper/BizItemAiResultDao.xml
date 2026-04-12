@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.qg.server.mapper.BizItemAiResultDao">
+    <select id="selectByItemIds" resultType="com.qg.pojo.entity.BizItemAiResult">
+        SELECT
+        id,
+        item_id,
+        result_version,
+        ai_category
+        FROM biz_item_ai_result
+        WHERE item_id IN
+        <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </select>
+
+</mapper>
