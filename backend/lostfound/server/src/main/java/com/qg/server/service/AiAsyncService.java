@@ -24,6 +24,10 @@ public interface AiAsyncService {
                                       List<ImageItem> imageItems);
 
     /**
+     * 重新生成已有物品的 AI 描述
+     */
+    void regenerateItemDescription(Long itemId, Long userId);
+    /**
      * 持久化 AI 结果到数据库
      * @return 新增结果 ID
      */

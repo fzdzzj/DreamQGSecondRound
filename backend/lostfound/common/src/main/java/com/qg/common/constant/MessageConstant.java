@@ -49,4 +49,5 @@ public interface MessageConstant {
     String PIN_REQUEST_AUDIT_PASS = "置顶申请审核通过";
     String NO_PERMISSION = "无权限操作";
     String USER_NOT_AUTHORIZED = "不能封禁管理员或系统用户";
+    String AI_RESULT_NOT_FOUND = "AI结果不存在";
 }

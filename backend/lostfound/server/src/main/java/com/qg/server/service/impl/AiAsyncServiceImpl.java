@@ -1,17 +1,24 @@
 package com.qg.server.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.BizItemAiResultStatusConstant;
+import com.qg.common.constant.MessageConstant;
+import com.qg.common.exception.AbsentException;
+import com.qg.common.exception.AiGenerateException;
+import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemAiTag;
+import com.qg.pojo.entity.BizItemImage;
 import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.client.DescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemAiTagDao;
 import com.qg.server.mapper.BizItemDao;
+import com.qg.server.mapper.BizItemImageDao;
 import com.qg.server.service.AiAsyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +39,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     private final DescriptionClient descriptionClient;
     private final ImageDescriptionClient imageDescriptionClient;
     private final BizItemAiResultDao aiResultDao;
+    private final BizItemImageDao itemImageDao;
     private final BizItemAiTagDao aiTagDao; // 新增 tag 表 DAO
     private final BizItemDao itemDao;
     private final AIProperties aiProperties;
@@ -105,6 +113,55 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         if (lastResultId != null) {
             // 更新 item 当前 AI 状态
             updateItemCurrentAiResultId(itemId, lastResultId, allSuccess ? BizItemAiResultStatusConstant.SUCCESS : BizItemAiResultStatusConstant.FAILURE);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void regenerateItemDescription(Long itemId, Long userId) {
+        BizItem item = itemDao.selectById(itemId);
+        if (item == null || item.getDeleted() != null && item.getDeleted() == 1) {
+            log.warn("物品不存在,或已删除,物品ID:{}", itemId);
+            throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
+        }
+
+        if (!item.getUserId().equals(userId)) {
+            throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
+        }
+        BizItemAiResult latestResult = aiResultDao.selectLatestByItemId(itemId);
+        if (latestResult == null) {
+            throw new AiGenerateException(MessageConstant.AI_RESULT_NOT_FOUND);
+        }
+        //先把主表状态改成处理中
+        BizItem updateItem = new BizItem();
+        updateItem.setId(itemId);
+        updateItem.setAiStatus(BizItemAiResultStatusConstant.PENDING);
+        itemDao.updateById(updateItem);
+
+        List<BizItemImage> imageList = itemImageDao.selectList(new LambdaQueryWrapper<BizItemImage>()
+                .eq(BizItemImage::getItemId, itemId));
+
+        List<ImageDescriptionClient.ImageItem> imageItems = imageList.stream()
+                .map(img -> new ImageDescriptionClient.ImageItem(img.getUrl(), null)).toList();
+
+        // 有图走多模态，无图走文本
+        if (imageItems != null && !imageItems.isEmpty()) {
+            generateItemImageDescription(
+                    item.getTitle(),
+                    item.getDescription(),
+                    item.getNormalizedLocation(),
+                    userId,
+                    itemId,
+                    imageItems
+            );
+        } else {
+            generateItemDescription(
+                    item.getTitle(),
+                    item.getDescription(),
+                    item.getNormalizedLocation(),
+                    userId,
+                    itemId
+            );
         }
     }
 

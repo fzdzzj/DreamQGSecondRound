@@ -32,7 +32,6 @@ public class PermissionServiceImpl implements PermissionService {
                     "PUT:/common/personal-info",
                     "PUT:/common/password",
 
-
                     "POST:/item/lost",
                     "POST:/item/found",
                     "PUT:/item/{id}",
@@ -40,6 +39,9 @@ public class PermissionServiceImpl implements PermissionService {
                     "POST:/item/page",
                     "GET:/item/{id}",
                     "PUT:/item/{id}/close",
+
+                    // AI 重新描述
+                    "POST:/ai/item/{id}/regenerate",
 
                     "POST:/api/file/upload",
 
@@ -85,13 +87,13 @@ public class PermissionServiceImpl implements PermissionService {
                 // 刷新、登出接口
                 "POST:/auth/logout",
                 "POST:/auth/refresh",
+
                 // 个人信息接口
                 "GET:/common/personal-info",
                 "PUT:/common/personal-info",
                 "PUT:/common/password",
 
-
-                // 物品接口接口
+                // 物品接口
                 "POST:/item/lost",
                 "POST:/item/found",
                 "PUT:/item/{id}",
@@ -101,16 +103,14 @@ public class PermissionServiceImpl implements PermissionService {
                 "PUT:/item/{id}/close",
                 "GET:/item/{id}",
 
+                // AI 重新描述
+                "POST:/ai/item/{id}/regenerate",
 
                 "PUT:/item/pin/apply",
 
                 "POST:/api/file/upload",
 
-
-
                 "POST:/pin/apply",
-
-
                 "POST:/pin/cancel/{id}",
                 "GET:/pin/{id}",
                 "GET:/pin/mylist",
@@ -139,8 +139,6 @@ public class PermissionServiceImpl implements PermissionService {
                 "DELETE:/message/{id}",
                 "DELETE:/message/conversation/{id}",
                 "GET:/message/unread/count"
-
-
         );
     }
 }

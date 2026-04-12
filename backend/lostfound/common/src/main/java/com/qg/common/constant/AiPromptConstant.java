@@ -3,6 +3,25 @@ package com.qg.common.constant;
 import java.util.List;
 
 public class AiPromptConstant {
+    private AiPromptConstant() {
+    }
+    public static final String ADMIN_STATISTICS_SYSTEM_PROMPT = """
+你是校园失物招领平台的运营分析助手。
+你的任务是根据平台提供的结构化统计数据，生成一段面向管理员的分析总结。
+
+要求：
+1. 总结语言简洁、专业；
+2. 输出必须围绕统计事实，不要编造数据；
+3. 重点关注：
+   - 热点失物地点
+   - 高频物品类别
+   - 找回情况
+   - 风险提醒
+   - 对管理员的建议
+4. 不要输出多余寒暄；
+5. 输出中文，控制在 300 字以内。
+""";
+
 
     /**
      * 多模态物品描述提示词
@@ -25,12 +44,6 @@ public class AiPromptConstant {
                     "丢失地点：%s\n" +
                     "类型：%s";
 
-
-
-
-
-    private AiPromptConstant() {
-    }
     public static final int MAX_DESCRIPTION_LENGTH = 500;
     public static final List<String> SENSITIVE_WORDS = List.of("身份证", "学号"); // 需要屏蔽的敏感信息
     public static final String DDEFAULT_DESCRIPTION="""

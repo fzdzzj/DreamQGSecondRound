@@ -20,6 +20,7 @@ import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemImage;
 import com.qg.pojo.vo.BizItemDetailVO;
 import com.qg.pojo.vo.BizItemStatVO;
+import com.qg.server.ai.util.LocationNormalizeUtil;
 import com.qg.server.event.ItemAiGenerateEvent;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
@@ -87,7 +88,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setTitle(dto.getTitle());
         item.setDescription(dto.getDescription());
         item.setLocation(dto.getLocation());
+        item.setContactMethod(dto.getContactMethod());
         item.setHappenTime(dto.getHappenTime());
+        item.setNormalizedLocation(LocationNormalizeUtil.normalize(dto.getLocation()));
 
         // 插入数据库
         bizItemDao.insert(item);
@@ -101,7 +104,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 item.getId(),
                 item.getTitle(),
                 item.getDescription(),
-                item.getLocation(),
+                item.getNormalizedLocation(),
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
@@ -125,7 +128,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setIsPinned(0);
         item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
-
+        item.setNormalizedLocation(LocationNormalizeUtil.normalize(dto.getLocation()));
+        item.setContactMethod(dto.getContactMethod());
         save(item);
         saveItemImages(item.getId(), dto.getImageUrls());
 
@@ -134,7 +138,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 item.getId(),
                 dto.getTitle(),
                 dto.getDescription(),
-                dto.getLocation(),
+                item.getNormalizedLocation(),
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
@@ -162,7 +166,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setStatus(oldItem.getStatus());
         item.setIsPinned(oldItem.getIsPinned());
         item.setPinExpireTime(oldItem.getPinExpireTime());
-
+        item.setContactMethod(dto.getContactMethod());
         // 清空旧 AI 结果
         item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
@@ -179,7 +183,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 id,
                 dto.getTitle(),
                 dto.getDescription(),
-                dto.getLocation(),
+                item.getNormalizedLocation(),
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
@@ -418,6 +422,20 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         }else{
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
+    }
+
+    @Override
+    public void clearExpiredPinnedItems() {
+        log.info("清除过期的置顶物品");
+        List<BizItem> expiredPinnedItems = list(new LambdaQueryWrapper<BizItem>()
+                .ge(BizItem::getPinExpireTime, LocalDateTime.now()));
+        expiredPinnedItems.forEach(item -> {
+            item.setPinExpireTime(null);
+            item.setIsPinned(0);
+            updateById(item);
+            evictItemCaches(item.getId());
+        });
+        log.info("清除完成，共清除{}个物品", expiredPinnedItems.size());
     }
 
     // ===================== 工具方法 =====================

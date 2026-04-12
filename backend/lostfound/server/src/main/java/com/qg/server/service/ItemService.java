@@ -62,4 +62,6 @@ public interface ItemService extends IService<BizItem> { // 继承 IService
      * @param id 物品ID
      */
     void closeItem(Long id);
+
+    void clearExpiredPinnedItems();
 }

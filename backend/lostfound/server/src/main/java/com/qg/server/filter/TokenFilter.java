@@ -80,7 +80,6 @@ public class TokenFilter extends OncePerRequestFilter {
             try {
                 claims = jwtUtil.parseToken(token);
             } catch (Exception e) {
-                // 捕获解析异常，返回 JSON，而不是抛异常
                 log.warn("Token 解析失败：{}", e.getMessage());
                 writeJson(response, 401, "Token无效或已过期");
                 return;
@@ -95,18 +94,22 @@ public class TokenFilter extends OncePerRequestFilter {
             Long userId = claims.get("userId", Long.class);
             String username = claims.get("username", String.class);
             String role = claims.get("role", String.class);
+
             @SuppressWarnings("unchecked")
             Set<String> permissions = jwtUtil.getPermissionsFromToken(claims);
+
             log.warn("permissions: {}", permissions);
+
             if (userId == null || username == null || role == null) {
                 writeJson(response, 401, "Token信息不完整");
                 return;
             }
 
             BaseContext.setCurrentUser(userId, role);
-            if(RoleConstant.ADMIN.equals(role) || RoleConstant.USER.equals(role)){
+
+            if (RoleConstant.ADMIN.equals(role) || RoleConstant.USER.equals(role)) {
                 SysUser user = userDao.selectById(userId);
-                if(UserStatusConstant.DISABLE.equals(user.getStatus())){
+                if (UserStatusConstant.DISABLE.equals(user.getStatus())) {
                     writeJson(response, 403, "用户已被禁用");
                     return;
                 }
@@ -114,7 +117,7 @@ public class TokenFilter extends OncePerRequestFilter {
 
             // 2. RBAC 权限校验
             if (!hasPermission(uri, method, role, permissions)) {
-                log.warn("用户: " + username + " 无权限访问: " + uri);
+                log.warn("用户: {} 无权限访问: {}", username, uri);
                 writeJson(response, 403, "权限不足");
                 return;
             }
@@ -123,7 +126,6 @@ public class TokenFilter extends OncePerRequestFilter {
                 tokenRefreshService.addTokenToBlacklist(token);
             }
 
-            // 放行请求
             filterChain.doFilter(request, response);
 
         } finally {
@@ -131,15 +133,19 @@ public class TokenFilter extends OncePerRequestFilter {
         }
     }
 
-
     private boolean hasPermission(String uri, String method, String role, Set<String> permissions) {
-        if ("ADMIN".equals(role) || "SYSTEM".equals(role)) return true;
-        if (permissions == null || permissions.isEmpty()) return false;
+        if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
+            return true;
+        }
+        if (permissions == null || permissions.isEmpty()) {
+            return false;
+        }
 
         String normalizedUri = uri.replaceAll("/\\d+", "/{id}");
         String currentPerm = (method + ":" + normalizedUri).trim();
-        log.warn("当前权限：" + currentPerm);
-        log.warn("权限列表：" + permissions);
+
+        log.warn("当前权限：{}", currentPerm);
+        log.warn("权限列表：{}", permissions);
 
         return permissions.stream().anyMatch(p -> p.trim().equals(currentPerm));
     }
