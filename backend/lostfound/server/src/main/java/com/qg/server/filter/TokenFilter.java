@@ -137,18 +137,35 @@ public class TokenFilter extends OncePerRequestFilter {
         if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
             return true;
         }
+
         if (permissions == null || permissions.isEmpty()) {
             return false;
         }
 
-        String normalizedUri = uri.replaceAll("/\\d+", "/{id}");
-        String currentPerm = (method + ":" + normalizedUri).trim();
-
-        log.warn("当前权限：{}", currentPerm);
+        log.warn("当前请求：{} {}", method, uri);
         log.warn("权限列表：{}", permissions);
 
-        return permissions.stream().anyMatch(p -> p.trim().equals(currentPerm));
+        return permissions.stream().anyMatch(permission -> {
+            if (permission == null || permission.isBlank()) {
+                return false;
+            }
+
+            String[] arr = permission.split(":", 2);
+            if (arr.length != 2) {
+                return false;
+            }
+
+            String permMethod = arr[0].trim();
+            String permUri = arr[1].trim();
+
+            if (!permMethod.equalsIgnoreCase(method)) {
+                return false;
+            }
+
+            return pathMatcher.match(permUri, uri);
+        });
     }
+
 
     private void writeJson(HttpServletResponse response, int code, String msg) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
