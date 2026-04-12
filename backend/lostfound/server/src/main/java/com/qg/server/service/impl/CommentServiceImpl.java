@@ -13,11 +13,13 @@ import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
 import com.qg.pojo.entity.BizItem;
+import com.qg.pojo.entity.Notification;
 import com.qg.pojo.entity.SysUser;
 import com.qg.pojo.vo.CommentDetailVO;
 import com.qg.pojo.vo.CommentStatVO;
 import com.qg.server.mapper.BizCommentDao;
 import com.qg.server.mapper.BizItemDao;
+import com.qg.server.mapper.NotificationDao;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.CommentService;
 import com.qg.server.service.NotificationService;
@@ -40,45 +42,68 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
     private final UserDao userDao;  // 用户数据访问层
     private final NotificationService notificationService;  // 通知服务层
     private final BizCommentDao bizCommentDao;
+    private final NotificationDao notificationDao;
 
     /**
      * 新增留言
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void addComment(CommentAddDTO commentAddDTO) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("新增留言开始，userId={}, itemId={}", userId, commentAddDTO.getItemId());
+    @Transactional
+    public void addComment(CommentAddDTO dto) {
+        Long currentUserId = BaseContext.getCurrentId();
 
-        // 校验物品是否存在
-        BizItem bizItem = bizItemDao.selectById(commentAddDTO.getItemId());
-        if (bizItem == null) {
-            log.warn("新增留言失败，物品不存在，itemId={}, userId={}", commentAddDTO.getItemId(), userId);
-            throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
+        // 1. 校验物品
+        BizItem item = bizItemDao.selectById(dto.getItemId());
+        if (item == null || item.getDeleted() == 1) {
+            throw new AbsentException("物品不存在");
         }
 
-        // 创建新的留言
-        BizComment bizComment = new BizComment();
-        bizComment.setItemId(commentAddDTO.getItemId());
-        bizComment.setUserId(userId);
-        bizComment.setContent(commentAddDTO.getContent());
-        if(commentAddDTO.getParentId() !=0){
-            BizComment parentComment =getById(commentAddDTO.getParentId());
-            if(parentComment == null){
-                log.warn("新增留言失败，父留言不存在，parentId={}, userId={}", commentAddDTO.getParentId(), userId);
-                throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
+        // 2. 创建评论
+        BizComment comment = new BizComment();
+        comment.setItemId(dto.getItemId());
+        comment.setUserId(currentUserId);
+        comment.setContent(dto.getContent());
+
+        Long parentId = dto.getParentId();
+        if (parentId == null) {
+            parentId = 0L;
+        }
+        comment.setParentId(parentId);
+
+        comment.setIsRead(0);
+        bizCommentDao.insert(comment);
+
+        // 3. 如果是回复，发送通知
+        if (parentId != 0) {
+            BizComment parent = bizCommentDao.selectById(parentId);
+
+            if (parent != null && !parent.getUserId().equals(currentUserId)) {
+
+                Notification notification = new Notification();
+                notification.setUserId(parent.getUserId());
+                notification.setContent("有人回复了你的评论");
+                notification.setCommentId(comment.getId());
+                notification.setIsRead(0);
+
+                notificationDao.insert(notification);
             }
-
         }
-        bizComment.setParentId(commentAddDTO.getParentId() == null ? 0L : commentAddDTO.getParentId());
-        bizComment.setIsRead(ReadStatusConstant.UNREAD);
 
-        // 保存留言
-        save(bizComment); // 使用 IService 提供的 save 方法
+        // 4. 一级评论通知物品发布者
+        if (parentId == 0) {
+            if (!item.getUserId().equals(currentUserId)) {
 
-        log.info("新增留言成功，commentId={}, userId={}, itemId={}",
-                bizComment.getId(), userId, commentAddDTO.getItemId());
+                Notification notification = new Notification();
+                notification.setUserId(item.getUserId());
+                notification.setContent("你的物品有新的留言");
+                notification.setCommentId(comment.getId());
+                notification.setIsRead(0);
+
+                notificationDao.insert(notification);
+            }
+        }
     }
+
 
     /**
      * 获取物品留言列表（分页）
@@ -273,53 +298,5 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         Long count = (long) comments.size();
         log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
         return count;
-    }
-
-    /**
-     * 回复留言
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void replyComment(CommentAddDTO commentAddDTO) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("回复留言开始，userId={}, itemId={}, parentId={}", userId, commentAddDTO.getItemId(), commentAddDTO.getParentId());
-
-        BizItem bizItem = bizItemDao.selectById(commentAddDTO.getItemId());
-        if (bizItem == null) {
-            log.warn("回复留言失败，物品不存在，itemId={}", commentAddDTO.getItemId());
-            throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
-        }
-
-        // 父留言验证
-        if (commentAddDTO.getParentId() != 0) {
-            BizComment parentComment = getById(commentAddDTO.getParentId());  // 使用 IService 提供的 getById 方法
-            if (parentComment == null) {
-                log.warn("回复留言失败，父留言不存在，parentId={}", commentAddDTO.getParentId());
-                throw new AbsentException(MessageConstant.PARENT_COMMENT_NOT_FOUND);
-            }
-
-            // 创建通知：通知父留言的用户
-            Long parentUserId = parentComment.getUserId();
-            if (parentUserId.equals(userId)) {
-                log.info("回复自己留言不用通知，parentId={}", commentAddDTO.getParentId());
-            }else{
-                log.info("回复留言通知父留言用户，parentId={}", commentAddDTO.getParentId());
-                String content = "您的留言有新的回复：" + commentAddDTO.getContent();
-                notificationService.createNotification(parentUserId, commentAddDTO.getParentId(), content); // 创建通知
-            }
-        }
-
-        // 创建回复留言
-        BizComment bizComment = new BizComment();
-        bizComment.setItemId(commentAddDTO.getItemId());
-        bizComment.setUserId(userId);
-        bizComment.setContent(commentAddDTO.getContent());
-        bizComment.setParentId(commentAddDTO.getParentId());
-        bizComment.setIsRead(ReadStatusConstant.UNREAD);  // 设置为未读
-
-        save(bizComment);  // 使用 IService 提供的 save 方法
-
-        log.info("回复留言成功，commentId={}, userId={}, itemId={}",
-                bizComment.getId(), userId, commentAddDTO.getItemId());
     }
 }

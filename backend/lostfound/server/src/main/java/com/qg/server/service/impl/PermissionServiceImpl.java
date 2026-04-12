@@ -60,7 +60,6 @@ public class PermissionServiceImpl implements PermissionService {
                     "GET:/pin/{id}",
 
                     "POST:/comment",
-                    "POST:/comment/reply",
                     "PUT:/comment/{id}/read",
                     "GET:/comment/{id}",
                     "DELETE:/comment/{id}",
@@ -119,7 +118,6 @@ public class PermissionServiceImpl implements PermissionService {
                 "GET:/report/{id}",
 
                 "POST:/comment",
-                "POST:/comment/reply",
                 "PUT:/comment/{id}/read",
                 "GET:/comment/{id}",
                 "DELETE:/comment/{id}",

@@ -112,22 +112,4 @@ public class CommentController {
         return Result.success(count);
     }
 
-    /**
-     * 回复留言
-     */
-    @PostMapping("/reply")
-    @Operation(summary = "回复留言")
-    public Result<Void> replyComment(@Validated @RequestBody CommentAddDTO commentAddDTO) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("用户请求回复留言，userId={}, itemId={}, parentId={}", userId, commentAddDTO.getItemId(), commentAddDTO.getParentId());
-        commentService.replyComment(commentAddDTO);
-        log.info("用户回复留言成功，userId={}, itemId={}, parentId={}", userId, commentAddDTO.getItemId(), commentAddDTO.getParentId());
-        return Result.success();
-    }
-
-
-
-
-
-
 }

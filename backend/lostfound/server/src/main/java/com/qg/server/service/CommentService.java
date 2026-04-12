@@ -64,10 +64,4 @@ public interface CommentService extends IService<BizComment> {
      */
     Long getUserUnreadCount(Long userId);
 
-    /**
-     * 回复留言
-     *
-     * @param commentAddDTO 留言参数
-     */
-    void replyComment(CommentAddDTO commentAddDTO);
 }

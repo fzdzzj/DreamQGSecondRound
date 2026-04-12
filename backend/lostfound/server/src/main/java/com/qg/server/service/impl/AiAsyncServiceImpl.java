@@ -124,7 +124,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
             log.warn("物品不存在,或已删除,物品ID:{}", itemId);
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
-
+        log.info("重新生成物品描述,用户ID:{},物品ID:{},物品用户ID:{}", userId, itemId,item.getUserId());
         if (!item.getUserId().equals(userId)) {
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
