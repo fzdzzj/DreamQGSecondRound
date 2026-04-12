@@ -104,7 +104,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
             log.warn("通知不存在，notificationId={}", notificationId);
             throw new AbsentException(MessageConstant.NOTIFICATION_NOT_FOUND);
         }
-        if(!notification.getUserId().equals(BaseContext.getCurrentId())){
+        if (!notification.getUserId().equals(BaseContext.getCurrentId())) {
             log.warn("用户无权限删除该通知，notificationId={}", notificationId);
             throw new AbsentException(MessageConstant.NO_PERMISSION);
         }

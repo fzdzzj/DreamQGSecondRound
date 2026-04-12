@@ -13,15 +13,6 @@ import java.io.Serializable;
 @Schema(description = "用户注册DTO")
 public class RegisterDTO implements Serializable {
     private static final long serialVersionUID = 1L;
-    /**
-     * 注册账号
-     * <p>
-     * 业务说明：用户注册的唯一标识，支持学生学号（3125/3225开头）或管理员ID（0025开头）<br>
-     * 校验规则：
-     * 1. 非空（不能为null、空字符串或全空格）；
-     * 示例：3125012345（学生账号）
-     * </p>
-     */
     @Schema(description = "用户名", required = true, example = "dreamqg")
     @NotBlank(message = "用户名不能为空")
     private String username;
@@ -56,7 +47,7 @@ public class RegisterDTO implements Serializable {
      * 示例：Abc123、1234567890、Qwe7890
      * </p>
      */
-    @Schema(description = "密码（6-10位英文数字）", required = true, example = "123456")
+    @Schema(description = "密码（6-10位英文数字）", example = "123456")
     @NotBlank(message = "密码不能为空")
     @Pattern(regexp = RegexConstant.PASSWORD, message = "密码格式错误")
     private String password;
@@ -67,10 +58,9 @@ public class RegisterDTO implements Serializable {
      * 业务说明：用户注册的角色标识，1=学生，2=管理员<br>
      * 校验规则：
      * 1. 非空（不能为null、空字符串或全空格）；
-     * 2. 匹配正则表达式{@link RegexConstant#ROLE}
      * </p>
      */
-    @Schema(description = "角色标识", required = true, example = "1")
+    @Schema(description = "确认密码", example = "123456")
     @NotBlank(message = "确认密码不能为空")
     @Pattern(regexp = RegexConstant.PASSWORD, message = "确认密码格式错误")
     private String passwordConfirm;

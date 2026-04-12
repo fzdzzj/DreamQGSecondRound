@@ -16,9 +16,9 @@ public class RegexConstant {
      * 示例：dreamqg、dreamqg@example.com
      * </p>
      */
-    public static final String IDENTIFIER = "^(?!.*@.*@)[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$|^[A-Za-z0-9_\\-]{4,20}$";
+    public static final String IDENTIFIER = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$|^[A-Za-z0-9_\\-]{4,20}$";
 
-    public static final String EMAIL = "^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+\\.[a-zA-Z]{2,6}$";
+    public static final String EMAIL = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
 
     public static final String PHONE = "^1[3-9]\\d{9}$";
     /**
@@ -27,9 +27,5 @@ public class RegexConstant {
      * 密码正则：6-10位字母/数字，无特殊字符
      */
     public static final String PASSWORD = "[a-zA-Z0-9]{6,10}";
-    /**
-     * 角色标识正则：1=学生，2=管理员
-     */
-    public static final String ROLE = "STUDENT";
 
 }

@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -275,32 +276,45 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 .orderByDesc(BizItem::getCreateTime);
 
         // -----------------关键词搜索-----------------
-        if ((query.getKeyword() != null && !query.getKeyword().isEmpty()) ||
-                (query.getLocation() != null && !query.getLocation().isEmpty()) ||
-                (query.getAiCategory() != null && !query.getAiCategory().isEmpty())) {
+        boolean hasKeyword = query.getKeyword() != null && !query.getKeyword().trim().isEmpty();
+        boolean hasLocation = query.getLocation() != null && !query.getLocation().trim().isEmpty();
+        boolean hasAiCategory = query.getAiCategory() != null && !query.getAiCategory().trim().isEmpty();
 
-            String kw = query.getKeyword() != null ? query.getKeyword() : "";
-            String loc = query.getLocation() != null ? query.getLocation() : "";
-            String aiCat = query.getAiCategory() != null ? query.getAiCategory() : "";
+        if (hasKeyword || hasLocation || hasAiCategory) {
+
+            String kw = hasKeyword ? query.getKeyword().trim() : "";
+            String loc = hasLocation ? query.getLocation().trim() : "";
+            String aiCat = hasAiCategory ? query.getAiCategory().trim() : "";
 
             wrapper.and(w -> {
+                boolean hasPrevCondition = false;
+
                 // 1️⃣ title + description 用 n-gram FULLTEXT
-                if (!kw.isEmpty()) {
+                if (hasKeyword) {
                     w.apply("MATCH(title, description) AGAINST({0} IN NATURAL LANGUAGE MODE)", kw);
+                    hasPrevCondition = true;
                 }
 
-                // 2️⃣ location 用 REGEXP 支持非连续匹配
-                if (!loc.isEmpty()) {
-                    // 生成正则，例如 "西一" -> "西.*一"
-                    String regexpPattern = loc.replaceAll("", ".*");
-                    w.or().apply("location REGEXP {0}", regexpPattern);
+                // 2️⃣ location 用 REGEXP 支持非连续匹配（安全转义，避免注入/特殊字符影响）
+                if (hasLocation) {
+                    String regexpPattern = buildSafeFuzzyRegexp(loc);
+                    if (hasPrevCondition) {
+                        w.or();
+                    }
+                    w.apply("location REGEXP {0}", regexpPattern);
+                    hasPrevCondition = true;
                 }
 
                 // 3️⃣ 子表 ai_tags 用 n-gram FULLTEXT
-                if (!kw.isEmpty() || !aiCat.isEmpty()) {
-                    w.or().apply(
-                            "id IN (SELECT item_id FROM biz_item_ai_tag WHERE MATCH(ai_tags) AGAINST({0} IN NATURAL LANGUAGE MODE))",
-                            kw + " " + aiCat
+                if (hasKeyword || hasAiCategory) {
+                    String aiSearchText = (kw + " " + aiCat).trim();
+                    if (hasPrevCondition) {
+                        w.or();
+                    }
+                    w.apply(
+                            "id IN (SELECT item_id FROM biz_item_ai_tag " +
+                                    "WHERE MATCH(ai_tags) AGAINST({0} IN NATURAL LANGUAGE MODE))",
+                            aiSearchText
                     );
                 }
             });
@@ -319,7 +333,11 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
             // 最新 AI 分类和标签
             List<BizItemAiResult> aiResults = bizItemAiResultDao.selectByItemId(item.getId());
             if (!aiResults.isEmpty()) {
-                int latestVersion = aiResults.stream().mapToInt(BizItemAiResult::getResultVersion).max().orElse(1);
+                int latestVersion = aiResults.stream()
+                        .mapToInt(BizItemAiResult::getResultVersion)
+                        .max()
+                        .orElse(1);
+
                 List<BizItemAiResult> latestResults = aiResults.stream()
                         .filter(r -> r.getResultVersion() == latestVersion)
                         .toList();
@@ -329,7 +347,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                         .filter(Objects::nonNull)
                         .findFirst()
                         .orElse("未知"));
-
             }
 
             return vo;
@@ -337,6 +354,23 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         return new PageResult<>(voList, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
+
+    /**
+     * 将用户输入构造成“非连续模糊匹配”的安全正则
+     * 例如：西一 -> 西.*一
+     * 同时对正则特殊字符做转义，避免正则注入
+     */
+    private String buildSafeFuzzyRegexp(String input) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < input.length(); i++) {
+            if (i > 0) {
+                sb.append(".*");
+            }
+            sb.append(Pattern.quote(String.valueOf(input.charAt(i))));
+        }
+        return sb.toString();
+    }
+
 
 
 
@@ -428,7 +462,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     public void clearExpiredPinnedItems() {
         log.info("清除过期的置顶物品");
         List<BizItem> expiredPinnedItems = list(new LambdaQueryWrapper<BizItem>()
-                .le(BizItem::getPinExpireTime, LocalDateTime.now()));
+                .eq(BizItem::getIsPinned, 1)
+                .ge(BizItem::getPinExpireTime, LocalDateTime.now()));
         expiredPinnedItems.forEach(item -> {
             item.setPinExpireTime(null);
             item.setIsPinned(0);
