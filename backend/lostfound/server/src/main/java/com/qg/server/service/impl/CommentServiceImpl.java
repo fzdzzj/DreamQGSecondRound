@@ -26,7 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -83,14 +86,57 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
     @Override
     public PageResult<CommentStatVO> getCommentList(Long itemId, Integer pageNum, Integer pageSize) {
         log.info("查询物品留言，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
-
+        //1. 一级评论分页
         Page<CommentStatVO> page = new Page<>(pageNum, pageSize);
-
-        // 查询留言
         Page<CommentStatVO> commentPage = baseMapper.selectCommentList(page, itemId);
+        List<CommentStatVO> rootList=commentPage.getRecords();
+        //2.没有一级评论，直接返回
+        if(rootList==null||rootList.isEmpty()){
+            return new PageResult<>(rootList, commentPage.getTotal(), pageNum, pageSize);
+        }
 
-        // 直接返回结果
-        return new PageResult<>(commentPage.getRecords(), commentPage.getTotal(), pageNum, pageSize);
+        //2.查询当前物品所有子评论
+        List<CommentStatVO> childList=baseMapper.selectChildCommentList(itemId);
+
+        if(childList==null||childList.isEmpty()){
+            return new PageResult<>(rootList, commentPage.getTotal(), pageNum, pageSize);
+        }
+
+        //3.构建所有评论映射表:id->comment
+        Map<Long,CommentStatVO>commentMap=new HashMap<>();
+
+        //先放一级评论
+        for(CommentStatVO root:rootList){
+            if(root.getChildren()==null){
+                root.setChildren(new ArrayList<>());
+            }
+            commentMap.put(root.getId(),root);
+        }
+
+        //再放子评论
+        for(CommentStatVO child:childList){
+            if(child.getChildren()== null){
+                child.setChildren(new ArrayList<>());
+            }
+            commentMap.put(child.getId(),child);
+        }
+
+        //4.组建树
+        for(CommentStatVO child:childList){
+            Long parentId=child.getParentId();
+            if(parentId==null||parentId==0){
+                continue;
+            }
+
+            CommentStatVO parent=commentMap.get(parentId);
+            if(parent!=null){
+                parent.getChildren().add(child);
+            }
+        }
+
+        //5.返回一级评论树
+        return new PageResult<>(rootList,commentPage.getTotal(),pageNum,pageSize);
+
     }
 
 

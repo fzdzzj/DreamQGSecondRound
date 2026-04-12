@@ -1,32 +1,57 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.qg.server.mapper.BizCommentDao">
-    <resultMap id="CommentStatVO" type="com.qg.pojo.vo.CommentStatVO">
+    <resultMap id="CommentStatVOMap" type="com.qg.pojo.vo.CommentStatVO">
         <id property="id" column="id"/>
         <result property="itemId" column="item_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="content" column="content"/>
         <result property="nickname" column="nickname"/>
         <result property="avatar" column="avatar"/>
-        <result property="content" column="content"/>
-        <result property="createTime" column="create_time"/>
         <result property="isRead" column="is_read"/>
+        <result property="createTime" column="create_time"/>
     </resultMap>
-
-    <select id="selectCommentList" resultMap="CommentStatVO">
+    <!-- 一级评论分页 -->
+    <select id="selectCommentList" resultMap="CommentStatVOMap">
         SELECT
             c.id,
             c.item_id,
-            u.nickname,
-            u.avatar,
+            c.user_id,
+            c.parent_id,
             c.content,
+            c.is_read,
             c.create_time,
-            c.is_read
+            u.nickname,
+            u.avatar
         FROM biz_comment c
                  LEFT JOIN sys_user u ON c.user_id = u.id
         WHERE c.item_id = #{itemId}
           AND c.deleted = 0
+          AND (c.parent_id IS NULL OR c.parent_id = 0)
         ORDER BY c.create_time DESC
     </select>
 
+    <!-- 当前物品下所有子评论 -->
+    <select id="selectChildCommentList" resultMap="CommentStatVOMap">
+        SELECT
+            c.id,
+            c.item_id,
+            c.user_id,
+            c.parent_id,
+            c.content,
+            c.is_read,
+            c.create_time,
+            u.nickname,
+            u.avatar
+        FROM biz_comment c
+                 LEFT JOIN sys_user u ON c.user_id = u.id
+        WHERE c.item_id = #{itemId}
+          AND c.deleted = 0
+          AND c.parent_id IS NOT NULL
+          AND c.parent_id != 0
+        ORDER BY c.create_time ASC
+    </select>
 
 
 </mapper>
