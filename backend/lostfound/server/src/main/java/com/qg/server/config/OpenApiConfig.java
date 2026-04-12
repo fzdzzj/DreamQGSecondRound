@@ -24,7 +24,7 @@ public class OpenApiConfig {
 
     @Bean
     @Primary
-    public OpenAPI customOpenAPI_v2() {  // 改名
+    public OpenAPI customOpenAPI_v2() {
         return new OpenAPI()
                 .info(new Info()
                         .title("校园失物招领系统 API V2")

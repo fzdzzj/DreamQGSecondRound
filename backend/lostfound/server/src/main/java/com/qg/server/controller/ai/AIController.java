@@ -26,7 +26,7 @@ public class AIController {
     {
         Long userId = BaseContext.getCurrentId();
         log.info("重新生成物品AI描述，用户ID={},物品ID={}", userId, itemId);
-        aiAsyncService.regenerateItemDescription(userId, itemId);
+        aiAsyncService.regenerateItemDescription(itemId, userId);
         log.info("重新生成物品AI描述成功，用户ID={},物品ID={}", userId, itemId);
         return Result.success();
     }
