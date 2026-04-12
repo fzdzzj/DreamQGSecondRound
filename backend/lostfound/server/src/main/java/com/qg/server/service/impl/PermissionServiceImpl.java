@@ -137,6 +137,7 @@ public class PermissionServiceImpl implements PermissionService {
                 "GET:/message/history/{id}",
                 "PUT:/message/{id}/read",
                 "DELETE:/message/{id}",
+                "DELETE:/message/conversation/{id}",
                 "GET:/message/unread/count"
 
 

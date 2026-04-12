@@ -36,11 +36,11 @@ public class AuthController {
      * - user：当前登录用户基础信息
      */
     @PostMapping("/login")
-    @OperationLog("用户登录")
-    @Operation(summary = "用户登录", description = "用户登录，返回用户信息及 token")
-    public Result<LoginResponseVO> login(@Validated @RequestBody LoginDTO loginDTO) {
+    @Operation(summary = "用户登录")
+    public Result<LoginResponseVO> login(@Validated @RequestBody LoginDTO loginDTO,
+                                         HttpServletRequest request) {
         log.info("用户登录尝试，账号={}", loginDTO.getIdentifier());
-        LoginResponseVO response = userService.login(loginDTO);
+        LoginResponseVO response = userService.login(loginDTO, request);
         log.info("用户登录成功，账号={}", loginDTO.getIdentifier());
         return Result.success(response);
     }

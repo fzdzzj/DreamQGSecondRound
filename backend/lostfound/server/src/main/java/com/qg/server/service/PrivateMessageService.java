@@ -36,13 +36,6 @@ public interface PrivateMessageService extends IService<BizPrivateMessage> {
     PageResult<PrivateMessageVO> getChatHistory(Long peerId, Integer pageNum, Integer pageSize);
 
     /**
-     * 标记单条消息为已读
-     *
-     * @param messageId 消息ID
-     */
-    void markAsRead(Long messageId);
-
-    /**
      * 将整个会话标记为已读
      *
      * @param peerId 对方用户ID

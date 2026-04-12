@@ -41,7 +41,7 @@ public class BizPrivateMessage implements Serializable {
     /**
      * 消息状态：UNREAD / READ
      */
-    private String status;
+    private Integer status;
 
     /**
      * 发送方是否删除：0否 1是

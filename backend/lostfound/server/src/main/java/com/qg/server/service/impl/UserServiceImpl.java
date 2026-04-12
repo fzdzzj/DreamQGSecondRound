@@ -15,6 +15,7 @@ import com.qg.pojo.vo.UserLoginVO;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.PermissionService;
 import com.qg.server.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -42,7 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      * @return 登录后的 token 和用户信息
      */
     @Override
-    public LoginResponseVO login(LoginDTO loginDTO) {
+    public LoginResponseVO login(LoginDTO loginDTO, HttpServletRequest request) {
         String identifier = loginDTO.getIdentifier();  // 用户标识（邮箱或手机）
         String password = loginDTO.getPassword();  // 用户密码
         log.info("用户发起登录请求，账号={}", identifier);
@@ -76,22 +77,35 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
             log.warn("登录失败：密码错误，账号={}", identifier);
             throw new LoginFailedException(MessageConstant.PASSWORD_ERROR);
         }
+        String clientIp = getClientIp(request);
+// 更新最后登录信息
+        SysUser updateUser = new SysUser();
+        updateUser.setId(user.getId());
+        updateUser.setLastLoginIp(clientIp);
+        updateUser.setLastLoginTime(LocalDateTime.now());
+        userDao.updateById(updateUser);
 
-        // 权限查询：根据角色加载用户权限
-        Set<String> permissions = permissionService.getPermissionsByRole(user.getRole()).stream()
+        Set<String> permissions = permissionService.getPermissionsByRole(user.getRole())
+                .stream()
                 .map(String::trim)
                 .collect(Collectors.toSet());
 
-        log.info("用户权限加载完成，账号={}，权限数={}", identifier, permissions.size());
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                permissions
+        );
 
-        // 生成 JWT Token
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getRole(), permissions);
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(
+                user.getId(),
+                user.getUsername(),
+                user.getRole()
+        );
 
-        // 返回登录信息，包括 Token 和用户信息
-        LoginResponseVO loginResponseVO = new LoginResponseVO();
-        loginResponseVO.setAccessToken(accessToken);
-        loginResponseVO.setRefreshToken(refreshToken);
+        LoginResponseVO responseVO = new LoginResponseVO();
+        responseVO.setAccessToken(accessToken);
+        responseVO.setRefreshToken(refreshToken);
 
         UserLoginVO userInfo = new UserLoginVO();
         userInfo.setId(user.getId());
@@ -100,12 +114,11 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         userInfo.setNickname(user.getNickname());
         userInfo.setAvatar(user.getAvatar());
 
-        loginResponseVO.setUser(userInfo);
+        responseVO.setUser(userInfo);
 
-        log.info("用户登录成功，账号={}", identifier);
-        return loginResponseVO;
+        log.info("用户登录成功，userId={}, ip={}", user.getId(), clientIp);
+        return responseVO;
     }
-
     /**
      * 用户注册操作：验证用户名、邮箱、手机号唯一性，注册新用户
      *
@@ -268,5 +281,21 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
 
         userDao.updateById(update);  // 更新数据库密码
         log.info("修改密码成功，userId={}", userId);
+    }
+    /**
+     * 获取客户端真实IP
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.split(",")[0].trim();
+        }
+
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }

@@ -13,6 +13,7 @@ public class BizItemAiTag {
     private Integer aiResultVersion;
 
     // ⚡ 改成 String 存 JSON
+    @TableField("ai_tags")
     private String aiTags;
 
     @TableField(fill = FieldFill.INSERT)

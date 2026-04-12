@@ -46,7 +46,7 @@
                     COUNT(*) AS unread_count
                 FROM biz_private_message
                 WHERE receiver_id = #{currentUserId}
-                  AND status = 'UNREAD'
+                  AND status = '0'
                   AND receiver_deleted = 0
                 GROUP BY sender_id
             ) uc ON uc.peer_id = t.peer_id

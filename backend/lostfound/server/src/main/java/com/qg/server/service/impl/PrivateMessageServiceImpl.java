@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.PrivateMessageStatus;
+import com.qg.common.constant.ReadStatus;
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.exception.AbsentException;
@@ -70,7 +71,7 @@ public class PrivateMessageServiceImpl
         message.setSenderId(senderId);
         message.setReceiverId(receiverId);
         message.setContent(sendDTO.getContent().trim());
-        message.setStatus(PrivateMessageStatus.UNREAD);
+        message.setStatus(ReadStatus.UNREAD);
         message.setSenderDeleted(0);
         message.setReceiverDeleted(0);
 
@@ -129,43 +130,6 @@ public class PrivateMessageServiceImpl
     }
 
     /**
-     * 标记单条消息为已读
-     *
-     * 说明：
-     * 1. 只有接收方本人可以标记已读
-     * 2. 已读消息重复标记直接返回，保证幂等
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void markAsRead(Long messageId) {
-        Long currentUserId = BaseContext.getCurrentId();
-        log.info("标记单条消息已读开始，userId={}, messageId={}", currentUserId, messageId);
-
-        BizPrivateMessage message = getById(messageId);
-        if (message == null) {
-            log.warn("标记单条消息已读失败，消息不存在，messageId={}", messageId);
-            throw new AbsentException(MessageConstant.PRIVATE_MESSAGE_NOT_FOUND);
-        }
-
-        if (!currentUserId.equals(message.getReceiverId())) {
-            log.warn("标记单条消息已读失败，无权操作，userId={}, messageId={}", currentUserId, messageId);
-            throw new BaseException(403, MessageConstant.PRIVATE_MESSAGE_VIEW_NOT_ALLOWED);
-        }
-
-        if ("READ".equals(message.getStatus())) {
-            log.info("消息已是已读状态，无需重复标记，messageId={}", messageId);
-            return;
-        }
-
-        BizPrivateMessage update = new BizPrivateMessage();
-        update.setId(messageId);
-        update.setStatus(PrivateMessageStatus.READ);
-        updateById(update);
-
-        log.info("标记单条消息已读成功，userId={}, messageId={}", currentUserId, messageId);
-    }
-
-    /**
      * 将整个会话标记为已读
      *
      * 说明：
@@ -180,9 +144,9 @@ public class PrivateMessageServiceImpl
         lambdaUpdate()
                 .eq(BizPrivateMessage::getSenderId, peerId)
                 .eq(BizPrivateMessage::getReceiverId, currentUserId)
-                .eq(BizPrivateMessage::getStatus, PrivateMessageStatus.UNREAD)
+                .eq(BizPrivateMessage::getStatus, ReadStatus.UNREAD)
                 .eq(BizPrivateMessage::getReceiverDeleted, 0)
-                .set(BizPrivateMessage::getStatus, PrivateMessageStatus.READ)
+                .set(BizPrivateMessage::getStatus, ReadStatus.READ)
                 .update();
 
         log.info("标记会话已读成功，userId={}, peerId={}", currentUserId, peerId);
@@ -266,7 +230,7 @@ public class PrivateMessageServiceImpl
 
         Long count = lambdaQuery()
                 .eq(BizPrivateMessage::getReceiverId, currentUserId)
-                .eq(BizPrivateMessage::getStatus, PrivateMessageStatus.UNREAD)
+                .eq(BizPrivateMessage::getStatus, ReadStatus.UNREAD)
                 .eq(BizPrivateMessage::getReceiverDeleted, 0)
                 .count();
 

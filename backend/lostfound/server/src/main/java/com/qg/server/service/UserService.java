@@ -5,6 +5,7 @@ import com.qg.pojo.dto.*;
 import com.qg.pojo.entity.SysUser;
 import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.pojo.vo.SysUserDetailVO;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 
@@ -16,7 +17,7 @@ public interface UserService extends IService<SysUser> {
      * @param loginDTO 登录请求的DTO
      * @return 登录后的用户信息和 token
      */
-    LoginResponseVO login(LoginDTO loginDTO);
+    LoginResponseVO login(LoginDTO loginDTO, HttpServletRequest request);
 
     /**
      * 用户注册，完成用户信息的注册操作
