@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qg.common.constant.BizItemStatus;
+import com.qg.common.constant.BizItemStatusConstant;
 import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.ReportStatus;
-import com.qg.common.constant.Role;
+import com.qg.common.constant.ReportStatusConstant;
+import com.qg.common.constant.RoleConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.ReportStatusEnum;
 import com.qg.common.exception.AbsentException;
@@ -74,7 +74,7 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
         report.setReporterId(userId);
         report.setReason(dto.getReason());
         report.setDetail(dto.getDetail());
-        report.setStatus(ReportStatus.PENDING);
+        report.setStatus(ReportStatusConstant.PENDING);
 
         save(report);  // 使用 IService 提供的 save 方法
 
@@ -90,7 +90,7 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
         if (report == null) {
             throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
         }
-        if (!report.getStatus().equals(ReportStatus.PENDING)) {
+        if (!report.getStatus().equals(ReportStatusConstant.PENDING)) {
             throw new BaseException(400, MessageConstant.REPORT_NOT_PENDING);
         }
 
@@ -102,11 +102,11 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
 
         updateById(report);  // 使用 IService 提供的 updateById 方法
 
-        if (report.getStatus().equals(ReportStatus.APPROVED)) {
+        if (report.getStatus().equals(ReportStatusConstant.APPROVED)) {
             log.info("举报审核通过，删除物品，itemId={}", report.getItemId());
             BizItem item = new BizItem();
             item.setId(report.getItemId());
-            item.setStatus(BizItemStatus.REPORTED);
+            item.setStatus(BizItemStatusConstant.REPORTED);
             itemDao.updateById(item);  // 更新物品状态为已举报
             itemDao.deleteById(report.getItemId());  // 删除物品
 
@@ -134,14 +134,14 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
     public ReportDetailVO getById(Long id) {
         String role = BaseContext.getCurrentRole();
         ReportDetailVO vo = new ReportDetailVO();
-        if (Role.ADMIN.equals(role) || Role.SYSTEM.equals(role)) {
+        if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
             BizReport report = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
             if (report == null) {
                 throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
             }
             BeanUtils.copyProperties(report, vo);
             vo.setStatusDesc(ReportStatusEnum.getDescByCode(report.getStatus()));
-        } else if (Role.USER.equals(role)) {
+        } else if (RoleConstant.USER.equals(role)) {
             BizReport report = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
             if (report == null) {
                 throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);

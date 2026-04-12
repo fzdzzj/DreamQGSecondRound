@@ -55,7 +55,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
         // 检查物品状态
-        if (!item.getStatus().equals(BizItemStatus.OPEN) && !item.getStatus().equals(BizItemStatus.MATCHED)) {
+        if (!item.getStatus().equals(BizItemStatusConstant.OPEN) && !item.getStatus().equals(BizItemStatusConstant.MATCHED)) {
             throw new BaseException(400, MessageConstant.ITEM_STATUS_INVALID);
         }
 
@@ -63,7 +63,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         Long count = bizPinRequestDao.selectCount(
                 new LambdaQueryWrapper<BizPinRequest>()
                         .eq(BizPinRequest::getItemId, pinApplyDTO.getItemId())
-                        .eq(BizPinRequest::getStatus, PinRequestStatus.PENDING)
+                        .eq(BizPinRequest::getStatus, PinRequestStatusConstant.PENDING)
         );
 
         if (count != null && count > 0) {
@@ -75,7 +75,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         request.setItemId(pinApplyDTO.getItemId());
         request.setApplicantId(userId);
         request.setReason(pinApplyDTO.getReason());
-        request.setStatus(PinRequestStatus.PENDING);
+        request.setStatus(PinRequestStatusConstant.PENDING);
 
         save(request); // 使用 IService 提供的 save 方法
 
@@ -95,22 +95,22 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         }
 
         // 用户角色逻辑：只能取消自己的申请，且状态为 PENDING
-        if (Role.USER.equals(currentRole)) {
+        if (RoleConstant.USER.equals(currentRole)) {
             if (!pinRequest.getApplicantId().equals(currentUserId)) {
                 throw new BaseException(403, "不能取消他人申请");
             }
-            if (!PinRequestStatus.PENDING.equals(pinRequest.getStatus())) {
+            if (!PinRequestStatusConstant.PENDING.equals(pinRequest.getStatus())) {
                 throw new BaseException(400, "已处理的申请无法取消");
             }
-            pinRequest.setStatus(PinRequestStatus.CANCELED);
+            pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
             updateById(pinRequest);  // 使用 IService 提供的 updateById 方法
             log.info("学生取消自己的置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
 
         // 管理员逻辑：可以取消任意申请
-        if (Role.ADMIN.equals(currentRole) || Role.SYSTEM.equals(currentRole)) {
-            if (PinRequestStatus.APPROVED.equals(pinRequest.getStatus())) {
+        if (RoleConstant.ADMIN.equals(currentRole) || RoleConstant.SYSTEM.equals(currentRole)) {
+            if (PinRequestStatusConstant.APPROVED.equals(pinRequest.getStatus())) {
                 // 如果管理员取消已批准的申请，同时撤销物品置顶
                 BizItem item = bizItemDao.selectById(pinRequest.getItemId());
                 if (item != null) {
@@ -119,7 +119,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
                     bizItemDao.updateById(item);
                 }
             }
-            pinRequest.setStatus(PinRequestStatus.CANCELED);
+            pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
             updateById(pinRequest);  // 使用 IService 提供的 updateById 方法
             log.info("管理员取消置顶申请，pinRequestId={}", pinRequestId);
             return;
@@ -137,7 +137,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             throw new AbsentException("置顶申请不存在");
         }
 
-        if (!PinRequestStatus.PENDING.equals(request.getStatus())) {
+        if (!PinRequestStatusConstant.PENDING.equals(request.getStatus())) {
             throw new BaseException(400, "该申请已处理");
         }
 
@@ -152,7 +152,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         updateById(update);  // 使用 IService 提供的 updateById 方法
 
         // 审核通过 → 真正置顶
-        if (PinRequestStatus.APPROVED.equals(pinAuditDTO.getStatus())) {
+        if (PinRequestStatusConstant.APPROVED.equals(pinAuditDTO.getStatus())) {
             BizItem item = new BizItem();
             item.setId(request.getItemId());
             item.setIsPinned(1);
@@ -181,7 +181,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         String role = BaseContext.getCurrentRole();
         BizPinRequest request = null;
         PinRequestDetailVO vo = new PinRequestDetailVO();
-        if (Role.ADMIN.equals(role) || Role.SYSTEM.equals(role)) {
+        if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
             request = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
             if (request == null) {
                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
@@ -191,7 +191,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
             return vo;
         }
-        if (Role.USER.equals(role)) {
+        if (RoleConstant.USER.equals(role)) {
             request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
                     .eq(BizPinRequest::getId, id));
             if (request == null) {

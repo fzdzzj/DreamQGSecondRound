@@ -1,14 +1,12 @@
 package com.qg.server.filter;
 
-import com.qg.common.constant.Role;
-import com.qg.common.constant.UserStatus;
+import com.qg.common.constant.RoleConstant;
+import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.context.BaseContext;
-import com.qg.common.enums.UserStatusEnum;
 import com.qg.common.util.JwtUtil;
 import com.qg.pojo.entity.SysUser;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.TokenRefreshService;
-import com.qg.server.service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -106,9 +104,9 @@ public class TokenFilter extends OncePerRequestFilter {
             }
 
             BaseContext.setCurrentUser(userId, role);
-            if(Role.ADMIN.equals(role) || Role.USER.equals(role)){
+            if(RoleConstant.ADMIN.equals(role) || RoleConstant.USER.equals(role)){
                 SysUser user = userDao.selectById(userId);
-                if(UserStatus.DISABLE.equals(user.getStatus())){
+                if(UserStatusConstant.DISABLE.equals(user.getStatus())){
                     writeJson(response, 403, "用户已被禁用");
                     return;
                 }

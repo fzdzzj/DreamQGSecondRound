@@ -4,11 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.*;
-import com.qg.common.context.BaseContext;
 import com.qg.common.enums.UserRoleEnum;
 import com.qg.common.enums.UserStatusEnum;
 import com.qg.common.exception.AbsentException;
-import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
@@ -104,23 +102,23 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
             throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
-        if (UserStatus.DISABLE.equals(user.getStatus())) {
+        if (UserStatusConstant.DISABLE.equals(user.getStatus())) {
             log.info("用户当前已为禁用状态，无需重复封禁，userId={}", userId);
             return;
         }
-        if (Role.ADMIN.equals(user.getRole())|| Role.SYSTEM.equals(user.getRole())) {
+        if (RoleConstant.ADMIN.equals(user.getRole())|| RoleConstant.SYSTEM.equals(user.getRole())) {
             log.warn("用户无权限操作此用户，userId={}", userId);
             throw new AbsentException(MessageConstant.USER_NOT_AUTHORIZED);
         }
 
         SysUser updateUser = new SysUser();
         updateUser.setId(userId);
-        updateUser.setStatus(UserStatus.DISABLE);
+        updateUser.setStatus(UserStatusConstant.DISABLE);
 
         baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
 
         log.info("管理员封禁用户成功，userId={}, oldStatus={}, newStatus={}",
-                userId, user.getStatus(), UserStatus.DISABLE);
+                userId, user.getStatus(), UserStatusConstant.DISABLE);
     }
 
     /**
@@ -139,23 +137,23 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
             throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
-        if (UserStatus.ENABLE.equals(user.getStatus())) {
+        if (UserStatusConstant.ENABLE.equals(user.getStatus())) {
             log.info("用户当前已为启用状态，无需重复解封，userId={}", userId);
             return;
         }
-        if (Role.ADMIN.equals(user.getRole())|| Role.SYSTEM.equals(user.getRole())) {
+        if (RoleConstant.ADMIN.equals(user.getRole())|| RoleConstant.SYSTEM.equals(user.getRole())) {
             log.warn("用户无权限操作此用户，userId={}", userId);
             throw new AbsentException(MessageConstant.USER_NOT_AUTHORIZED);
         }
 
         SysUser updateUser = new SysUser();
         updateUser.setId(userId);
-        updateUser.setStatus(UserStatus.ENABLE);
+        updateUser.setStatus(UserStatusConstant.ENABLE);
 
         baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
 
         log.info("管理员解封用户成功，userId={}, oldStatus={}, newStatus={}",
-                userId, user.getStatus(), UserStatus.ENABLE);
+                userId, user.getStatus(), UserStatusConstant.ENABLE);
     }
 
     /**
@@ -209,7 +207,7 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         // 找回物品数量
         Long foundCount = bizItemDao.selectCount(
                 new LambdaQueryWrapper<BizItem>()
-                        .eq(BizItem::getStatus, BizItemStatus.MATCHED)
+                        .eq(BizItem::getStatus, BizItemStatusConstant.MATCHED)
                         .ge(startTime != null, BizItem::getCreateTime, startTime)
                         .le(endTime != null, BizItem::getCreateTime, endTime)
         );

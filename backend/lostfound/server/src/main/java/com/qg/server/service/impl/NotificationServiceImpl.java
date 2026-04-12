@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.ReadStatus;
+import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.result.PageResult;
@@ -51,7 +51,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
         return count(
                 new LambdaQueryWrapper<Notification>()
                         .eq(Notification::getUserId, userId)
-                        .eq(Notification::getIsRead, ReadStatus.UNREAD)
+                        .eq(Notification::getIsRead, ReadStatusConstant.UNREAD)
         );  // 使用 IService 提供的 count 方法
     }
 

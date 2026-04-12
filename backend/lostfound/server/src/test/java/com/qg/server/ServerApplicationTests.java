@@ -1,23 +1,13 @@
 package com.qg.server;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qg.common.constant.BizItemAiResultStatus;
-import com.qg.server.config.JacksonConfig;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.qg.common.constant.BizItemStatus;
-import com.qg.common.constant.BizItemType;
-import com.qg.common.util.PasswordUtil;
-import com.qg.pojo.dto.LostBizItemDTO;
+import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.pojo.entity.BizItem;
-import com.qg.server.mapper.BizItemDao;
-import com.qg.server.service.ItemService;
 import com.qg.server.service.impl.ItemServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -37,7 +27,7 @@ class ServerApplicationTests {
         item.setHappenTime(LocalDateTime.now());
         item.setStatus("OPEN");
         item.setIsPinned(0);
-        item.setAiStatus(BizItemAiResultStatus.PENDING);
+        item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
 
         BizItem savedItem = itemService.publishLostItem(item);
         System.out.println("生成的 ID：" + savedItem.getId());

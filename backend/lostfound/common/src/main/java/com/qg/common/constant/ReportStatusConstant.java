@@ -3,9 +3,9 @@ package com.qg.common.constant;
 /**
  * 举报状态常量
  */
-public class ReportStatus {
+public class ReportStatusConstant {
 
-    private ReportStatus() {
+    private ReportStatusConstant() {
     }
 
     /**

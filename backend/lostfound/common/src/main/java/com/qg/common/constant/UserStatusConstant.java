@@ -3,9 +3,9 @@ package com.qg.common.constant;
 /**
  * 用户状态常量
  */
-public class UserStatus {
+public class UserStatusConstant {
 
-    private UserStatus() {
+    private UserStatusConstant() {
     }
 
     /**

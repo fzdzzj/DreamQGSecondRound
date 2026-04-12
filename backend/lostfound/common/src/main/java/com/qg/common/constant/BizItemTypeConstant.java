@@ -3,9 +3,9 @@ package com.qg.common.constant;
 /**
  * 物品类型常量
  */
-public class BizItemType {
+public class BizItemTypeConstant {
 
-    private BizItemType() {
+    private BizItemTypeConstant() {
     }
 
     /**

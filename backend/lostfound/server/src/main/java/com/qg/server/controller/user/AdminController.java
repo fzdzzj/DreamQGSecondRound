@@ -27,7 +27,7 @@ public class AdminController {
      */
     @PostMapping("/user/list")
     @Operation(summary = "用户分页列表")
-    public Result<PageResult<SysUserStatVO>> userList(@Validated @RequestBody UserPageQueryDTO queryDTO) {
+    public Result<PageResult<SysUserStatVO>> userList(@Validated @RequestBody(required = false) UserPageQueryDTO queryDTO) {
         log.info("管理员获取用户列表，pageNum={}, pageSize={}", queryDTO.getPageNum(), queryDTO.getPageSize());
         PageResult<SysUserStatVO> pageResult = adminService.userList(queryDTO);
         log.info("用户列表获取成功，total={}, pageNum={}, pageSize={}",
@@ -88,7 +88,7 @@ public class AdminController {
      */
     @GetMapping("/statistics")
     @Operation(summary = "平台统计")
-    public Result<AdminStatisticsVO> statistics( @RequestBody AdminStatisticsQueryDTO dto) {
+    public Result<AdminStatisticsVO> statistics( @RequestBody(required = false) AdminStatisticsQueryDTO dto) {
         log.info("管理员请求平台统计，startTime={}, endTime={}", dto.getStartTime(), dto.getEndTime());
         AdminStatisticsVO vo = adminService.statistics(dto);
         log.info("管理员请求平台统计成功");

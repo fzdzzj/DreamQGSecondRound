@@ -1,7 +1,5 @@
 package com.qg.pojo.dto;
 
-import com.baomidou.mybatisplus.annotation.*;
-import com.qg.common.constant.BizItemType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

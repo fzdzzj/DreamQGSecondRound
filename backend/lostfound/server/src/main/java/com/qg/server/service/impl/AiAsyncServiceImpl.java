@@ -1,8 +1,7 @@
 package com.qg.server.service.impl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qg.common.constant.BizItemAiResultStatus;
+import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
@@ -48,7 +47,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
                                         Long userId, Long itemId) {
         ImageAiResponseVO generatedDesc = descriptionClient.generateDescriptionVo(title, description, location, userId);
 
-        String status = BizItemAiResultStatus.SUCCESS.equals(generatedDesc.getStatus()) ? BizItemAiResultStatus.SUCCESS : BizItemAiResultStatus.FAILURE;
+        String status = BizItemAiResultStatusConstant.SUCCESS.equals(generatedDesc.getStatus()) ? BizItemAiResultStatusConstant.SUCCESS : BizItemAiResultStatusConstant.FAILURE;
 
         Map<String, String> resultInfo = persistAiDescription(title, location, userId, itemId,
                 generatedDesc.getAiDescription(), description, status, generatedDesc.getAiCategory());
@@ -100,12 +99,12 @@ public class AiAsyncServiceImpl implements AiAsyncService {
                 insertAiTags(itemId, newVersion, vo.getAiTags());
             }
 
-            if (!BizItemAiResultStatus.SUCCESS.equals(vo.getStatus())) allSuccess = false;
+            if (!BizItemAiResultStatusConstant.SUCCESS.equals(vo.getStatus())) allSuccess = false;
         }
 
         if (lastResultId != null) {
             // 更新 item 当前 AI 状态
-            updateItemCurrentAiResultId(itemId, lastResultId, allSuccess ? BizItemAiResultStatus.SUCCESS : BizItemAiResultStatus.FAILURE);
+            updateItemCurrentAiResultId(itemId, lastResultId, allSuccess ? BizItemAiResultStatusConstant.SUCCESS : BizItemAiResultStatusConstant.FAILURE);
         }
     }
 

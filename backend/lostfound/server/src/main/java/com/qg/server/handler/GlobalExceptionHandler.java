@@ -7,6 +7,7 @@ import com.qg.common.result.Result;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.unit.DataSize;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -43,6 +44,11 @@ public class GlobalExceptionHandler {
         log.warn("参数校验失败：{}", message);
         return Result.error(400, message);
     }
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result<String> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
+        return Result.error(400,"请求体不能为空或格式错误");
+    }
+
 
     @ExceptionHandler(BaseException.class)
     public Result<Void> handleBusiness(BaseException e, HttpServletResponse response) {

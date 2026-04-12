@@ -4,13 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.ReadStatus;
-import com.qg.common.constant.Role;
+import com.qg.common.constant.ReadStatusConstant;
+import com.qg.common.constant.RoleConstant;
 import com.qg.common.context.BaseContext;
-import com.qg.common.enums.ReadStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.DeletionNotAllowedException;
-import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.entity.BizComment;
@@ -25,12 +23,10 @@ import com.qg.server.service.CommentService;
 import com.qg.server.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -72,7 +68,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
 
         }
         bizComment.setParentId(commentAddDTO.getParentId() == null ? 0L : commentAddDTO.getParentId());
-        bizComment.setIsRead(ReadStatus.UNREAD);
+        bizComment.setIsRead(ReadStatusConstant.UNREAD);
 
         // 保存留言
         save(bizComment); // 使用 IService 提供的 save 方法
@@ -114,7 +110,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         }
 
         // 判断留言是否是留言拥有者或管理员进行删除
-        if (!comment.getUserId().equals(userId) && !BaseContext.getCurrentRole().equals(Role.ADMIN)) {
+        if (!comment.getUserId().equals(userId) && !BaseContext.getCurrentRole().equals(RoleConstant.ADMIN)) {
             log.warn("删除留言失败，非留言拥有者或管理员，commentId={}, userId={}", commentId, userId);
             throw new DeletionNotAllowedException(MessageConstant.DELETE_NOT_ALLOWED);
         }
@@ -185,7 +181,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         // 标记为已读
         BizComment updateComment = new BizComment();
         updateComment.setId(commentId);
-        updateComment.setIsRead(ReadStatus.READ);  // 设置为已读
+        updateComment.setIsRead(ReadStatusConstant.READ);  // 设置为已读
         updateById(updateComment);  // 使用 IService 提供的 updateById 方法
         log.info("留言标记为已读成功，commentId={}", commentId);
     }
@@ -204,7 +200,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         Long count = count(
                 new LambdaQueryWrapper<BizComment>()
                         .eq(BizComment::getItemId, itemId)
-                        .eq(BizComment::getIsRead, ReadStatus.UNREAD)
+                        .eq(BizComment::getIsRead, ReadStatusConstant.UNREAD)
         );  // 使用 IService 提供的 count 方法
 
         log.info("查询物品下未读留言数量成功，itemId={}, count={}", itemId, count);
@@ -225,7 +221,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         //找出用户未读的留言
         List<BizComment> comments = bizCommentDao.selectList(
                 new LambdaQueryWrapper<BizComment>()
-                        .eq(BizComment::getIsRead, ReadStatus.UNREAD)
+                        .eq(BizComment::getIsRead, ReadStatusConstant.UNREAD)
                         .in(BizComment::getItemId, items)
         );
         Long count = (long) comments.size();
@@ -273,7 +269,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         bizComment.setUserId(userId);
         bizComment.setContent(commentAddDTO.getContent());
         bizComment.setParentId(commentAddDTO.getParentId());
-        bizComment.setIsRead(ReadStatus.UNREAD);  // 设置为未读
+        bizComment.setIsRead(ReadStatusConstant.UNREAD);  // 设置为未读
 
         save(bizComment);  // 使用 IService 提供的 save 方法
 

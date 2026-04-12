@@ -1,6 +1,7 @@
 package com.qg.pojo.dto;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.qg.common.constant.DefaultPageConstant;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -15,10 +16,10 @@ public class UserPageQueryDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Min(value = 1L, message = "页码不能小于1")
-    private Integer pageNum;
+    private Integer pageNum= DefaultPageConstant.DEFAULT_PAGE_NUM;
     @Max(value = 100, message = "页大小不能大于100")
     @Min(value = 1, message = "页大小不能小于1")
-    private Integer pageSize;
+    private Integer pageSize=DefaultPageConstant.DEFAULT_PAGE_SIZE;
     @Schema(description = "用户id")
     private Long id;
     @Schema(description = "用户名")

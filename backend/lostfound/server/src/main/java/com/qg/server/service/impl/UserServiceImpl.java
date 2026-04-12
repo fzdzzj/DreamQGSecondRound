@@ -3,7 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.UserStatus;
+import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.exception.*;
 import com.qg.common.util.JwtUtil;
 import com.qg.common.util.PasswordUtil;
@@ -22,8 +22,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -67,7 +65,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         }
 
         // 校验账号状态（账号是否禁用）
-        if (user.getStatus() == null || !UserStatus.ENABLE.equals(user.getStatus())) {
+        if (user.getStatus() == null || !UserStatusConstant.ENABLE.equals(user.getStatus())) {
             log.warn("登录失败：用户已被禁用，账号={}", identifier);
             throw new AccountLockedException(MessageConstant.ACCOUNT_DISABLED);
         }
@@ -151,7 +149,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         user.setPhone(phone);
         user.setPasswordHash(PasswordUtil.encrypt(registerDTO.getPassword()));
         user.setRole("STUDENT");  // 默认角色为学生
-        user.setStatus(UserStatus.ENABLE);
+        user.setStatus(UserStatusConstant.ENABLE);
         user.setNickname(registerDTO.getNickname());
         userDao.insert(user);  // 保存用户到数据库
     }

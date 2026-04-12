@@ -79,10 +79,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 构造物品实体
         BizItem item = new BizItem();
         item.setUserId(userId);
-        item.setType(BizItemType.LOST);
-        item.setStatus(BizItemStatus.OPEN);
+        item.setType(BizItemTypeConstant.LOST);
+        item.setStatus(BizItemStatusConstant.OPEN);
         item.setIsPinned(0);
-        item.setAiStatus(BizItemAiResultStatus.PENDING); // AI 处理状态
+        item.setAiStatus(BizItemAiResultStatusConstant.PENDING); // AI 处理状态
         item.setCurrentAiResultId(null);
         item.setTitle(dto.getTitle());
         item.setDescription(dto.getDescription());
@@ -120,10 +120,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         BizItem item = new BizItem();
         BeanUtils.copyProperties(dto, item);
         item.setUserId(userId);
-        item.setType(BizItemType.FOUND);
-        item.setStatus(BizItemStatus.OPEN);
+        item.setType(BizItemTypeConstant.FOUND);
+        item.setStatus(BizItemStatusConstant.OPEN);
         item.setIsPinned(0);
-        item.setAiStatus(BizItemAiResultStatus.PENDING);
+        item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
 
         save(item);
@@ -164,7 +164,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setPinExpireTime(oldItem.getPinExpireTime());
 
         // 清空旧 AI 结果
-        item.setAiStatus(BizItemAiResultStatus.PENDING);
+        item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
 
         updateById(item);
@@ -265,7 +265,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         wrapper.eq(query.getType() != null, BizItem::getType, query.getType())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
-                .eq(BizItem::getStatus, BizItemStatus.OPEN)
+                .eq(BizItem::getStatus, BizItemStatusConstant.OPEN)
                 .orderByDesc(BizItem::getIsPinned)
                 .orderByDesc(BizItem::getPinExpireTime)
                 .orderByDesc(BizItem::getCreateTime);
@@ -411,8 +411,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         if (item == null) throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         if (!item.getUserId().equals(userId)) throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
 
-        if (!BizItemStatus.CLOSED.equals(item.getStatus())) {
-            item.setStatus(BizItemStatus.CLOSED);
+        if (!BizItemStatusConstant.CLOSED.equals(item.getStatus())) {
+            item.setStatus(BizItemStatusConstant.CLOSED);
             updateById(item);
             evictItemCaches(id);
         }else{

@@ -15,11 +15,11 @@ public class AdminStatisticsQueryDTO implements Serializable {
      * 开始时间
      */
     @Schema(description = "开始时间")
-    private LocalDateTime startTime;
+    private LocalDateTime startTime=LocalDateTime.now().minusDays(7);
 
     /**
      * 结束时间
      */
     @Schema(description = "结束时间")
-    private LocalDateTime endTime;
+    private LocalDateTime endTime=LocalDateTime.now();
 }

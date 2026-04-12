@@ -1,12 +1,9 @@
 package com.qg.server.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.PrivateMessageStatus;
-import com.qg.common.constant.ReadStatus;
+import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.exception.AbsentException;
@@ -71,7 +68,7 @@ public class PrivateMessageServiceImpl
         message.setSenderId(senderId);
         message.setReceiverId(receiverId);
         message.setContent(sendDTO.getContent().trim());
-        message.setStatus(ReadStatus.UNREAD);
+        message.setStatus(ReadStatusConstant.UNREAD);
         message.setSenderDeleted(0);
         message.setReceiverDeleted(0);
 
@@ -144,9 +141,9 @@ public class PrivateMessageServiceImpl
         lambdaUpdate()
                 .eq(BizPrivateMessage::getSenderId, peerId)
                 .eq(BizPrivateMessage::getReceiverId, currentUserId)
-                .eq(BizPrivateMessage::getStatus, ReadStatus.UNREAD)
+                .eq(BizPrivateMessage::getStatus, ReadStatusConstant.UNREAD)
                 .eq(BizPrivateMessage::getReceiverDeleted, 0)
-                .set(BizPrivateMessage::getStatus, ReadStatus.READ)
+                .set(BizPrivateMessage::getStatus, ReadStatusConstant.READ)
                 .update();
 
         log.info("标记会话已读成功，userId={}, peerId={}", currentUserId, peerId);
@@ -230,7 +227,7 @@ public class PrivateMessageServiceImpl
 
         Long count = lambdaQuery()
                 .eq(BizPrivateMessage::getReceiverId, currentUserId)
-                .eq(BizPrivateMessage::getStatus, ReadStatus.UNREAD)
+                .eq(BizPrivateMessage::getStatus, ReadStatusConstant.UNREAD)
                 .eq(BizPrivateMessage::getReceiverDeleted, 0)
                 .count();
 

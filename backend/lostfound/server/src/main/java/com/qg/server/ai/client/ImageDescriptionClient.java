@@ -8,7 +8,7 @@ import com.alibaba.dashscope.common.MultiModalMessage;
 import com.alibaba.dashscope.common.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.AiPromptConstant;
-import com.qg.common.constant.BizItemAiResultStatus;
+import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.util.AiUtils;
@@ -140,7 +140,7 @@ public class ImageDescriptionClient {
                     vo.setAiCategory(AiUtils.filterSensitiveWords(vo.getAiCategory()));
                     vo.setAiTags(vo.getAiTags() != null ? AiUtils.filterSensitiveWords(vo.getAiTags()) : Collections.emptyList());
                     vo.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(vo.getAiDescription())));
-                    vo.setStatus(BizItemAiResultStatus.SUCCESS);
+                    vo.setStatus(BizItemAiResultStatusConstant.SUCCESS);
                     results.add(vo);
                     hasSuccess = true;
                 } catch (Exception parseEx) {
@@ -214,7 +214,7 @@ public class ImageDescriptionClient {
         vo.setAiCategory("未知");
         vo.setAiTags(Collections.emptyList());  // tag 不存 BizItemAiResult
         vo.setAiDescription(String.format(AiPromptConstant.DDEFAULT_DESCRIPTION, title, description, location));
-        vo.setStatus(BizItemAiResultStatus.FAILURE);
+        vo.setStatus(BizItemAiResultStatusConstant.FAILURE);
         return vo;
     }
 
