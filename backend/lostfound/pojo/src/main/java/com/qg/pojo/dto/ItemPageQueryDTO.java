@@ -1,5 +1,6 @@
 package com.qg.pojo.dto;
 
+import com.qg.common.constant.DefaultPageConstant;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -14,11 +15,11 @@ public class ItemPageQueryDTO implements Serializable {
     private static final long serialVersionUID = 1L;
     @Min(1)
     @Schema(description = "页码")
-    private Integer pageNum;
+    private Integer pageNum = DefaultPageConstant.DEFAULT_PAGE_NUM;
     @Min(1)
     @Max(100)
     @Schema(description = "页大小")
-    private Integer pageSize;
+    private Integer pageSize = DefaultPageConstant.DEFAULT_PAGE_SIZE;
     @Schema(description = "物品类型 1:丢失物品 2:拾取物品",  example = "1")
     private String type;
     @Schema(description = "物品地点")

@@ -29,7 +29,7 @@ public class PinController {
      * 申请置顶
      */
     @PostMapping("/apply")
-    public Result<Void> apply(PinApplyDTO pinApplyDTO){
+    public Result<Void> apply(@Validated @RequestBody PinApplyDTO pinApplyDTO){
         log.info("申请置顶，物品ID：{}，申请理由：{}", pinApplyDTO.getItemId(), pinApplyDTO.getReason());
         pinService.apply(pinApplyDTO);
         log.info("申请置顶成功:{}", pinApplyDTO);

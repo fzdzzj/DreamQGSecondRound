@@ -1,5 +1,6 @@
 package com.qg.pojo.dto;
 
+import com.qg.common.constant.DefaultPageConstant;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -12,10 +13,10 @@ public class ReportPageQueryDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "页码", example = "1")
-    private Integer pageNum = 1;
+    private Integer pageNum = DefaultPageConstant.DEFAULT_PAGE_NUM;
 
     @Schema(description = "每页数量", example = "10")
-    private Integer pageSize = 10;
+    private Integer pageSize = DefaultPageConstant.DEFAULT_PAGE_SIZE;
 
     @Schema(description = "举报状态: PENDING/APPROVED/REJECTED,1:待审核,2:已审核,3:已拒绝")
     private String status;
