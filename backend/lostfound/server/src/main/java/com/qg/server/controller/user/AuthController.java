@@ -5,6 +5,7 @@ import com.qg.pojo.dto.LoginDTO;
 import com.qg.pojo.dto.RegisterDTO;
 import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.server.anno.OperationLog;
+import com.qg.server.service.EmailVerificationCodeService;
 import com.qg.server.service.TokenRefreshService;
 import com.qg.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +27,7 @@ public class AuthController {
 
     private final UserService userService;
     private final TokenRefreshService tokenRefreshService;
-
+    private final EmailVerificationCodeService codeService;
     /**
      * 用户登录
      *
@@ -109,5 +110,18 @@ public class AuthController {
             return null;
         }
         return authHeader.substring(7).trim();
+    }
+    @PostMapping("/sendCode")
+    public Result<Void> sendCode(@RequestParam String email, @RequestParam String type) {
+        codeService.sendCode(email, type);
+        return Result.success();
+    }
+
+    @PostMapping("/verifyCode")
+    public Result<Void> verifyCode(@RequestParam String email,
+                                   @RequestParam String type,
+                                   @RequestParam String code) {
+        boolean ok = codeService.verifyCode(email, type, code);
+        return ok ? Result.success() : Result.error(401,"验证码错误或已过期");
     }
 }

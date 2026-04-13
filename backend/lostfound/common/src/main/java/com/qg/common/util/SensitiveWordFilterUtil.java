@@ -1,9 +1,11 @@
 package com.qg.common.util;
 
+import org.springframework.stereotype.Component;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
-
+@Component
 public class SensitiveWordFilterUtil {
     private final Map<String, Pattern>sensitivePatterns=new HashMap<>();
 

@@ -2,6 +2,7 @@ package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.qg.common.constant.CodeTypeConstant;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.exception.*;
@@ -13,6 +14,7 @@ import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.UserLoginVO;
 import com.qg.server.mapper.UserDao;
+import com.qg.server.service.EmailVerificationCodeService;
 import com.qg.server.service.PermissionService;
 import com.qg.server.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +34,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
 
     private final UserDao userDao;  // 用户数据访问层
     private final PermissionService permissionService;  // 权限服务层
+    private final EmailVerificationCodeService emailVerificationCodeService;  // 邮箱验证码服务层
     private final JwtUtil jwtUtil;  // JWT 工具类
 
     /**
@@ -280,6 +283,45 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         userDao.updateById(update);  // 更新数据库密码
         log.info("修改密码成功，userId={}", userId);
     }
+
+    @Override
+    public void changePasswordByCode(Long userId, ChangePasswordByCodeDTO dto) {
+        // 1. 校验验证码（类型：RESET_PASSWORD）
+        boolean verifySuccess = emailVerificationCodeService.verifyCode(
+                dto.getEmail(),
+                CodeTypeConstant.RESET_PASSWORD,
+                dto.getCode()
+        );
+        log.info("校验验证码结果，userId={}, code={}, verifySuccess={}", userId, dto.getCode(), verifySuccess);
+
+        if (!verifySuccess) {
+            log.warn("修改密码失败，验证码错误，userId={}", userId);
+            throw new BaseException(400, MessageConstant.CODE_ERROR);
+        }
+
+        // 2. 查询当前用户（确保只能改自己的邮箱）
+        SysUser user = getById(userId);
+        if (user == null) {
+            log.warn("修改密码失败，用户不存在，userId={}", userId);
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 3. 安全校验：必须是当前登录用户的邮箱，防止越权
+        if (!user.getEmail().equals(dto.getEmail())) {
+            log.warn("修改密码失败，邮箱与当前用户不匹配，userId={}", userId);
+            throw new BaseException(400, MessageConstant.EMAIL_MISMATCH);
+        }
+
+        log.info("修改密码开始，userId={}", userId);
+        // 4. 密码加密（BCrypt）
+        String newPassword = PasswordUtil.encrypt(dto.getNewPassword());
+
+        // 5. 更新密码
+        user.setPasswordHash(newPassword);
+        updateById(user);
+        log.info("修改密码成功，userId={}", userId);
+    }
+
     /**
      * 获取客户端真实IP
      */

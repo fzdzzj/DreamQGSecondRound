@@ -2,6 +2,7 @@ package com.qg.server.controller.user;
 
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.Result;
+import com.qg.pojo.dto.ChangePasswordByCodeDTO;
 import com.qg.pojo.dto.ChangePasswordDTO;
 import com.qg.pojo.dto.UpdateUserDTO;
 import com.qg.pojo.vo.SysUserDetailVO;
@@ -73,6 +74,26 @@ public class CommonController {
         tokenRefreshService.addTokenToBlacklist(refreshToken);
 
         log.info("密码修改成功，旧 token 已失效，用户ID={}", userId);
+        return Result.success();
+    }
+    @PutMapping("/password/by-code")
+    @Operation(summary = "验证码修改密码（无需旧密码）")
+    public Result<Void> changePasswordByCode(@Validated @RequestBody ChangePasswordByCodeDTO dto,
+                                             HttpServletRequest request,
+                                             @RequestHeader(value = "Refresh-Token", required = false) String refreshToken) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("验证码修改密码，用户ID={}", userId);
+
+        // 核心：验证码修改密码（内部校验邮箱、验证码、类型）
+        userService.changePasswordByCode(userId, dto);
+
+        // 修改密码后强制重新登录
+        String authHeader = request.getHeader("Authorization");
+        String accessToken = extractBearerToken(authHeader);
+        tokenRefreshService.addTokenToBlacklist(accessToken);
+        tokenRefreshService.addTokenToBlacklist(refreshToken);
+
+        log.info("验证码修改密码成功，token已拉黑，用户ID={}", userId);
         return Result.success();
     }
 

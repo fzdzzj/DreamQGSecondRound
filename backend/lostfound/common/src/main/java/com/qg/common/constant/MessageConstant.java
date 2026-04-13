@@ -54,4 +54,6 @@ public interface MessageConstant {
     String CLAIM_REQUEST_AUDIT_REJECT = "认领申请审核拒绝";
     String CLAIM_REQUEST_AUDIT_MORE_INFO_REQUIRED = "需要更多信息";
     String CLAIM_REQUEST_ABSENT = "认领申请不存在";
+    String CODE_ERROR = "验证码错误或已过期";
+    String EMAIL_MISMATCH = "邮箱与当前用户不匹配";
 }
