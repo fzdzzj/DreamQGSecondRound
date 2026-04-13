@@ -2,11 +2,9 @@ package com.qg.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.qg.pojo.entity.AiChatHistory;
-import com.qg.pojo.vo.AIMessageVO;
 import org.apache.ibatis.annotations.*;
 
 import java.time.Instant;
-import java.util.List;
 
 @Mapper
 public interface ChatHistoryDao extends BaseMapper<AiChatHistory> {

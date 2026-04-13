@@ -2,7 +2,7 @@ package com.qg.server.ai.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qg.pojo.entity.AiChatHistory;
-import com.qg.pojo.vo.AIMessageVO;
+import com.qg.server.ai.AIMessageVO;
 import com.qg.server.mapper.ChatHistoryDao;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

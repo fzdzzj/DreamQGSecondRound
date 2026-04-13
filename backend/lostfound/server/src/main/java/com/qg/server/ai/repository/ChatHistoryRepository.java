@@ -1,6 +1,6 @@
 package com.qg.server.ai.repository;
 
-import com.qg.pojo.vo.AIMessageVO;
+import com.qg.server.ai.AIMessageVO;
 
 import java.time.Instant;
 import java.util.List;
