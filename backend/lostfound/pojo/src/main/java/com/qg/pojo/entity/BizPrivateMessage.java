@@ -1,9 +1,6 @@
 package com.qg.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -44,6 +41,19 @@ public class BizPrivateMessage implements Serializable {
     private Integer status;
 
     /**
+     * 消息类型：TEXT / IMAGE
+     */
+    private String messageType;
+    /**
+     * 图片URL
+     */
+    private String imageUrl;
+    /**
+     * 客户端消息ID
+     */
+    private String clientMsgId;
+
+    /**
      * 发送方是否删除：0否 1是
      */
     private Integer senderDeleted;
@@ -56,12 +66,12 @@ public class BizPrivateMessage implements Serializable {
     /**
      * 创建时间
      */
-    @TableField("create_time")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
-    @TableField("update_time")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

@@ -1,31 +1,29 @@
 package com.qg.pojo.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.io.Serializable;
 
-/**
- * 私聊发送 DTO
- */
 @Data
-@Schema(description = "私聊发送 DTO")
+@Schema(description = "发送私聊消息DTO")
 public class PrivateMessageSendDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 接收者ID
-     */
-    @Schema(description = "接收者ID")
     @NotNull(message = "接收者ID不能为空")
+    @Schema(description = "接收者ID")
     private Long receiverId;
 
-    /**
-     * 消息内容
-     */
-    @Schema(description = "消息内容")
-    @NotBlank(message = "消息内容不能为空")
+    @Schema(description = "文本内容")
     private String content;
+
+    @Schema(description = "消息类型：TEXT/IMAGE")
+    private String messageType;
+
+    @Schema(description = "图片地址")
+    private String imageUrl;
+
+    @Schema(description = "客户端消息ID，防重")
+    private String clientMsgId;
 }

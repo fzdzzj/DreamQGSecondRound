@@ -43,40 +43,17 @@ public class PrivateMessageController {
         return Result.success();
     }
 
-    /**
-     * 获取会话列表
-     */
-    @GetMapping("/conversations")
-    @Operation(summary = "获取会话列表")
-    public Result<List<ConversationVO>> getConversationList() {
-        Long userId = BaseContext.getCurrentId();
-        log.info("获取会话列表，userId={}", userId);
-
-        List<ConversationVO> list = privateMessageService.getConversationList();
-
-        log.info("获取会话列表成功，userId={}, size={}", userId, list.size());
-        return Result.success(list);
-    }
 
     /**
      * 获取聊天记录
      */
-    @GetMapping("/history/{id}")
+    @GetMapping("/history/cursor/{peerId}")
     @Operation(summary = "获取聊天记录")
-    public Result<PageResult<PrivateMessageVO>> getChatHistory(@PathVariable Long id,
-                                                               @RequestParam(defaultValue = "1") Integer pageNum,
-                                                               @RequestParam(defaultValue = "10") Integer pageSize) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("获取聊天记录，userId={}, peerId={}, pageNum={}, pageSize={}",
-                userId, id, pageNum, pageSize);
-
-
-        PageResult<PrivateMessageVO> pageResult = privateMessageService.getChatHistory(id, pageNum, pageSize);
-
-
-        log.info("获取聊天记录成功，userId={}, id={}, total={}",
-                userId, id, pageResult.getTotal());
-        return Result.success(pageResult);
+    public Result<List<PrivateMessageVO>> getChatHistoryByCursor(
+            @PathVariable Long peerId,
+            @RequestParam(required = false) Long lastMessageId,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return Result.success(privateMessageService.getChatHistoryByCursor(peerId, lastMessageId, pageSize));
     }
 
 
@@ -94,6 +71,12 @@ public class PrivateMessageController {
         log.info("将会话全部标记为已读成功，userId={}, id={}", userId, id);
         return Result.success();
     }
+    @GetMapping("/conversations")
+    public Result<List<ConversationVO>> getConversationList() {
+        List<ConversationVO> list = privateMessageService.getConversationList();
+        return Result.success(list);
+    }
+
 
     /**
      * 删除单条消息
@@ -139,4 +122,11 @@ public class PrivateMessageController {
         log.info("获取未读消息总数成功，userId={}, count={}", userId, count);
         return Result.success(count);
     }
+    @PutMapping("/conversation/{id}/clear")
+    @Operation(summary = "清空会话")
+    public Result<Void> clearConversation(@PathVariable Long id) {
+        privateMessageService.clearConversation(id);
+        return Result.success();
+    }
+
 }
