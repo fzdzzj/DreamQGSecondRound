@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 @Schema(description = "物品领领请求VO")
+@Data
 public class BizClaimRequestVO  implements Serializable {
     private static final long serialVersionUID = 1L;
     @Schema(description = "领领请求ID")

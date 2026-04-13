@@ -35,25 +35,22 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
 
     @Override
     @Transactional
-    public BizClaimRequestVO createClaimRequest(BizClaimRequestDTO request) {
+    public void createClaimRequest(BizClaimRequestDTO request) {
         BizClaimRequest bizClaimRequest = new BizClaimRequest();
         BeanUtils.copyProperties(request, bizClaimRequest);
+        bizClaimRequest.setApplicantId(BaseContext.getCurrentId());
         bizClaimRequest.setStatus(BizClaimRequestStatusConstant.PENDING);
         Long ownerId = itemDao.selectOne(new LambdaQueryWrapper<BizItem>()
                 .eq(BizItem::getId, request.getItemId())
         ).getUserId();
         bizClaimRequest.setOwnerId(ownerId);
         save(bizClaimRequest);
-        BizClaimRequestVO vo = new BizClaimRequestVO();
-        BeanUtils.copyProperties(bizClaimRequest, vo);
-        log.info("创建认领申请: {}", vo);
-        return vo;
+        log.info("创建认领申请成功: {}", bizClaimRequest);
     }
 
     @Override
-    public List<BizClaimRequestVO> getPendingRequestsByItem(Long itemId) {
+    public List<BizClaimRequestVO> getPendingRequests() {
         List<BizClaimRequest> requests = list(new LambdaQueryWrapper<BizClaimRequest>()
-                .eq(BizClaimRequest::getItemId, itemId)
                 .eq(BizClaimRequest::getStatus, BizClaimRequestStatusConstant.PENDING)
                 .eq(BizClaimRequest::getOwnerId, BaseContext.getCurrentId())
                 .or().eq(BizClaimRequest::getApplicantId, BaseContext.getCurrentId())

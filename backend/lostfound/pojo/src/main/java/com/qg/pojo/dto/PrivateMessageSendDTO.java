@@ -18,7 +18,7 @@ public class PrivateMessageSendDTO implements Serializable {
     @Schema(description = "文本内容")
     private String content;
 
-    @Schema(description = "消息类型：TEXT/IMAGE")
+    @Schema(description = "消息类型：1文本消息/2图片消息")
     private String messageType;
 
     @Schema(description = "图片地址")

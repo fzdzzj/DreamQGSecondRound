@@ -20,7 +20,6 @@ import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemImage;
 import com.qg.pojo.vo.BizItemDetailVO;
 import com.qg.pojo.vo.BizItemStatVO;
-import com.qg.server.ai.util.LocationNormalizeUtil;
 import com.qg.server.event.ItemAiGenerateEvent;
 import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemDao;
@@ -41,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -91,7 +89,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setLocation(dto.getLocation());
         item.setContactMethod(dto.getContactMethod());
         item.setHappenTime(dto.getHappenTime());
-        item.setNormalizedLocation(LocationNormalizeUtil.normalize(dto.getLocation()));
 
         // 插入数据库
         bizItemDao.insert(item);
@@ -105,7 +102,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 item.getId(),
                 item.getTitle(),
                 item.getDescription(),
-                item.getNormalizedLocation(),
+                item.getLocation(),
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
@@ -129,7 +126,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setIsPinned(0);
         item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
-        item.setNormalizedLocation(LocationNormalizeUtil.normalize(dto.getLocation()));
         item.setContactMethod(dto.getContactMethod());
         save(item);
         saveItemImages(item.getId(), dto.getImageUrls());
@@ -139,7 +135,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 item.getId(),
                 dto.getTitle(),
                 dto.getDescription(),
-                item.getNormalizedLocation(),
+                item.getLocation(),
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
@@ -184,7 +180,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 id,
                 dto.getTitle(),
                 dto.getDescription(),
-                item.getNormalizedLocation(),
+                item.getLocation(),
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));

@@ -104,9 +104,9 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
     private List<Map<String, Object>> topLocations(List<BizItem> items) {
         return items.stream()
                 .collect(Collectors.groupingBy(
-                        item -> item.getNormalizedLocation() == null || item.getNormalizedLocation().isBlank()
+                        item -> item.getLocation() == null || item.getLocation().isBlank()
                                 ? "未知"
-                                : item.getNormalizedLocation(),
+                                : item.getLocation(),
                         Collectors.counting()
                 ))
                 .entrySet()

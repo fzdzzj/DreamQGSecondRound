@@ -1,11 +1,13 @@
 package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.qg.common.constant.MessageTypeConstant;
 import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.BaseException;
 import com.qg.pojo.dto.PrivateMessageSendDTO;
+import com.qg.pojo.entity.Conversation;
 import com.qg.pojo.vo.ConversationVO;
 import com.qg.pojo.vo.PrivateMessageRealtimeVO;
 import com.qg.pojo.vo.PrivateMessageVO;
@@ -44,17 +46,20 @@ public class PrivateMessageServiceImpl
         Long senderId = BaseContext.getCurrentId();
         Long receiverId = sendDTO.getReceiverId();
 
+        // 验证接收者
         SysUser receiver = userDao.selectById(receiverId);
         if (receiver == null) throw new AbsentException("接收用户不存在");
 
+        // 验证消息内容
         String messageType = sendDTO.getMessageType();
-        if ("TEXT".equals(messageType) && (sendDTO.getContent() == null || sendDTO.getContent().trim().isEmpty())) {
+        if (MessageTypeConstant.TEXT.equals(messageType) && (sendDTO.getContent() == null || sendDTO.getContent().trim().isEmpty())) {
             throw new BaseException(400, "文本消息不能为空");
         }
-        if ("IMAGE".equals(messageType) && (sendDTO.getImageUrl() == null || sendDTO.getImageUrl().trim().isEmpty())) {
+        if (MessageTypeConstant.IMAGE.equals(messageType) && (sendDTO.getImageUrl() == null || sendDTO.getImageUrl().trim().isEmpty())) {
             throw new BaseException(400, "图片地址不能为空");
         }
 
+        // 保存消息
         BizPrivateMessage message = new BizPrivateMessage();
         message.setSenderId(senderId);
         message.setReceiverId(receiverId);
@@ -65,9 +70,9 @@ public class PrivateMessageServiceImpl
         message.setClientMsgId(sendDTO.getClientMsgId());
         message.setSenderDeleted(0);
         message.setReceiverDeleted(0);
-
         save(message);
 
+        // 构建前端实时消息对象
         PrivateMessageRealtimeVO vo = new PrivateMessageRealtimeVO();
         vo.setId(message.getId());
         vo.setSenderId(senderId);
@@ -78,10 +83,36 @@ public class PrivateMessageServiceImpl
         vo.setStatus(message.getStatus());
         vo.setCreateTime(message.getCreateTime());
 
+        // 推送给接收者
         wsHandler.sendToUser(receiverId, vo);
+
+        // --- 更新发送者视角的会话 ---
+        BizPrivateConversation senderConversation = conversationDao.selectByUserIdAndPeerId(senderId, receiverId);
+        if (senderConversation == null) {
+            senderConversation = new BizPrivateConversation();
+            senderConversation.setUserId(senderId);
+            senderConversation.setPeerId(receiverId);
+            // 不要初始化 clearBeforeTime
+            senderConversation.setLastReadMessageId(message.getId());
+            conversationDao.insert(senderConversation);
+        } else {
+            senderConversation.setLastReadMessageId(message.getId());
+            conversationDao.updateById(senderConversation);
+        }
+
+        // --- 确保接收者视角的会话存在（但不更新 lastReadMessageId） ---
+        BizPrivateConversation receiverConversation = conversationDao.selectByUserIdAndPeerId(receiverId, senderId);
+        if (receiverConversation == null) {
+            receiverConversation = new BizPrivateConversation();
+            receiverConversation.setUserId(receiverId);
+            receiverConversation.setPeerId(senderId);
+            // 不要设置 lastReadMessageId
+            conversationDao.insert(receiverConversation);
+        }
 
         return vo;
     }
+
 
     @Override
     public List<PrivateMessageVO> getChatHistoryByCursor(Long peerId, Long lastMessageId, Integer pageSize) {

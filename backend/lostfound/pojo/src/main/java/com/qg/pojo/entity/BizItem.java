@@ -27,7 +27,6 @@ public class BizItem implements Serializable {
     private Integer isPinned;
     private LocalDateTime pinExpireTime;
     private String contactMethod;
-    private String normalizedLocation;
     private String aiStatus; // PENDING, SUCCESS, FAILURE
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

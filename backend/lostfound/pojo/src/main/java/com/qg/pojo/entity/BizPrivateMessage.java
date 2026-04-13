@@ -41,7 +41,7 @@ public class BizPrivateMessage implements Serializable {
     private Integer status;
 
     /**
-     * 消息类型：TEXT / IMAGE
+     * 消息类型：1文本消息 / 2图片消息
      */
     private String messageType;
     /**

@@ -149,7 +149,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
             generateItemImageDescription(
                     item.getTitle(),
                     item.getDescription(),
-                    item.getNormalizedLocation(),
+                    item.getLocation(),
                     userId,
                     itemId,
                     imageItems
@@ -158,7 +158,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
             generateItemDescription(
                     item.getTitle(),
                     item.getDescription(),
-                    item.getNormalizedLocation(),
+                    item.getLocation(),
                     userId,
                     itemId
             );

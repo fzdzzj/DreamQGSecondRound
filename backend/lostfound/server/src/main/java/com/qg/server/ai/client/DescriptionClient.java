@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class DescriptionClient {
 

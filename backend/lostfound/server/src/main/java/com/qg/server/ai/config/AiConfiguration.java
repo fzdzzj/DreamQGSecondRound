@@ -5,7 +5,9 @@ import com.qg.common.properties.AIProperties;
 import com.qg.server.ai.client.AdminStatisticsAiClient;
 import com.qg.server.ai.client.DescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient;
+import com.qg.server.ai.tools.ItemTools;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
@@ -35,6 +37,15 @@ public class AiConfiguration {
         return ChatClient.builder(chatModel)
                 .defaultSystem(AiPromptConstant.ADMIN_STATISTICS_SYSTEM_PROMPT)
                 .defaultAdvisors(new SimpleLoggerAdvisor())
+                .build();
+    }
+    @Bean
+    public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools, ChatMemory chatMemory) {
+        return ChatClient.builder(chatModel)
+                .defaultSystem(AiPromptConstant.ANSWER_SYSTEM_PROMPT)
+                .defaultAdvisors(new SimpleLoggerAdvisor(),
+                        new MessageChatMemoryAdvisor(chatMemory))
+                .defaultTools(itemTools)
                 .build();
     }
 

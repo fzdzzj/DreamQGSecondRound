@@ -11,10 +11,10 @@ import java.util.List;
 public interface BizClaimRequestService extends IService<BizClaimRequest> {
 
     // 失主发起认领申请
-    BizClaimRequestVO createClaimRequest(BizClaimRequestDTO request);
+    void createClaimRequest(BizClaimRequestDTO request);
 
     // 获取某物品的所有待审批申请
-    List<BizClaimRequestVO> getPendingRequestsByItem(Long itemId);
+    List<BizClaimRequestVO> getPendingRequests();
 
     // 拾取者审批（同意/拒绝/要求补充证据）
     void approveRequest(ApproveRequestDTO dto);

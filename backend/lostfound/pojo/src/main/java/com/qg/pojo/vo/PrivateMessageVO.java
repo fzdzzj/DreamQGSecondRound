@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  * 私聊消息 VO
  */
 @Data
+@Schema(description = "私聊消息 VO")
 public class PrivateMessageVO implements Serializable {
     private static final long serialVersionUID = 1L;
 

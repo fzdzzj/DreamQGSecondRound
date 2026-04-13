@@ -12,8 +12,6 @@ public class BizClaimRequestDTO implements Serializable {
     private static final long serialVersionUID = 1L;
     @Schema(description = "物品ID")
     private Long itemId;
-    @Schema(description = "申请人ID")
-    private Long applicantId;
     @Schema(description = "验证答案")
     private String verificationAnswer;
 }
