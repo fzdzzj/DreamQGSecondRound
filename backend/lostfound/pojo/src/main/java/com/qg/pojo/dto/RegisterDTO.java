@@ -69,6 +69,13 @@ public class RegisterDTO implements Serializable {
     @NotBlank(message = "昵称不能为空")
     private String nickname;
 
+    @Schema(description = "验证码", required = true, example = "123456")
+    @Pattern(regexp = RegexConstant.CODE, message = "验证码格式错误")
+    @NotBlank(message = "验证码不能为空")
+    private String code;
+
+
+
     /**
      * 验证密码和确认密码是否相等
      */

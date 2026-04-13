@@ -147,9 +147,24 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      */
     @Override
     public void register(RegisterDTO registerDTO) {
+        String email = registerDTO.getEmail();
+        String code = registerDTO.getCode();
+
+        // 1. 校验注册验证码（
+        boolean ok = emailVerificationCodeService.verifyCode(email, code, "REGISTER");
+        if (!ok) {
+            throw new BaseException(401, MessageConstant.CODE_ERROR);
+        }
+
+        // 2. 邮箱是否已注册
+        SysUser exist = userDao.selectOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getEmail, email)
+                .eq(SysUser::getDeleted, 0));
+        if (exist != null) {
+            throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
+        }
         log.info("用户发起注册请求，用户名：{}", registerDTO.getUsername());
         String username = registerDTO.getUsername();
-        String email = registerDTO.getEmail();
         String phone = registerDTO.getPhone();
 
         // 查询用户名、邮箱、手机号是否已存在

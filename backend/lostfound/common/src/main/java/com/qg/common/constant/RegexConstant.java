@@ -5,6 +5,7 @@ package com.qg.common.constant;
 public class RegexConstant {
 
 
+    public static final String CODE = "^\\d{6}$";
 
     // 私有构造函数
     private RegexConstant() {
