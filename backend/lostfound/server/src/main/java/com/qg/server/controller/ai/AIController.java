@@ -1,11 +1,14 @@
 package com.qg.server.controller.ai;
 
+import com.qg.common.constant.Ai_Output_Input;
 import com.qg.common.context.BaseContext;
 import com.qg.common.properties.AIProperties;
 import com.qg.common.result.Result;
+import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.server.ai.repository.ChatHistoryRepository;
 import com.qg.server.ai.util.AiUtils;
 import com.qg.server.service.AiAsyncService;
+import org.apache.commons.text.StringEscapeUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class AIController {
     private final AiAsyncService aiAsyncService;
     private final ChatClient answerChatClient;
     private final ChatHistoryRepository chatHistoryRepository;
+    private final SensitiveWordFilterUtil sensitiveWordFilter;
     @PostMapping("/item/{itemId}/regenerate")
     @Operation(summary="重新生成物品AI描述")
     public Result<Void> regenerateItemDescription(@PathVariable Long itemId)
@@ -46,6 +50,7 @@ public class AIController {
     public Flux<String> ask(String prompt, String chatId){
         AiUtils.checkUserLimit(BaseContext.getCurrentId(), redisTemplate, aiProperties.getDailyLimit());
         Long userId = BaseContext.getCurrentId();
+        prompt = filterUserInput(prompt);
         // 保存用户输入
         chatHistoryRepository.saveMessage("answer", userId, chatId, "user", prompt);
 
@@ -55,8 +60,24 @@ public class AIController {
                 .stream()
                 .content()
                 .doOnNext(reply -> {
+                    // 过滤AI回复
+                    reply = filterAIOutput(reply);
                     // 保存AI回复
                     chatHistoryRepository.saveMessage("answer", userId, chatId, "assistant", reply);
                 });
+    }
+    private String filterUserInput(String text){
+        if(text==null)return "";
+        text=text.replaceAll("[\\r\\n]+"," ").trim();
+        if(text.length()> Ai_Output_Input.MAX_USER_PROMPT){
+            text=text.substring(0,Ai_Output_Input.MAX_USER_PROMPT);
+        }
+        return StringEscapeUtils.escapeHtml4(text);
+    }
+    private String filterAIOutput(String text) {
+        if (text == null) return "";
+        if (text.length() > Ai_Output_Input.MAX_AI_OUTPUT) text = text.substring(0, Ai_Output_Input.MAX_AI_OUTPUT);
+        text = sensitiveWordFilter.filter(text);
+        return StringEscapeUtils.escapeHtml4(text);
     }
 }
