@@ -16,13 +16,18 @@ public class LoginDTO implements Serializable {
     @NotBlank(message = "登录标识不能为空")
     @Pattern(regexp = RegexConstant.IDENTIFIER,
             message = "请输入有效的邮箱或用户名（4-20位字母数字）")
-    @Schema(description = "登录标识（邮箱或手机号）", required = true, example = "dreamqg@example.com")
+    @Schema(description = "登录标识（邮箱或手机号）",example = "dreamqg@example.com")
     private String identifier;
 
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 20, message = "密码长度为6-20位")
-    @Schema(description = "密码", required = true, example = "123456")
+    @Schema(description = "密码",  example = "123456")
     @Pattern(regexp = RegexConstant.PASSWORD, message = "密码格式错误")
     private String password;
+
+    @Schema(description = "登录方式", example = "1")
+    private String loginType; // 1.PASSWORD / 2.EMAIL_CODE
+    @Schema(description = "验证码", example = "123456")
+    private String code;     // 验证码
 
 }

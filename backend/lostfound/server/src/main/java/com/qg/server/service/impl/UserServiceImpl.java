@@ -3,6 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.CodeTypeConstant;
+import com.qg.common.constant.LoginTypeConstant;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.exception.*;
@@ -45,41 +46,60 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      */
     @Override
     public LoginResponseVO login(LoginDTO loginDTO, HttpServletRequest request) {
-        String identifier = loginDTO.getIdentifier();  // 用户标识（邮箱或手机）
-        String password = loginDTO.getPassword();  // 用户密码
-        log.info("用户发起登录请求，账号={}", identifier);
+        SysUser user;
+        if(loginDTO.getLoginType().equals(LoginTypeConstant.PASSWORD)){
+           String identifier = loginDTO.getIdentifier();  // 用户标识（邮箱或手机）
+           String password = loginDTO.getPassword();  // 用户密码
+           log.info("用户发起登录请求，账号={}", identifier);
 
-        // 根据账号类型（手机号或邮箱）查询用户
-        SysUser user = null;
-        if (identifier.contains("@")) {
+           // 根据账号类型（手机号或邮箱）查询用户
+           if (identifier.contains("@")) {
+               user = userDao.selectOne(new LambdaQueryWrapper<SysUser>()
+                       .eq(SysUser::getEmail, identifier)
+                       .eq(SysUser::getDeleted, 0));  // 未删除的用户
+           } else {
+               user = userDao.selectOne(new LambdaQueryWrapper<SysUser>()
+                       .eq(SysUser::getPhone, identifier)
+                       .eq(SysUser::getDeleted, 0));  // 未删除的用户
+           }
+
+           // 用户不存在或已删除，抛出异常
+           if (user == null) {
+               log.warn("登录失败：用户不存在或已删除，账号={}", identifier);
+               throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+           }
+
+           // 校验账号状态（账号是否禁用）
+           if (user.getStatus() == null || !UserStatusConstant.ENABLE.equals(user.getStatus())) {
+               log.warn("登录失败：用户已被禁用，账号={}", identifier);
+               throw new AccountLockedException(MessageConstant.ACCOUNT_DISABLED);
+           }
+
+           // 校验密码是否正确
+           if (!PasswordUtil.matches(password, user.getPasswordHash())) {
+               log.warn("登录失败：密码错误，账号={}", identifier);
+               throw new LoginFailedException(MessageConstant.PASSWORD_ERROR);
+           }
+       }else{
+            String email = loginDTO.getIdentifier();
+            String code = loginDTO.getCode();
+
+            // 校验验证码（LOGIN 类型）
+            boolean ok = emailVerificationCodeService.verifyCode(email, CodeTypeConstant.LOGIN, code);
+            if (!ok) {
+                throw new BaseException(401, MessageConstant.CODE_ERROR);
+            }
+            // 根据邮箱查用户
             user = userDao.selectOne(new LambdaQueryWrapper<SysUser>()
-                    .eq(SysUser::getEmail, identifier)
-                    .eq(SysUser::getDeleted, 0));  // 未删除的用户
-        } else {
-            user = userDao.selectOne(new LambdaQueryWrapper<SysUser>()
-                    .eq(SysUser::getPhone, identifier)
-                    .eq(SysUser::getDeleted, 0));  // 未删除的用户
-        }
+                    .eq(SysUser::getEmail, email)
+                    .eq(SysUser::getDeleted, 0));
+            if (user == null) {
+                throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+            }
 
-        // 用户不存在或已删除，抛出异常
-        if (user == null) {
-            log.warn("登录失败：用户不存在或已删除，账号={}", identifier);
-            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
-
-        // 校验账号状态（账号是否禁用）
-        if (user.getStatus() == null || !UserStatusConstant.ENABLE.equals(user.getStatus())) {
-            log.warn("登录失败：用户已被禁用，账号={}", identifier);
-            throw new AccountLockedException(MessageConstant.ACCOUNT_DISABLED);
-        }
-
-        // 校验密码是否正确
-        if (!PasswordUtil.matches(password, user.getPasswordHash())) {
-            log.warn("登录失败：密码错误，账号={}", identifier);
-            throw new LoginFailedException(MessageConstant.PASSWORD_ERROR);
-        }
+        // 更新最后登录信息
         String clientIp = getClientIp(request);
-// 更新最后登录信息
         SysUser updateUser = new SysUser();
         updateUser.setId(user.getId());
         updateUser.setLastLoginIp(clientIp);
