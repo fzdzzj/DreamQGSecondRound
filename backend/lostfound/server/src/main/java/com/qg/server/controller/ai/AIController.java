@@ -1,14 +1,17 @@
 package com.qg.server.controller.ai;
 
 import com.qg.common.context.BaseContext;
+import com.qg.common.properties.AIProperties;
 import com.qg.common.result.Result;
 import com.qg.server.ai.repository.ChatHistoryRepository;
+import com.qg.server.ai.util.AiUtils;
 import com.qg.server.service.AiAsyncService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +26,8 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 @Slf4j
 @RequiredArgsConstructor
 public class AIController {
+   private final AIProperties aiProperties;
+   private final RedisTemplate<String, Object> redisTemplate;
     private final AiAsyncService aiAsyncService;
     private final ChatClient answerChatClient;
     private final ChatHistoryRepository chatHistoryRepository;
@@ -37,8 +42,9 @@ public class AIController {
         return Result.success();
     }
 
-    @RequestMapping(value="/service", produces="text/html;charset=utf-8")
-    public Flux<String> service(String prompt, String chatId){
+    @RequestMapping(value="/ask", produces="text/html;charset=utf-8")
+    public Flux<String> ask(String prompt, String chatId){
+        AiUtils.checkUserLimit(BaseContext.getCurrentId(), redisTemplate, aiProperties.getDailyLimit());
         Long userId = BaseContext.getCurrentId();
         // 保存用户输入
         chatHistoryRepository.saveMessage("answer", userId, chatId, "user", prompt);

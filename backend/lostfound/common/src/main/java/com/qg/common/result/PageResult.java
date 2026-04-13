@@ -10,8 +10,9 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PageResult<T>  {
+public class PageResult<T> implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private List<T> list;
 
     private Long total;

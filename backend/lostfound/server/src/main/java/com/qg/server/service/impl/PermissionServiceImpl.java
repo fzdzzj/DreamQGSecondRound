@@ -77,7 +77,9 @@ public class PermissionServiceImpl implements PermissionService {
                     "GET:/message/history/{id}",
                     "PUT:/message/{id}/read",
                     "DELETE:/message/{id}",
-                    "GET:/message/unread/count"
+                    "GET:/message/unread/count",
+
+                    "POST:/ai/ask"
             );
         }
 
@@ -102,8 +104,6 @@ public class PermissionServiceImpl implements PermissionService {
                 "PUT:/item/{id}/close",
                 "GET:/item/{id}",
 
-                // AI 重新描述
-                "POST:/ai/item/{id}/regenerate",
 
                 "PUT:/item/pin/apply",
 
@@ -142,7 +142,10 @@ public class PermissionServiceImpl implements PermissionService {
 
                 "POST:/biz/claim/create",
                 "GET:/biz/claim/pending",
-                "POST:/biz/claim/approve"
+                "POST:/biz/claim/approve",
+
+                "POST:/ai/item/{id}/regenerate",
+                "POST:/ai/ask"
         );
     }
 }

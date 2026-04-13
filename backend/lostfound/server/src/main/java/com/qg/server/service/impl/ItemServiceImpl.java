@@ -198,6 +198,12 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 3. 缓存 30 分钟
      */
     public BizItemDetailVO getItem(Long id) {
+        String cacheKey = RedisConstant.ITEM_DETAIL_KEY + id;
+        // 尝试从 Redis 获取
+        BizItemDetailVO cached = (BizItemDetailVO) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
         BizItem item = bizItemDao.selectById(id);
         if (item == null) throw new AbsentException("物品不存在");
 
@@ -244,6 +250,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         vo.setAiDescription(aiDescription);
 
         vo.setAiStatus(item.getAiStatus());
+        // 写入 Redis 缓存，过期 30 分钟
+        redisTemplate.opsForValue().set(cacheKey, vo, 30, java.util.concurrent.TimeUnit.MINUTES);
 
         return vo;
     }
@@ -259,7 +267,17 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      */
     @Override
     public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
-
+        String cacheKey=String.format(RedisConstant.ITEM_PAGE_KEY,query.getPageNum(),
+                query.getPageSize(),
+                query.getType() == null ? "all" : query.getType(),
+                query.getKeyword() == null ? "" : query.getKeyword().trim(),
+                query.getLocation() == null ? "" : query.getLocation().trim(),
+                query.getAiCategory() == null ? "" : query.getAiCategory().trim());
+        // 尝试从缓存获取
+        PageResult<BizItemStatVO> cached = (PageResult<BizItemStatVO>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
@@ -318,8 +336,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         }
 
         page(page, wrapper);
-
-        return buildPageResult(page);
+        PageResult<BizItemStatVO> voList = buildPageResult(page);
+        // 写入 Redis 缓存，过期 30 分钟
+        redisTemplate.opsForValue().set(cacheKey, voList, 30, java.util.concurrent.TimeUnit.MINUTES);
+        return voList;
     }
 
 
