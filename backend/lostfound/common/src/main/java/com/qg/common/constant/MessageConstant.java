@@ -50,4 +50,8 @@ public interface MessageConstant {
     String NO_PERMISSION = "无权限操作";
     String USER_NOT_AUTHORIZED = "不能封禁管理员或系统用户";
     String AI_RESULT_NOT_FOUND = "AI结果不存在";
+    String CLAIM_REQUEST_AUDIT_PASS = "认领申请审核通过";
+    String CLAIM_REQUEST_AUDIT_REJECT = "认领申请审核拒绝";
+    String CLAIM_REQUEST_AUDIT_MORE_INFO_REQUIRED = "需要更多信息";
+    String CLAIM_REQUEST_ABSENT = "认领申请不存在";
 }
