@@ -72,7 +72,7 @@ public class AIController {
         if(text.length()> Ai_Output_Input.MAX_USER_PROMPT){
             text=text.substring(0,Ai_Output_Input.MAX_USER_PROMPT);
         }
-        return StringEscapeUtils.escapeHtml4(text);
+        return text;
     }
     private String filterAIOutput(String text) {
         if (text == null) return "";
