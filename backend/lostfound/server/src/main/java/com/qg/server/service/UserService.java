@@ -57,4 +57,6 @@ public interface UserService extends IService<SysUser> {
      * @param dto 验证码和密码的DTO
      */
     void changePasswordByCode(Long userId, ChangePasswordByCodeDTO dto);
+
+    SysUser getByEmail(String email);
 }

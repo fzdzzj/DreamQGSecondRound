@@ -356,6 +356,12 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         log.info("修改密码成功，userId={}", userId);
     }
 
+    @Override
+    public SysUser getByEmail(String email) {
+        log.info("根据邮箱查询用户，email={}", email);
+        return userDao.selectOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getEmail, email));
+    }
+
     /**
      * 获取客户端真实IP
      */

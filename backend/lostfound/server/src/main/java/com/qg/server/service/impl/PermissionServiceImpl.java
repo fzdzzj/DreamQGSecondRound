@@ -79,7 +79,10 @@ public class PermissionServiceImpl implements PermissionService {
                     "DELETE:/message/{id}",
                     "GET:/message/unread/count",
 
-                    "POST:/ai/ask"
+                    "POST:/ai/ask",
+
+                    "POST:/log/page",
+                    "GET:/log/list"
             );
         }
 
