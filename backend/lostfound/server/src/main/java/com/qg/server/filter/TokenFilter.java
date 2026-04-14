@@ -1,6 +1,8 @@
 package com.qg.server.filter;
 
+import com.qg.common.constant.JwtClaimsConstant;
 import com.qg.common.constant.RoleConstant;
+import com.qg.common.constant.TokenConstant;
 import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.util.JwtUtil;
@@ -24,6 +26,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Token 过滤器
+ * 用于验证请求中的 Token 并设置上下文
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -46,14 +52,29 @@ public class TokenFilter extends OncePerRequestFilter {
             "/email/sendCode", "/email/verifyCode"
     );
 
+    /**
+     * 忽略过滤的 URL
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (!filterEnabled) return true;
+        // 允许 OPTIONS 请求通过
         if (HttpMethod.OPTIONS.matches(request.getMethod())) return true;
+        // 忽略白名单中的 URL
         String uri = request.getRequestURI();
         return WHITE_LIST.stream().anyMatch(pattern -> pathMatcher.match(pattern, uri));
     }
 
+    /**
+     * 过滤器逻辑
+     * 验证请求中的 Token 并设置上下文
+     * 1. Token 检查
+     * 2. Token 解析
+     * 3. Token 校验
+     * 4. 获取权限
+     * 5. 设置上下文
+     * 6. 验证权限
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -79,7 +100,9 @@ public class TokenFilter extends OncePerRequestFilter {
 
             Claims claims;
             try {
+                // 2. Token 解析
                 claims = jwtUtil.parseToken(token);
+                log.info("Token 解析成功：{}", claims);
             } catch (Exception e) {
                 log.warn("Token 解析失败：{}", e.getMessage());
                 writeJson(response, 401, "Token无效或已过期");
@@ -87,27 +110,26 @@ public class TokenFilter extends OncePerRequestFilter {
             }
 
             String tokenType = claims.get("type", String.class);
-            if (!"access".equals(tokenType)) {
+            if (!TokenConstant.ACCESS.equals(tokenType)) {
                 writeJson(response, 401, "Token类型错误");
                 return;
             }
-
-            Long userId = claims.get("userId", Long.class);
-            String username = claims.get("username", String.class);
-            String role = claims.get("role", String.class);
-
-            @SuppressWarnings("unchecked")
+            // 3. Token 校验
+            Long userId = claims.get(JwtClaimsConstant.USER_ID, Long.class);
+            String username = claims.get(JwtClaimsConstant.USERNAME, String.class);
+            String role = claims.get(JwtClaimsConstant.ROLE, String.class);
+            // 4. 获取权限
             Set<String> permissions = jwtUtil.getPermissionsFromToken(claims);
+            log.info("权限列表大小：{}", permissions.size());
 
-            log.warn("permissions: {}", permissions);
 
             if (userId == null || username == null || role == null) {
                 writeJson(response, 401, "Token信息不完整");
                 return;
             }
-
+            // 5. 设置上下文
             BaseContext.setCurrentUser(userId, role);
-
+            // 6.1 验证权限
             if (RoleConstant.ADMIN.equals(role) || RoleConstant.USER.equals(role)) {
                 SysUser user = userDao.selectById(userId);
                 if (UserStatusConstant.DISABLE.equals(user.getStatus())) {
@@ -116,17 +138,12 @@ public class TokenFilter extends OncePerRequestFilter {
                 }
             }
 
-            // 2. RBAC 权限校验
+            // 6.2 RBAC 权限校验
             if (!hasPermission(uri, method, role, permissions)) {
                 log.warn("用户: {} 无权限访问: {}", username, uri);
                 writeJson(response, 403, "权限不足");
                 return;
             }
-
-            if (uri.equals("/auth/refresh")) {
-                tokenRefreshService.addTokenToBlacklist(token);
-            }
-
             filterChain.doFilter(request, response);
 
         } finally {
@@ -167,7 +184,9 @@ public class TokenFilter extends OncePerRequestFilter {
         });
     }
 
-
+    /**
+     * 响应 JSON
+     */
     private void writeJson(HttpServletResponse response, int code, String msg) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(code == 401 ? HttpServletResponse.SC_UNAUTHORIZED : HttpServletResponse.SC_FORBIDDEN);

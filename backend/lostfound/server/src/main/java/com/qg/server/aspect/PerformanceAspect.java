@@ -14,7 +14,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class PerformanceAspect {
 
-    // 监控 Service 层所有方法
+    /**
+     * 监控 Service 层所有方法
+     */
     @Around("execution(* com.qg.server.service..*.*(..))")
     public Object monitorPerformance(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
@@ -25,8 +27,8 @@ public class PerformanceAspect {
             Object result = joinPoint.proceed();
             long costTime = System.currentTimeMillis() - startTime;
 
-            // 超过 1 秒的方法记录警告
-            if (costTime > 1000) {
+            // 超过 2 秒的方法记录警告
+            if (costTime > 2000) {
                 log.warn(" 方法执行缓慢：{} | 耗时：{}ms", methodName, costTime);
             } else {
                 log.debug("✓ 方法执行：{} | 耗时：{}ms", methodName, costTime);

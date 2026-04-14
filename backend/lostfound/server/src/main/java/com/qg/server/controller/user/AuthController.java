@@ -4,7 +4,6 @@ import com.qg.common.result.Result;
 import com.qg.pojo.dto.LoginDTO;
 import com.qg.pojo.dto.RegisterDTO;
 import com.qg.pojo.vo.LoginResponseVO;
-import com.qg.server.service.EmailVerificationCodeService;
 import com.qg.server.service.TokenRefreshService;
 import com.qg.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +16,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * 认证接口
+ * 提供用户登录、注册、刷新 accessToken 等认证相关的接口
+ */
 @Slf4j
 @RestController
 @RequestMapping("/auth")
@@ -26,10 +29,10 @@ public class AuthController {
 
     private final UserService userService;
     private final TokenRefreshService tokenRefreshService;
-    private final EmailVerificationCodeService codeService;
+
     /**
      * 用户登录
-     *
+     * <p>
      * 返回：
      * - accessToken：访问业务接口
      * - refreshToken：刷新 accessToken
@@ -47,6 +50,13 @@ public class AuthController {
 
     /**
      * 用户注册
+     * <p>
+     * 参数：
+     * - identifier：账号（用户名或手机号）
+     * - username：用户名
+     * - password：密码
+     * - confirmPassword：确认密码
+     * - email：邮箱
      */
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "新用户注册")
@@ -59,7 +69,7 @@ public class AuthController {
 
     /**
      * 刷新 AccessToken
-     *
+     * <p>
      * 前端在 accessToken 过期后，携带 refreshToken 调这个接口，
      * 成功后拿到新的 accessToken，再重放原请求。
      */
@@ -74,21 +84,21 @@ public class AuthController {
 
     /**
      * 退出登录
-     *
+     * <p>
      * 处理逻辑：
      * - 把当前 accessToken 拉入 Redis 黑名单
      * - 把当前 refreshToken 拉入 Redis 黑名单
-     *
+     * <p>
      * 这样即使客户端本地仍保留旧 token，服务端也会拒绝它继续访问。
      */
     @PostMapping("/logout")
     @Operation(summary = "退出登录")
     public Result<Void> logout(HttpServletRequest request,
                                @RequestHeader(value = "Refresh-Token", required = false) String refreshToken) {
-
+        log.info("用户退出登录尝试");
         String authHeader = request.getHeader("Authorization");
         String accessToken = extractBearerToken(authHeader);
-
+        log.warn("用户退出登录尝试，未携带 accessToken");
         tokenRefreshService.addTokenToBlacklist(accessToken);
         tokenRefreshService.addTokenToBlacklist(refreshToken);
 
@@ -99,11 +109,16 @@ public class AuthController {
 
     /**
      * 从 Authorization: Bearer xxx 中提取 token
+     *
+     * @param authHeader Authorization 头
+     *                   格式为：Bearer xxx
+     * @return 提取到的 token，或 null 如果格式错误
      */
     private String extractBearerToken(String authHeader) {
         if (authHeader == null || authHeader.isBlank()) {
             return null;
         }
+        log.info("Authorization 头：{}", authHeader);
         if (!authHeader.startsWith("Bearer ")) {
             return null;
         }

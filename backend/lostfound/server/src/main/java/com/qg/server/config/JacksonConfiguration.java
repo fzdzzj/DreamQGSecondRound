@@ -15,6 +15,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Jackson 配置类
+ * 用于全局自定义 Jackson 序列化规则
+ */
 @Configuration
 public class JacksonConfiguration {
 

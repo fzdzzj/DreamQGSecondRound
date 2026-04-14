@@ -1,10 +1,15 @@
-package com.qg.server.config;  // 注意包名！
+package com.qg.server.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 
+/**
+ * MyBatis-Plus 元局字段填充类
+ * 用于自动填充实体类的 createTime 和 updateTime 字段
+ */
 @Component
 public class MyBatisPlusMetaObjectHandler implements MetaObjectHandler {
 

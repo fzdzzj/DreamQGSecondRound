@@ -16,6 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 用户相关接口
+ * 提供用户个人信息、修改密码等操作的接口
+ */
 @RestController
 @RequestMapping("/common")
 @Slf4j
@@ -29,6 +33,8 @@ public class CommonController {
 
     /**
      * 获取个人信息
+     *
+     * @return 个人信息的VO对象
      */
     @GetMapping("/personal-info")
     @Operation(summary = "获取个人信息")
@@ -42,6 +48,10 @@ public class CommonController {
 
     /**
      * 更新个人信息
+     *
+     * @param updateUserDTO 更新的用户信息
+     *                      包含昵称、邮箱、手机号等字段
+     * @return 更新结果
      */
     @PutMapping("/personal-info")
     @Operation(summary = "更新个人信息")
@@ -55,6 +65,9 @@ public class CommonController {
 
     /**
      * 修改密码
+     *
+     * @param changePasswordDTO 新密码的DTO
+     * @return 修改密码结果
      */
     @PutMapping("/password")
     @Operation(summary = "修改密码")
@@ -76,6 +89,13 @@ public class CommonController {
         log.info("密码修改成功，旧 token 已失效，用户ID={}", userId);
         return Result.success();
     }
+
+    /**
+     * 验证码修改密码
+     *
+     * @param dto 验证码修改密码的DTO
+     * @return 修改密码结果
+     */
     @PutMapping("/password/by-code")
     @Operation(summary = "验证码修改密码（无需旧密码）")
     public Result<Void> changePasswordByCode(@Validated @RequestBody ChangePasswordByCodeDTO dto,
@@ -97,12 +117,17 @@ public class CommonController {
         return Result.success();
     }
 
-
-
+    /**
+     * 从 Authorization 头中提取 Bearer token
+     *
+     * @param authHeader Authorization 头
+     * @return Bearer token
+     */
     private String extractBearerToken(String authHeader) {
         if (authHeader == null || authHeader.isBlank()) {
             return null;
         }
+        log.info("从 Authorization 头中提取 Bearer token，Authorization 头：{}", authHeader);
         if (!authHeader.startsWith("Bearer ")) {
             return null;
         }

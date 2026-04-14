@@ -11,9 +11,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 留言接口
+ * 提供留言相关的接口，如发表留言、获取留言列表、删除留言等
+ */
 @RestController
 @RequestMapping("/comment")
 @RequiredArgsConstructor
@@ -25,19 +28,27 @@ public class CommentController {
 
     /**
      * 发表评论/留言
+     *
+     * @param commentAddDTO 留言添加DTO
+     * @return 发表留言结果
      */
     @PostMapping
-    @Operation(summary="发表评论/留言")
-    public Result<Void> addComment(@RequestBody CommentAddDTO commentAddDTO){
-        Long userId= BaseContext.getCurrentId();
-        log.info("用户发表留言，用户ID：{}，物品ID：{}",userId,commentAddDTO.getItemId());
+    @Operation(summary = "发表评论/留言")
+    public Result<Void> addComment(@RequestBody CommentAddDTO commentAddDTO) {
+        Long userId = BaseContext.getCurrentId();
+        log.info("用户发表留言，用户ID：{}，物品ID：{}", userId, commentAddDTO.getItemId());
         commentService.addComment(commentAddDTO);
-        log.info("用户发表留言成功，用户ID：{}，物品ID：{}",userId,commentAddDTO.getItemId());
+        log.info("用户发表留言成功，用户ID：{}，物品ID：{}", userId, commentAddDTO.getItemId());
         return Result.success();
     }
 
     /**
      * 获取物品留言列表
+     *
+     * @param id       物品ID
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @return 分页查询结果
      */
     @GetMapping("/item/{id}")
     @Operation(summary = "获取物品留言列表")
@@ -53,6 +64,9 @@ public class CommentController {
 
     /**
      * 删除留言
+     *
+     * @param id 留言ID
+     * @return 删除留言结果
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "删除留言")
@@ -63,19 +77,27 @@ public class CommentController {
         log.info("用户删除留言成功，id={}, userId={}", id, userId);
         return Result.success();
     }
+
     /**
      * 获取留言详情
+     *
+     * @param id 留言ID
+     * @return 留言详情
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取留言详情")
     public Result<CommentDetailVO> getCommentDetail(@PathVariable Long id) {
         log.info("查询留言详情，id={}", id);
         CommentDetailVO commentVO = commentService.getCommentDetail(id);
-        log.info("查询留言详情成功，id={}", id);
+        log.info("查询留言详情成功，id={} commentContent={}", id, commentVO.getContent());
         return Result.success(commentVO);
     }
+
     /**
      * 标记留言为已读
+     *
+     * @param id 留言ID
+     * @return 标记留言为已读结果
      */
     @PutMapping("/{id}/read")
     @Operation(summary = "标记留言为已读")
@@ -89,6 +111,9 @@ public class CommentController {
 
     /**
      * 获取物品下未读留言数量
+     *
+     * @param id 物品ID
+     * @return 未读留言数量
      */
     @GetMapping("/item/{id}/unread")
     @Operation(summary = "获取物品下未读留言数量")
@@ -101,6 +126,8 @@ public class CommentController {
 
     /**
      * 获取用户未读留言数量
+     *
+     * @return 用户未读留言数量
      */
     @GetMapping("/user/unread")
     @Operation(summary = "获取用户未读留言数量")

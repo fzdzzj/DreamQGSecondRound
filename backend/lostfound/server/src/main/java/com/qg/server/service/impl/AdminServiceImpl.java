@@ -32,28 +32,41 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 管理员服务实现类
+ * 提供管理员相关的业务逻辑实现
+ * 包括用户管理、物品管理、操作日志管理等功能
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements AdminService {
 
-    private final BizItemDao bizItemDao;  // 物品数据访问层
+    private final BizItemDao bizItemDao;
     private final UserDao userDao;
     private final UserService userService;
     private final OperationLogService operationLogService;
     private final RedisTemplate<String, Object> redisTemplate;
+
     /**
      * 用户分页列表
      *
      * @param queryDTO 查询条件
      * @return 用户分页结果
+     * 1. 查询用户列表
+     * 2. 转换为 VO 对象
      */
     @Override
     public PageResult<SysUserStatVO> userList(UserPageQueryDTO queryDTO) {
         log.info("管理员分页查询用户列表，queryDTO={}", queryDTO);
-
+        if (queryDTO.getPageNum() == null) {
+            queryDTO.setPageNum(DefaultPageConstant.DEFAULT_PAGE_NUM);
+        }
+        if (queryDTO.getPageSize() == null) {
+            queryDTO.setPageSize(DefaultPageConstant.DEFAULT_PAGE_SIZE);
+        }
         Page<SysUser> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
-
+        // 1. 查询用户列表
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(queryDTO.getId() != null, SysUser::getId, queryDTO.getId())
                 .like(queryDTO.getUsername() != null, SysUser::getUsername, queryDTO.getUsername())
@@ -64,9 +77,9 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
                 .orderByDesc(SysUser::getLastLoginTime)
                 .orderByDesc(SysUser::getCreateTime);
 
-        Page<SysUser> resultPage = baseMapper.selectPage(page, wrapper); // 使用 MyBatis-Plus 提供的 selectPage
-
-        // 将查询结果转换为 VO 对象
+        Page<SysUser> resultPage = page(page, wrapper);
+        log.info("分页查询用户列表结束,总条数：{}", resultPage.getTotal());
+        // 2. 将查询结果转换为 VO 对象
         List<SysUserStatVO> list = resultPage.getRecords()
                 .stream()
                 .map(this::toSysUserStatVO)
@@ -80,15 +93,20 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
      *
      * @param userId 用户ID
      * @return 用户详细信息
+     * 1. 查询用户详情
+     * 2. 转换为用户详情 VO 对象
      */
     @Override
     public SysUserDetailVO userDetail(Long userId) {
         log.info("管理员查看用户详情，userId={}", userId);
-
-        SysUser user = baseMapper.selectById(userId);  // 使用 IService 提供的 getById 方法
+        // 1. 查询用户详情
+        SysUser user = getById(userId);
         if (user == null) {
+            log.warn("用户不存在或已被逻辑删除，userId={}", userId);
             throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
+        // 2. 转换为用户详情 VO 对象
+        log.info("用户详情查询成功，userId={}", userId);
         return toSysUserDetailVO(user);
     }
 
@@ -96,80 +114,93 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
      * 封禁用户
      *
      * @param userId 用户ID
+     *               1. 查询用户详情
+     *               2. 检查用户状态
+     *               3. 更新用户状态
+     *               4. 禁用该用户的所有物品
+     *               5. 返回成功响应
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void disableUser(Long userId) {
         log.info("管理员封禁用户，userId={}", userId);
-
-        SysUser user = baseMapper.selectById(userId);  // 使用 IService 提供的 getById 方法
+        // 1. 查询用户详情
+        SysUser user = getById(userId);
         if (user == null) {
             log.warn("封禁用户失败，用户不存在或已被逻辑删除，userId={}", userId);
             throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
-
+        // 2. 检查用户状态
         if (UserStatusConstant.DISABLE.equals(user.getStatus())) {
             log.info("用户当前已为禁用状态，无需重复封禁，userId={}", userId);
             return;
         }
-        if (RoleConstant.ADMIN.equals(user.getRole())|| RoleConstant.SYSTEM.equals(user.getRole())) {
+        if (RoleConstant.ADMIN.equals(user.getRole()) || RoleConstant.SYSTEM.equals(user.getRole())) {
             log.warn("用户无权限操作此用户，userId={}", userId);
             throw new AbsentException(MessageConstant.USER_NOT_AUTHORIZED);
         }
-
+        // 3. 更新用户状态
         SysUser updateUser = new SysUser();
         updateUser.setId(userId);
         updateUser.setStatus(UserStatusConstant.DISABLE);
 
-        baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
-        banUser(userId,null);
-        //查找该用户的所有物品
+        updateById(updateUser);
+        log.info("更新用户状态成功，userId={}, oldStatus={}, newStatus={}",
+                userId, user.getStatus(), UserStatusConstant.DISABLE);
+        banUser(userId, null);
+        // 4. 关闭该用户所有物品
         List<BizItem> items = bizItemDao.selectList(new LambdaQueryWrapper<BizItem>()
                 .eq(BizItem::getUserId, userId));
-        //禁用该用户的所有物品
+        log.info("禁用该用户所有物品，userId={}", userId);
         items.forEach(item -> {
             item.setStatus(BizItemStatusConstant.CLOSED);
             bizItemDao.updateById(item);
         });
-
+        // 5. 返回成功响应
         log.info("管理员封禁用户成功，userId={}, oldStatus={}, newStatus={}",
                 userId, user.getStatus(), UserStatusConstant.DISABLE);
     }
-
 
 
     /**
      * 解封用户
      *
      * @param userId 用户ID
+     *               1. 查询用户详情
+     *               2. 检查用户状态
+     *               3. 更新用户状态
+     *               4. 删除用户封禁缓存
+     *               5. 返回成功响应
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void enableUser(Long userId) {
         log.info("管理员解封用户，userId={}", userId);
-
-        SysUser user = baseMapper.selectById(userId);  // 使用 IService 提供的 getById 方法
+        // 1. 查询用户详情
+        SysUser user = getById(userId);
         if (user == null) {
             log.warn("解封用户失败，用户不存在或已被逻辑删除，userId={}", userId);
             throw new AbsentException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
-
+        // 2. 检查用户状态
         if (UserStatusConstant.ENABLE.equals(user.getStatus())) {
             log.info("用户当前已为启用状态，无需重复解封，userId={}", userId);
             return;
         }
-        if (RoleConstant.ADMIN.equals(user.getRole())|| RoleConstant.SYSTEM.equals(user.getRole())) {
+        if (RoleConstant.ADMIN.equals(user.getRole()) || RoleConstant.SYSTEM.equals(user.getRole())) {
             log.warn("用户无权限操作此用户，userId={}", userId);
             throw new AbsentException(MessageConstant.USER_NOT_AUTHORIZED);
         }
-
+        // 3. 更新用户状态
         SysUser updateUser = new SysUser();
         updateUser.setId(userId);
         updateUser.setStatus(UserStatusConstant.ENABLE);
-
-        baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
+        updateById(updateUser);
+        log.info("更新用户状态成功，userId={}, oldStatus={}, newStatus={}",
+                userId, user.getStatus(), UserStatusConstant.ENABLE);
+        //4. 删除用户封禁缓存
         redisTemplate.delete(RedisConstant.USER_BANNED_KEY + userId);
-
+        // 5. 返回成功响应
         log.info("管理员解封用户成功，userId={}, oldStatus={}, newStatus={}",
                 userId, user.getStatus(), UserStatusConstant.ENABLE);
     }
@@ -178,16 +209,31 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
      * 删除物品（逻辑删除）
      *
      * @param itemId 物品ID
+     *               1. 查询物品详情
+     *               2. 检查物品状态
+     *               3. 更新物品状态
+     *               4. 清理物品缓存
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteItem(Long itemId) {
-        BizItem bizItem = bizItemDao.selectById(itemId);  // 使用 getById 方法
+        // 1. 查询物品详情
+        BizItem bizItem = bizItemDao.selectById(itemId);
         if (bizItem == null) {
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
-        bizItemDao.deleteById(itemId);  // 使用 deleteById 方法
-        evictItemCaches(itemId);  // 清理缓存
+        //2.删除物品
+        bizItemDao.deleteById(itemId);
+        log.info("删除物品成功，itemId={}", itemId);
+        //3. 更新物品状态
+        BizItem updateItem = new BizItem();
+        updateItem.setId(itemId);
+        updateItem.setStatus(BizItemStatusConstant.DELETED);
+        bizItemDao.updateById(updateItem);
+        log.info("更新物品状态成功，itemId={}, oldStatus={}, newStatus={}",
+                itemId, bizItem.getStatus(), BizItemStatusConstant.DELETED);
+        //4. 清理物品缓存
+        evictItemCaches(itemId); // 清理缓存
     }
 
     /**
@@ -195,16 +241,24 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
      *
      * @param queryDTO 查询条件
      * @return 统计结果
+     * 1. 获取查询条件
+     * 2. 检查时间范围是否有效
+     * 3. 统计发布信息数量
+     * 4. 统计找回物品数量
+     * 5. 统计活跃用户数
+     * 6. 统计用户数量
      */
     @Override
     public AdminStatisticsVO statistics(AdminStatisticsQueryDTO queryDTO) {
         log.info("管理员获取平台统计开始，queryDTO={}", queryDTO);
-
+        // 1. 获取查询条件
         LocalDateTime startTime = queryDTO == null ? null : queryDTO.getStartTime();
         LocalDateTime endTime = queryDTO == null ? null : queryDTO.getEndTime();
+        // 2. 检查时间范围是否有效
         if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
             throw new IllegalArgumentException("开始时间不能大于结束时间");
         }
+        log.info("开始时间：{}，结束时间：{}", startTime, endTime);
 
         // 默认时间范围：最近7天
         if (startTime == null && endTime == null) {
@@ -215,28 +269,31 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
 
         AdminStatisticsVO vo = new AdminStatisticsVO();
 
-        // 发布信息数量
+        // 3. 统计发布信息数量
         Long publishCount = bizItemDao.selectCount(
                 new LambdaQueryWrapper<BizItem>()
                         .ge(startTime != null, BizItem::getCreateTime, startTime)
                         .le(endTime != null, BizItem::getCreateTime, endTime)
         );
+        log.info("发布信息数量：{}", publishCount);
 
-        // 找回物品数量
+        // 4. 统计找回物品数量
         Long foundCount = bizItemDao.selectCount(
                 new LambdaQueryWrapper<BizItem>()
                         .eq(BizItem::getStatus, BizItemStatusConstant.MATCHED)
                         .ge(startTime != null, BizItem::getCreateTime, startTime)
                         .le(endTime != null, BizItem::getCreateTime, endTime)
         );
+        log.info("找回物品数量：{}", foundCount);
 
-        // 活跃用户数
+        // 5. 统计活跃用户数
         Long activeUserCount = userDao.selectCount(
                 new LambdaQueryWrapper<SysUser>()
                         .ge(startTime != null, SysUser::getLastLoginTime, startTime)
                         .le(endTime != null, SysUser::getLastLoginTime, endTime)
         );
-
+        log.info("活跃用户数：{}", activeUserCount);
+        // 6. 统计结果
         vo.setPublishCount(publishCount == null ? 0L : publishCount);
         vo.setFoundCount(foundCount == null ? 0L : foundCount);
         vo.setActiveUserCount(activeUserCount == null ? 0L : activeUserCount);
@@ -247,6 +304,12 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         return vo;
     }
 
+    /**
+     * 获取用户详情
+     *
+     * @param user 用户实体
+     * @return 用户列表VO
+     */
     private SysUserStatVO toSysUserStatVO(SysUser user) {
         SysUserStatVO vo = new SysUserStatVO();
         BeanUtils.copyProperties(user, vo);
@@ -255,6 +318,12 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         return vo;
     }
 
+    /**
+     * 获取用户详情
+     *
+     * @param user 用户实体
+     * @return 用户详情VO
+     */
     private SysUserDetailVO toSysUserDetailVO(SysUser user) {
         SysUserDetailVO vo = new SysUserDetailVO();
         BeanUtils.copyProperties(user, vo);
@@ -263,21 +332,40 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         return vo;
     }
 
+    /**
+     * 清理物品缓存
+     *
+     * @param itemId 物品ID
+     */
+
     private void evictItemCaches(Long itemId) {
         // 清理物品缓存
         redisTemplate.delete("item:detail:" + itemId);
     }
-    public void banUser(Long userId,String actionType) {
+
+    /**
+     * 封禁用户
+     *
+     * @param userId     用户ID
+     * @param actionType 封禁原因
+     *                   1. 封禁用户
+     *                   2. 记录封禁日志
+     */
+    public void banUser(Long userId, String actionType) {
+        // 1. 封禁用户
         redisTemplate.opsForValue().set(RedisConstant.USER_BANNED_KEY + userId, true);
         redisTemplate.expire(RedisConstant.USER_BANNED_KEY + userId, Duration.ofDays(8));
-        log.info("用户 {} 被封禁，封禁原因：{}", userId,actionType);
+        log.info("用户 {} 被封禁，封禁原因：{}", userId, actionType);
         SysUser sysUser = userService.getById(userId);
         sysUser.setStatus(0);
         userService.updateById(sysUser);
+        log.info("用户 {} 封禁成功", userId);
+        // 2. 记录封禁日志
         log.info("用户 {} 封禁成功", userId);
         UserActionLog userActionLog = new UserActionLog();
         userActionLog.setUserId(userId);
         userActionLog.setActionType(actionType);
         operationLogService.save(userActionLog);
+        log.info("用户 {} 封禁日志记录成功", userId);
     }
 }

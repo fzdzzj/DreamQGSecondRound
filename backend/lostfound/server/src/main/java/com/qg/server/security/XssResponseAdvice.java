@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -16,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
  * 全局响应体处理类，用于防止 XSS 攻击。
  */
 @ControllerAdvice
+@Slf4j
 public class XssResponseAdvice implements ResponseBodyAdvice<Object> {
 
     private final ObjectMapper objectMapper;
@@ -25,17 +27,25 @@ public class XssResponseAdvice implements ResponseBodyAdvice<Object> {
     }
 
     /**
-     * 修复点1：排除 byte[] 类型，不拦截二进制数据
+     * 排除 byte[] 类型，不拦截二进制数据
      */
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
         // 排除返回值是 byte[] 的接口（文档、文件、图片都会跳过）
-        if (returnType.getParameterType() == byte[].class) {
-            return false;
-        }
-        return true;
+        return returnType.getParameterType() != byte[].class;
     }
 
+    /**
+     * 处理 JSON 响应，防止 XSS 攻击
+     *
+     * @param body
+     * @param returnType
+     * @param selectedContentType
+     * @param selectedConverterType
+     * @param request
+     * @param response
+     * @return
+     */
     @Override
     public Object beforeBodyWrite(Object body,
                                   MethodParameter returnType,
@@ -43,8 +53,7 @@ public class XssResponseAdvice implements ResponseBodyAdvice<Object> {
                                   Class selectedConverterType,
                                   ServerHttpRequest request,
                                   ServerHttpResponse response) {
-
-        // 修复点2：如果是二进制/文件类型，直接返回，不处理
+        // 处理 byte[] 响应, 直接返回, 不处理
         if (body instanceof byte[]) {
             return body;
         }
@@ -60,14 +69,20 @@ public class XssResponseAdvice implements ResponseBodyAdvice<Object> {
         }
         return body;
     }
-
+    /**
+     * 递归处理 JSON 节点，防止 XSS 攻击
+     * @param node
+     * @return
+     */
     private JsonNode escapeJsonNode(JsonNode node) {
+        // 处理文本节点
         if (node.isTextual()) {
             String value = node.asText();
             if (value != null && !value.isEmpty()) {
                 return objectMapper.valueToTree(StringEscapeUtils.escapeHtml4(value));
             }
         }
+        // 处理对象节点
         if (node.isObject()) {
             ObjectNode objectNode = (ObjectNode) node;
             objectNode.fields().forEachRemaining(entry -> {
@@ -75,6 +90,7 @@ public class XssResponseAdvice implements ResponseBodyAdvice<Object> {
             });
             return objectNode;
         }
+        // 处理数组节点
         if (node.isArray()) {
             ArrayNode arrayNode = (ArrayNode) node;
             for (int i = 0; i < arrayNode.size(); i++) {

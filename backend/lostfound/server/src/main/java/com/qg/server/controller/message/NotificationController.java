@@ -11,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 通知接口
+ * 提供通知相关的接口，如获取用户未读通知数量、获取用户所有通知（分页）、标记通知为已读等
+ */
 @RestController
 @RequestMapping("/notification")
 @Tag(name = "通知接口")
@@ -18,8 +22,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;
+
     /**
      * 获取用户未读通知数量
+     *
+     * @return 用户未读通知数量
      */
     @GetMapping("/user/unread")
     @Operation(summary = "获取用户未读通知数量")
@@ -33,6 +40,10 @@ public class NotificationController {
 
     /**
      * 获取用户所有通知（分页）
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页条数
+     * @return 通知列表分页结果
      */
     @GetMapping("/user")
     @Operation(summary = "获取用户所有通知")
@@ -41,11 +52,16 @@ public class NotificationController {
         Long userId = BaseContext.getCurrentId();
         log.info("查询用户所有通知，userId={}, pageNum={}, pageSize={}", userId, pageNum, pageSize);
         PageResult<NotificationVO> pageResult = notificationService.getUserNotifications(userId, pageNum, pageSize);
-        log.info("查询用户所有通知成功，userId={}, pageNum={}, pageSize={}", userId, pageNum, pageSize);
+        log.info("查询用户所有通知成功，userId={}, pageNum={}, pageSize={}, total={}",
+                userId, pageNum, pageSize, pageResult.getTotal());
         return Result.success(pageResult);
     }
+
     /**
      * 标记通知为已读
+     *
+     * @param id 通知ID
+     * @return 成功结果
      */
     @PutMapping("/{id}/read")
     @Operation(summary = "标记通知为已读")
@@ -55,8 +71,12 @@ public class NotificationController {
         log.info("用户标记通知为已读成功，id={}", id);
         return Result.success();
     }
+
     /**
      * 删除通知（逻辑删除）
+     *
+     * @param id 通知ID
+     * @return 成功结果
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "删除通知")
@@ -66,7 +86,5 @@ public class NotificationController {
         log.info("用户删除通知成功，id={}", id);
         return Result.success();
     }
-
-
 
 }

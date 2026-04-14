@@ -11,7 +11,7 @@ import java.util.List;
 @Mapper
 public interface PermissionDao {
     /**
-      * 根据角色编号查询权限
-    */
+     * 根据角色编号查询权限
+     */
     List<Permission> selectPermissionsByRole(String role);
 }

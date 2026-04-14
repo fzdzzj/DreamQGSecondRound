@@ -1,12 +1,15 @@
 package com.qg.server.event;
 
+import com.qg.server.ai.client.ImageDescriptionClient.ImageItem;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
-import com.qg.server.ai.client.ImageDescriptionClient.ImageItem;
 
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 物品AI生成事件
+ */
 @Getter
 public class ItemAiGenerateEvent extends ApplicationEvent {
 
