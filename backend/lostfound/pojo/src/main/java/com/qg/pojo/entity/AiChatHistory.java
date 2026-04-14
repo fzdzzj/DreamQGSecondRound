@@ -3,6 +3,7 @@ package com.qg.pojo.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -11,7 +12,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("ai_chat_history")
-public class AiChatHistory {
+public class AiChatHistory implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * 主键 ID，自增

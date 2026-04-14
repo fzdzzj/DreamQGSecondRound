@@ -30,7 +30,7 @@ public class ChangePasswordDTO implements Serializable {
 
     @AssertTrue(message = "密码和确认密码不相等", groups = {ChangePasswordDTO.class})
     @Schema(description = "密码和确认密码是否相等")
-        public boolean isPasswordMatch() {
+    public boolean isPasswordMatch() {
         return newPassword != null && newPassword.equals(confirmPassword);
     }
 }

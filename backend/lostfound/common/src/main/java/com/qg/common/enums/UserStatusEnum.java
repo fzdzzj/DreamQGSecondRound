@@ -1,8 +1,8 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * 用户状态枚举类
+ */
 public enum UserStatusEnum {
 
     ENABLE(1, "启用"),

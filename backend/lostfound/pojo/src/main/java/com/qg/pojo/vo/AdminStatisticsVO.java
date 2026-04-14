@@ -6,7 +6,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-@Schema(description = "管理员统计信息")
+@Schema(description = "管理员统计信息VO")
 public class AdminStatisticsVO implements Serializable {
     private static final long serialVersionUID = 1L;
 

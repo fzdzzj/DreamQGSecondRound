@@ -152,8 +152,9 @@ public class PermissionServiceImpl implements PermissionService {
                 "POST:/biz/claim/approve",
 
                 "POST:/ai/item/{id}/regenerate",
-                "POST:/ai/ask"
-
+                "POST:/ai/ask",
+                "GET:/ai/history/chatIds",
+                "GET:/ai/history/chatHistory"
         );
     }
 }

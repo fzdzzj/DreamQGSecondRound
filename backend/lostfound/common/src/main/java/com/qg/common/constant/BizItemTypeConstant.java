@@ -4,7 +4,6 @@ package com.qg.common.constant;
  * 物品类型常量
  */
 public class BizItemTypeConstant {
-
     private BizItemTypeConstant() {
     }
 

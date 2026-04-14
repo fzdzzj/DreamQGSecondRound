@@ -1,8 +1,8 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * WebSocket操作枚举类
+ */
 public enum WsActionEnum {
     CHAT("CHAT", "聊天消息"),
     READ("READ", "已读回执"),

@@ -7,7 +7,7 @@ public class AccountNotFoundException extends BaseException {
 
 
     public AccountNotFoundException(String msg) {
-        super(404,msg);
+        super(404, msg);
     }
 
 }

@@ -13,16 +13,16 @@ import java.io.Serializable;
 public class PinRequestQueryDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @Min(1)
+    @Min(value = 1, message = "页码不能小于1")
     @Schema(description = "页码", example = "1")
     private Integer pageNum = DefaultPageConstant.DEFAULT_PAGE_NUM;
 
-    @Min(1)
-    @Max(50)
+    @Min(value = 1, message = "每页记录数不能小于1")
+    @Max(value = 50, message = "每页记录数不能大于50")
     @Schema(description = "每页记录数", example = "10")
     private Integer pageSize = DefaultPageConstant.DEFAULT_PAGE_SIZE;
 
-    @Schema(description = "申请状态，PENDING/APPROVED/REJECTED/CANCELLED", example = "PENDING")
+    @Schema(description = "申请状态，1.PENDING / 2.APPROVED / 3.REJECTED/4.CANCELLED", example = "PENDING")
     private String status;
 
     @Schema(description = "申请用户ID")

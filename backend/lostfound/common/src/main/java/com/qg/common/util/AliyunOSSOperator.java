@@ -18,19 +18,26 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+/**
+ * 阿里云OSS操作类
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class AliyunOSSOperator {
 
     private final AliyunOSSProperties aliyunOSSProperties;
+    /**
+     * 文件路径格式
+     */
     private static final DateTimeFormatter DIR_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM");
 
     public String upload(byte[] content, String originalFilename) {
         if (content == null || content.length == 0) {
             throw new BaseException(500, "文件不能为空");
         }
-
+        log.info("OSS上传开始：{}", originalFilename);
+        // 获取配置信息
         String endpoint = aliyunOSSProperties.getEndpoint();
         String region = aliyunOSSProperties.getRegion();
         String bucketName = aliyunOSSProperties.getBucketName();
@@ -60,6 +67,7 @@ public class AliyunOSSOperator {
 
             // 上传
             ossClient.putObject(bucketName, objectName, is);
+
             log.info("OSS上传成功：{}", objectName);
 
             return buildUrl(endpoint, bucketName, objectName);
@@ -69,11 +77,15 @@ public class AliyunOSSOperator {
             throw new BaseException(500, MessageConstant.IMAGE_UPLOAD_FAILED);
         } finally {
             if (ossClient != null) {
+                log.info("OSS关闭");
                 ossClient.shutdown();
             }
         }
     }
 
+    /**
+     * 构建文件访问URL
+     */
     private String buildUrl(String endpoint, String bucketName, String objectName) {
         if (endpoint.startsWith("http://")) {
             return "http://" + bucketName + "." + endpoint.substring(7) + "/" + objectName;
@@ -84,6 +96,9 @@ public class AliyunOSSOperator {
         }
     }
 
+    /**
+     * 获取文件扩展名
+     */
     private String getFileExtension(String filename) {
         if (filename == null || !filename.contains(".")) return ".png";
         return filename.substring(filename.lastIndexOf("."));

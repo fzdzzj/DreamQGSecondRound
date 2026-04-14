@@ -1,8 +1,8 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * 物品类型枚举类
+ */
 public enum BizItemTypeEnum {
 
     LOST("1", "丢失物品"),

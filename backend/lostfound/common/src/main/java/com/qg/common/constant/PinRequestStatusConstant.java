@@ -5,11 +5,24 @@ package com.qg.common.constant;
  */
 public class PinRequestStatusConstant {
 
-    public static final String PENDING = "1";
-    public static final String APPROVED = "2";
-    public static final String REJECTED = "3";
-    public static final String CANCELED = "4";
-
     private PinRequestStatusConstant() {
     }
+
+    /**
+     * 待审核
+     */
+    public static final String PENDING = "1";
+    /**
+     * 已审核
+     */
+    public static final String APPROVED = "2";
+    /**
+     * 已拒绝
+     */
+    public static final String REJECTED = "3";
+    /**
+     * 已取消
+     */
+    public static final String CANCELED = "4";
+
 }

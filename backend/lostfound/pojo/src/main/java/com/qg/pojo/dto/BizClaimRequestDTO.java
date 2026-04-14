@@ -3,9 +3,8 @@ package com.qg.pojo.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+
 @Data
 @Schema(description = "认领申请DTO")
 public class BizClaimRequestDTO implements Serializable {

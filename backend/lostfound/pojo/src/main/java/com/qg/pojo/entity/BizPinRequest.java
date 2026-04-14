@@ -1,18 +1,20 @@
 package com.qg.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.qg.common.enums.PinRequestStatusEnum;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 置顶申请表
+ */
 @Data
 @TableName("biz_pin_request")
 public class BizPinRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(type= IdType.AUTO)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
@@ -30,7 +32,7 @@ public class BizPinRequest implements Serializable {
     private String reason;
 
     /**
-     * 状态：PENDING / APPROVED / REJECTED / CANCELED
+     * 状态：1.待审核 2.已审核 3.已拒绝 4.已取消
      */
     private String status;
 
@@ -49,9 +51,9 @@ public class BizPinRequest implements Serializable {
      */
     private LocalDateTime auditTime;
 
-    @TableField(fill= FieldFill.INSERT)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill= FieldFill.INSERT_UPDATE)
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

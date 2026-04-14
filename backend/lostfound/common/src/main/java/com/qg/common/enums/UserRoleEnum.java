@@ -1,8 +1,8 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * 用户角色枚举类
+ */
 public enum UserRoleEnum {
 
     STUDENT("1", "学生"),

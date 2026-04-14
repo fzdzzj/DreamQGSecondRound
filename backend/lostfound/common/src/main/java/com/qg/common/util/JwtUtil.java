@@ -79,7 +79,7 @@ public class JwtUtil {
                                  Set<String> permissions,
                                  Long expire,
                                  String type) {
-
+        // 构建 Claims
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.USER_ID, userId);
         claims.put(JwtClaimsConstant.USERNAME, username);
@@ -90,13 +90,13 @@ public class JwtUtil {
         if (TokenConstant.ACCESS.equals(type) && permissions != null && !permissions.isEmpty()) {
             claims.put(JwtClaimsConstant.PERMISSIONS, permissions);
         }
-
+        // 构建过期时间
         long now = System.currentTimeMillis();
         Date expiration = new Date(now + expire);
 
         log.info("生成 {}Token，userId={}, username={}, role={}, expire={}",
                 type, userId, username, role, expiration);
-
+        // 生成 Token
         SecretKey secretKey = Keys.hmacShaKeyFor(
                 jwtProperties.getSignKey().getBytes(StandardCharsets.UTF_8)
         );
@@ -116,6 +116,8 @@ public class JwtUtil {
      */
     public Claims parseToken(String token) {
         try {
+            // 验证 Token 签名
+            log.info("验证 Token 签名");
             SecretKey secretKey = Keys.hmacShaKeyFor(
                     jwtProperties.getSignKey().getBytes(StandardCharsets.UTF_8)
             );
@@ -140,14 +142,20 @@ public class JwtUtil {
      */
     public Set<String> getPermissionsFromToken(Claims claims) {
         try {
+            // 从 Claims 中提取权限集合
+            log.info("从 Claims 中提取权限集合");
             Object obj = claims.get(JwtClaimsConstant.PERMISSIONS);
+            // 判断 obj 是否为 Iterable 类型，如 List 或 Set
             if (obj instanceof Iterable<?> iterable) {
                 Set<String> result = new HashSet<>();
                 for (Object item : iterable) {
                     result.add(String.valueOf(item));
                 }
+                log.info("提取到权限集合：{}", result);
                 return result;
             }
+            // 如果 obj 不是 Iterable 类型，返回空集合
+            log.warn("权限集合格式错误，返回空集合");
             return Collections.emptySet();
         } catch (Exception e) {
             log.error("获取权限失败", e);
@@ -159,6 +167,8 @@ public class JwtUtil {
      * 判断 Token 是否过期
      */
     public boolean isTokenExpired(String token) {
+        // 解析 Token 并获取 Claims
+        log.info("解析 Token 并获取 Claims");
         Claims claims = parseToken(token);
         return claims == null || claims.getExpiration().before(new Date());
     }
@@ -167,6 +177,7 @@ public class JwtUtil {
      * 获取 Token 类型
      */
     public String getTypeFromToken(String token) {
+        // 解析 Token 并获取 Claims
         Claims claims = parseToken(token);
         return claims == null ? null : claims.get(JwtClaimsConstant.TYPE, String.class);
     }
@@ -207,6 +218,7 @@ public class JwtUtil {
             if (claims == null) {
                 return -1;
             }
+            // 获取 Token 过期时间
             long expireTime = claims.getExpiration().getTime();
             long now = System.currentTimeMillis();
             return (expireTime - now) / 1000;

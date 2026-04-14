@@ -7,7 +7,6 @@ public interface MessageConstant {
     String UNKNOWN_ERROR = "未知错误";
     String PASSWORD_ENCRYPT_ERROR = "密码加密异常";
     String IMAGE_UPLOAD_FAILED = "图片上传失败";
-    String EMAIL_NOT_FOUND = "邮箱不存在";
     String ACCOUNT_NOT_FOUND = "账号不存在";
     String PASSWORD_ERROR = "密码错误";
     String USERNAME_OR_PHONE_OR_EMAIL_EXISTS = "用户名或手机号或邮箱已存在";
@@ -34,17 +33,8 @@ public interface MessageConstant {
     String PIN_REQUEST_ABSENT = "置顶申请不存在";
     String COMMENT_NOT_FOUND = "留言不存在";
     String USER_NOT_FOUND = "用户不存在";
-    String PARENT_COMMENT_NOT_FOUND = "父留言不存在";
     String NOTIFICATION_NOT_FOUND = "通知不存在";
 
-    String PRIVATE_MESSAGE_NOT_FOUND = "私聊消息不存在";
-    String PRIVATE_MESSAGE_VIEW_NOT_ALLOWED = "无权查看该消息";
-    String PRIVATE_MESSAGE_DELETE_NOT_ALLOWED = "无权删除该消息";
-    String PRIVATE_MESSAGE_RECEIVER_NOT_FOUND = "接收用户不存在";
-    String PRIVATE_MESSAGE_CONTENT_EMPTY = "消息内容不能为空";
-    String PRIVATE_MESSAGE_SEND_TO_SELF_NOT_ALLOWED = "不能给自己发送私聊消息";
-
-    String DAILY_LIMIT_EXCEEDED = "今日生成次数已用完";
     String AI_GENERATE_FAILED = "AI生成失败";
     String PIN_REQUEST_AUDIT_PASS = "置顶申请审核通过";
     String NO_PERMISSION = "无权限操作";

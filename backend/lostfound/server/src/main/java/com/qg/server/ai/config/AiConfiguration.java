@@ -2,6 +2,7 @@ package com.qg.server.ai.config;
 
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.properties.AIProperties;
+import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.server.ai.client.AdminStatisticsAiClient;
 import com.qg.server.ai.client.DescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient;
@@ -12,18 +13,27 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 
+/**
+ * AI 配置类
+ */
 @Configuration
 public class AiConfiguration {
+    @Autowired
+    private SensitiveWordFilterUtil sensitiveWordFilterUtil;
 
     @Bean
     public ChatMemory chatMemory() {
         return new InMemoryChatMemory();
     }
 
+    /**
+     * 描述客户端
+     */
     @Bean
     public ChatClient descriptionChatClient(OpenAiChatModel chatModel) {
         return ChatClient.builder(chatModel)
@@ -32,6 +42,9 @@ public class AiConfiguration {
                 .build();
     }
 
+    /**
+     * 管理员统计客户端
+     */
     @Bean
     public ChatClient adminStatisticsChatClient(OpenAiChatModel chatModel) {
         return ChatClient.builder(chatModel)
@@ -39,6 +52,10 @@ public class AiConfiguration {
                 .defaultAdvisors(new SimpleLoggerAdvisor())
                 .build();
     }
+
+    /**
+     * 回答客户端
+     */
     @Bean
     public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
@@ -49,19 +66,28 @@ public class AiConfiguration {
                 .build();
     }
 
+    /**
+     * 描述客户端
+     */
     @Bean
     public DescriptionClient descriptionClient(ChatClient descriptionChatClient,
                                                RedisTemplate<String, Object> redisTemplate,
                                                AIProperties aiProperties) {
-        return new DescriptionClient(descriptionChatClient, redisTemplate, aiProperties);
+        return new DescriptionClient(descriptionChatClient, redisTemplate, aiProperties, sensitiveWordFilterUtil);
     }
 
+    /**
+     * 图片描述客户端
+     */
     @Bean
     public ImageDescriptionClient imageDescriptionClient(AIProperties aiProperties,
                                                          RedisTemplate<String, Object> redisTemplate) {
-        return new ImageDescriptionClient(aiProperties, redisTemplate);
+        return new ImageDescriptionClient(aiProperties, redisTemplate, sensitiveWordFilterUtil);
     }
 
+    /**
+     * 管理员统计客户端
+     */
     @Bean
     public AdminStatisticsAiClient adminStatisticsAiClient(ChatClient adminStatisticsChatClient) {
         return new AdminStatisticsAiClient(adminStatisticsChatClient);

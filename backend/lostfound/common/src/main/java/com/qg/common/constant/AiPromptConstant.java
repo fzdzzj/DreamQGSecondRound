@@ -1,8 +1,21 @@
 package com.qg.common.constant;
 
-import java.util.List;
-
+/**
+ * AI 提示词常量类
+ */
 public class AiPromptConstant {
+    private AiPromptConstant() {
+    }
+
+    /**
+     * 最大物品描述长度
+     */
+    public static final int MAX_DESCRIPTION_LENGTH = 500;
+
+
+    /**
+     * 默认系统提示词
+     */
     public static final String ANSWER_SYSTEM_PROMPT = """
             你是一名校园失物智能助手。你的名字叫“QG”，你的任务是帮助用户找回失物。
             你可以访问数据库中的三个表：BizItem, BizItemAiResult, BizItemAiTag。 \s
@@ -26,9 +39,9 @@ public class AiPromptConstant {
             
             """;
 
-    private AiPromptConstant() {
-    }
-
+    /**
+     * 管理员统计系统提示词
+     */
     public static final String ADMIN_STATISTICS_SYSTEM_PROMPT = """
             你是校园失物招领平台的运营分析助手。
             你的任务是根据平台提供的结构化统计数据，生成一段面向管理员的分析总结。
@@ -67,14 +80,9 @@ public class AiPromptConstant {
                     "用户描述：%s\n" +
                     "丢失地点：%s\n" +
                     "类型：%s";
-
-    public static final int MAX_DESCRIPTION_LENGTH = 500;
-    public static final List<String> SENSITIVE_WORDS = List.of("身份证", "学号"); // 需要屏蔽的敏感信息
-    public static final String DDEFAULT_DESCRIPTION = """
-            物品名称：%s
-            物品描述：%s
-            丢失地点：%s
-            """;
+    /**
+     * 多模态物品描述模板提示词
+     */
     public static final String DEFAULT_DESCRIPTION_TEMPLATE = """
                         你是校园失物多模态智能助手，请根据以下信息生成分类和标签，并生成物品描述。
                                     请严格返回 JSON 格式，字段必须包括：
@@ -93,6 +101,17 @@ public class AiPromptConstant {
                                     3. aiTags 描述物品颜色、材质、特征、场景等；
             
             """;
-
+    /**
+     * 默认物品描述模板(ai调用失败时使用)
+     * 占位符顺序：
+     * 1. 物品名称
+     * 2. 物品描述
+     * 3. 丢失地点
+     */
+    public static final String DDEFAULT_DESCRIPTION = """
+            物品名称：%s
+            物品描述：%s
+            丢失地点：%s
+            """;
 
 }

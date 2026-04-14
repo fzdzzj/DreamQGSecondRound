@@ -22,6 +22,6 @@ public class UserLoginVO {
     @Schema(description = "昵称", example = "小明", nullable = true)
     private String nickname;
 
-    @Schema(description = "头像URL", example = "https://example.com/avatar.png",nullable = true)
+    @Schema(description = "头像URL", example = "https://example.com/avatar.png", nullable = true)
     private String avatar;
 }

@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 public class EmailSendCodeDTO implements Serializable {
     @Schema(description = "邮箱")
-    @Pattern(regexp= RegexConstant.EMAIL, message = "邮箱格式错误")
+    @Pattern(regexp = RegexConstant.EMAIL, message = "邮箱格式错误")
     @NotBlank(message = "邮箱不能为空")
     private String email;
     @Schema(description = "类型")

@@ -17,27 +17,37 @@ public class BaseContext {
         private String role;  // 用户角色 student/admin
     }
 
-    // 线程上下文，存 UserContext
+    /**
+     * 线程上下文，存 UserContext
+     */
     private static final ThreadLocal<UserContext> threadLocal = new ThreadLocal<>();
 
-    // 设置当前用户信息
+    /**
+     * 设置当前用户信息
+     */
     public static void setCurrentUser(Long id, String role) {
         threadLocal.set(new UserContext(id, role));
     }
 
-    // 获取当前用户ID
+    /**
+     * 获取当前用户ID
+     */
     public static Long getCurrentId() {
         UserContext context = threadLocal.get();
         return context == null ? null : context.getId();
     }
 
-    // 获取当前用户角色
+    /**
+     * 获取当前用户角色
+     */
     public static String getCurrentRole() {
         UserContext context = threadLocal.get();
         return context == null ? null : context.getRole();
     }
 
-    // 清理
+    /**
+     * 清理当前用户信息
+     */
     public static void remove() {
         threadLocal.remove();
     }

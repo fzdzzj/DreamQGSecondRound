@@ -4,6 +4,7 @@ package com.qg.common.util;
 import com.qg.common.constant.MessageConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 /**
  * 密码加密工具类
  * 自动加盐，无法反解密，企业标准方案

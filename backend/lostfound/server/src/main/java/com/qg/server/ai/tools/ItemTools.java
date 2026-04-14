@@ -8,15 +8,19 @@ import com.qg.server.mapper.BizItemAiResultDao;
 import com.qg.server.mapper.BizItemAiTagDao;
 import com.qg.server.mapper.BizItemDao;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
+/**
+ * 物品工具类
+ */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ItemTools {
 
     private final BizItemDao bizItemDao;
@@ -68,7 +72,8 @@ public class ItemTools {
         if (description == null || description.isEmpty()) {
             return List.of();
         }
-
+        log.info("查询物品AI处理结果，物品概括描述={}", description);
+        // 查询物品的 AI 处理结果
         List<BizItemAiResult> results = bizItemAiResultDao.selectList(
                 new QueryChainWrapper<>(bizItemAiResultDao)
                         .like(true, "origin_text", description)
@@ -95,15 +100,15 @@ public class ItemTools {
                                   @ToolParam(description = "物品ID，可选") Long itemId) {
 
         QueryChainWrapper<BizItemAiTag> wrapper = new QueryChainWrapper<>(bizItemAiTagDao);
-
+        // 如果指定了 itemId，则加上 eq 条件
         if (itemId != null) {
             wrapper.eq(true, "item_id", itemId);
         }
-
+        // 如果指定了 description，则加上 like 条件
         if (description != null && !description.isEmpty()) {
             wrapper.or().like(true, "tag", description);
         }
-
+        log.info("查询物品AI标签成功，物品ID={},物品概括描述={},标签列表={}", itemId, description, tags);
         List<BizItemAiTag> tags = wrapper.list();
 
         return tags.stream()

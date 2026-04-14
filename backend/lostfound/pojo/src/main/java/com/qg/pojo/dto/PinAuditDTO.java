@@ -15,8 +15,8 @@ public class PinAuditDTO implements Serializable {
     @NotNull(message = "申请ID不能为空")
     private Long requestId;
     @Schema(description = "审核状态")
-    @NotBlank(message = "审核状态不能为空")
-    private String status; // APPROVED / REJECTED
+    @NotBlank(message = "审核状态不能为空，1.PENDING / 2.APPROVED / 3.REJECTED/4.CANCELLED")
+    private String status;
     @Schema(description = "审核备注")
     @NotBlank(message = "审核备注不能为空")
     private String remark;

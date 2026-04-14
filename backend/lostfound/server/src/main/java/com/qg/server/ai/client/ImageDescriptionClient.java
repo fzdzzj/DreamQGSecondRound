@@ -10,43 +10,63 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.common.properties.AIProperties;
+import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.pojo.vo.ImageAiResponseVO;
 import com.qg.server.ai.util.AiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
+/**
+ * 图片描述AI
+ *
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class ImageDescriptionClient {
 
     private final AIProperties aiProperties;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SensitiveWordFilterUtil sensitiveWordFilterUtil;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // ====================== 新增：超时配置（90秒） ======================
-    private static final int LLM_TIMEOUT_SECONDS = 90;
+    /**
+     * 超时配置
+     */
+    private final int LLM_TIMEOUT_SECONDS = aiProperties.getTimeoutMs() / 1000;
 
+    /**
+     * 生成图片描述 VO
+     * 1. 检查用户是否超过每日限制
+     * 2. 增加用户AI次数
+     * 3. 生成图片描述 VO
+     */
     public List<ImageAiResponseVO> generateDescriptionVo(
             String title, String description, String location, Long userId, List<ImageItem> imageItems) {
-
+        //1. 检查用户是否超过每日限制
         AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
+        //2. 增加用户AI次数
         AiUtils.incrementUserAiCount(userId, redisTemplate);
 
         List<ImageAiResponseVO> results = new ArrayList<>();
+        //标记是否有成功
         boolean hasSuccess = false;
 
         try {
-            // ====================== 【仅新增：】超时执行AI调用 ======================
+            // 3.  超时执行AI调用
             ExecutorService executor = Executors.newSingleThreadExecutor();
+            // 创建一个FutureTask，用于异步执行AI调用
             Callable<List<ImageAiResponseVO>> aiTask = () -> {
                 List<ImageAiResponseVO> tempList = new ArrayList<>();
                 MultiModalConversation conv = new MultiModalConversation();
                 List<MultiModalMessage> messages = new ArrayList<>();
-
+                //4.遍历 图片列表，生成AI描述
                 for (ImageItem item : imageItems) {
                     MultiModalMessage userMessage = MultiModalMessage.builder()
                             .role(Role.USER.getValue())
@@ -69,8 +89,9 @@ public class ImageDescriptionClient {
                         .model("qwen3.6-plus")
                         .messages(messages)
                         .build();
-
+                //5. 调用AI模型
                 MultiModalConversationResult result = conv.call(param);
+                //6. 处理AI结果
                 List<?> choices = result.getOutput() != null ? result.getOutput().getChoices() : Collections.emptyList();
 
                 for (int i = 0; i < messages.size(); i++) {
@@ -83,8 +104,8 @@ public class ImageDescriptionClient {
                     MultiModalMessage messageObj = null;
 
                     try {
-                        if (choiceObj instanceof Map) {
-                            Map<?, ?> choiceMap = (Map<?, ?>) choiceObj;
+                        // 兼容两种格式的 choiceObj
+                        if (choiceObj instanceof Map<?, ?> choiceMap) {
                             Object msg = choiceMap.get("message");
                             if (msg instanceof MultiModalMessage) messageObj = (MultiModalMessage) msg;
                         } else if (choiceObj instanceof MultiModalConversationOutput.Choice) {
@@ -94,18 +115,16 @@ public class ImageDescriptionClient {
                         log.warn("解析 choice 失败，跳过，index={}", i, ex);
                         continue;
                     }
-
                     if (messageObj == null) {
                         log.warn("messageObj 为 null，跳过，index={}", i);
                         continue;
                     }
-
+                    // 解析 content 中的 text 字段
                     List<?> contentList = messageObj.getContent();
                     if (contentList == null || contentList.isEmpty()) {
                         log.warn("content 为空，跳过，index={}", i);
                         continue;
                     }
-
                     String aiText = null;
                     for (Object o : contentList) {
                         if (o instanceof Map) {
@@ -119,19 +138,22 @@ public class ImageDescriptionClient {
                             break;
                         }
                     }
-
+                    // 检查是否成功解析到 text 字段
                     if (aiText == null) {
                         log.warn("未找到 text，跳过，index={}", i);
                         continue;
                     }
-
+                    // 清理 AI 文本
                     aiText = cleanAiText(aiText);
-
+                    // 解析 JSON 文本
                     try {
                         ImageAiResponseVO vo = objectMapper.readValue(aiText, ImageAiResponseVO.class);
-                        vo.setAiCategory(AiUtils.filterSensitiveWords(vo.getAiCategory()));
-                        vo.setAiTags(vo.getAiTags() != null ? AiUtils.filterSensitiveWords(vo.getAiTags()) : Collections.emptyList());
-                        vo.setAiDescription(AiUtils.limitLength(AiUtils.filterSensitiveWords(vo.getAiDescription())));
+                        vo.setAiCategory(sensitiveWordFilterUtil.filter(vo.getAiCategory()));
+                        vo.setAiTags(vo.getAiTags() != null ?
+                                vo.getAiTags().stream()
+                                        .map(sensitiveWordFilterUtil::filter)
+                                        .toList() : Collections.emptyList());
+                        vo.setAiDescription(AiUtils.limitLength(sensitiveWordFilterUtil.filter(vo.getAiDescription())));
                         vo.setStatus(BizItemAiResultStatusConstant.SUCCESS);
                         tempList.add(vo);
                     } catch (Exception parseEx) {
@@ -160,7 +182,9 @@ public class ImageDescriptionClient {
         return results;
     }
 
-    /** 清理 AI 文本 */
+    /**
+     * 清理 AI 文本
+     */
     private String cleanAiText(String aiText) {
         if (aiText == null) return "";
         aiText = aiText.trim();
@@ -172,7 +196,9 @@ public class ImageDescriptionClient {
         return aiText;
     }
 
-    /** fallback VO */
+    /**
+     * fallback VO
+     */
     private ImageAiResponseVO buildFallbackVO(String title, String description, String location) {
         ImageAiResponseVO vo = new ImageAiResponseVO();
         vo.setAiCategory("未知");
@@ -182,16 +208,24 @@ public class ImageDescriptionClient {
         return vo;
     }
 
-    /** 图片对象 */
+    /**
+     * 图片对象
+     */
     public static class ImageItem {
-        private String url;
-        private String type;
+        private final String url;
+        private final String type;
 
         public ImageItem(String url, String type) {
             this.url = url;
             this.type = type;
         }
-        public String getUrl() { return url; }
-        public String getType() { return type; }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getType() {
+            return type;
+        }
     }
 }

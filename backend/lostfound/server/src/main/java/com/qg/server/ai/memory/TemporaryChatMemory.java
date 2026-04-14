@@ -7,43 +7,71 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
+/**
+ * 临时存储
+ */
 @Component
 public class TemporaryChatMemory implements ChatMemory {
-
+    /**
+     * 临时存储
+     */
     private final Map<String, List<Message>> memory = new ConcurrentHashMap<>();
+    /**
+     * 创建时间
+     */
     private final Map<String, Instant> creationTime = new ConcurrentHashMap<>();
-
+    /**
+     * 获取临时存储
+     */
     @Override
     public List<Message> get(String chatId, int maxMessages) {
+        // 获取临时存储,默认返回空列表
         List<Message> list = memory.getOrDefault(chatId, List.of());
+        // 如果消息数量大于最大数量,则截取最后 maxMessages 条
         if (list.size() > maxMessages) {
             return list.subList(list.size() - maxMessages, list.size());
         }
         return new ArrayList<>(list);
     }
 
+    /**
+     * 清除临时存储
+     */
     @Override
     public void clear(String conversationId) {
         memory.remove(conversationId);
         creationTime.remove(conversationId);
     }
-
+    /**
+     * 添加消息到临时存储
+     */
     @Override
     public void add(String chatId, Message message) {
+        // 如果临时存储不存在,则创建一个新的列表,添加消息
+        // 如果临时存储存在,则添加消息
         memory.computeIfAbsent(chatId, k -> new ArrayList<>()).add(message);
+        // 更新创建时间
         creationTime.putIfAbsent(chatId, Instant.now());
     }
-
+    /**
+     * 批量添加消息到临时存储
+     */
     @Override
     public void add(String conversationId, List<Message> messages) {
+        // 如果消息为空,则直接返回
         if (messages == null || messages.isEmpty()) return;
+        // 批量添加消息
         memory.computeIfAbsent(conversationId, k -> new ArrayList<>()).addAll(messages);
+        // 更新创建时间
         creationTime.putIfAbsent(conversationId, Instant.now());
     }
 
+    /**
+     * 清除过期的临时存储
+     */
     public void cleanExpired(long ttlSeconds) {
         Instant now = Instant.now();
+        // 遍历创建时间,如果创建时间大于过期时间,则清除临时存储和创建时间
         creationTime.forEach((chatId, created) -> {
             if (now.getEpochSecond() - created.getEpochSecond() > ttlSeconds) {
                 memory.remove(chatId);

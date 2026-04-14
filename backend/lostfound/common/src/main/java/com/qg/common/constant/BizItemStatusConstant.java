@@ -4,7 +4,6 @@ package com.qg.common.constant;
  * 物品状态常量
  */
 public class BizItemStatusConstant {
-
     private BizItemStatusConstant() {
     }
 

@@ -3,13 +3,15 @@ package com.qg.pojo.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@Schema(description = "留言统计信息")
-public class CommentStatVO {
+@Schema(description = "留言统计信息VO")
+public class CommentStatVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "留言ID")
     private Long id;
     @Schema(description = "物品ID")

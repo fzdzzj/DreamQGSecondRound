@@ -1,8 +1,8 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * 物品状态枚举类
+ */
 public enum BizItemStatusEnum {
 
     OPEN("1", "开放中"),

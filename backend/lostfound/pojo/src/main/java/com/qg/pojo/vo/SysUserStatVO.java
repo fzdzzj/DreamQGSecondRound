@@ -28,12 +28,16 @@ public class SysUserStatVO implements Serializable {
 
     @Schema(description = "角色", example = "STUDENT")
     private String role;
+
     @Schema(description = "角色描述", example = "学生")
     private String roleDesc;
+
     @Schema(description = "状态,1:正常,0:禁用", example = "1")
     private Integer status;
+
     @Schema(description = "状态描述", example = "正常")
     private String statusDesc;
+
     @Schema(description = "创建时间", example = "2023-01-01 12:00:00")
     private LocalDateTime createTime;
 }

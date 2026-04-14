@@ -1,11 +1,11 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * 私聊消息类型枚举类
+ */
 public enum PrivateMessageTypeEnum {
-    TEXT("TEXT", "文本"),
-    IMAGE("IMAGE", "图片");
+    TEXT("1", "文本"),
+    IMAGE("2", "图片");
 
     private final String code;
     private final String desc;

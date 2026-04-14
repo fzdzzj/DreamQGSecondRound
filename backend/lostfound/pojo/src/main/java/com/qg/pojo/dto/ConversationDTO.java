@@ -14,8 +14,8 @@ import java.io.Serializable;
 public class ConversationDTO implements Serializable {
     private static final long serialVersionUID = 1L;
     @Schema(description = "当前用户ID")
-    private Long userId;  // 当前用户ID
+    private Long userId;
     @Schema(description = "对方用户ID")
     @NotNull(message = "对方用户ID不能为空")
-    private Long peerId;  // 对方用户ID
+    private Long peerId;
 }

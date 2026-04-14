@@ -8,8 +8,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@Schema(description = "丢失物品详情")
+@Schema(description = "丢失物品详情VO")
 public class BizItemDetailVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "物品ID")
     private Long id;
     @Schema(description = "物品类型")
@@ -22,7 +23,7 @@ public class BizItemDetailVO implements Serializable {
     private String location;
     @Schema(description = "物品发生时间")
     private LocalDateTime happenTime;
-    @Schema(description = "物品状态")
+    @Schema(description = "物品状态：1：丢失 2：拾取")
     private String status;
     @Schema(description = "物品状态描述")
     private String statusDesc;

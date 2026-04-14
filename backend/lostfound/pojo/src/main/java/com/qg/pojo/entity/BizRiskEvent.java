@@ -2,6 +2,7 @@ package com.qg.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 /**
@@ -19,7 +20,7 @@ public class BizRiskEvent {
 
     /**
      * 风险类型
-     * 1=THEFT_SUSPECT 盗窃嫌疑
+     * 1=HIGH_VALUE_ITEM 高价值物品
      * 2=PERIODIC_CLUSTER 时段聚集
      * 3=SENSITIVE_ITEM 敏感物品
      * 4=ITEM_FOUND 物品已经找回

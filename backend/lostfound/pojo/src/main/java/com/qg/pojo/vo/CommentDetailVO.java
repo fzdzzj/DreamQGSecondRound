@@ -1,7 +1,6 @@
 package com.qg.pojo.vo;
 
 
-import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -9,7 +8,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@Schema(description = "留言详情")
+@Schema(description = "留言详情VO")
 public class CommentDetailVO implements Serializable {
     private static final long serialVersionUID = 1L;
 

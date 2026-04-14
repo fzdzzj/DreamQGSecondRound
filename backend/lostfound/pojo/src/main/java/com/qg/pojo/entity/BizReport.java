@@ -1,6 +1,6 @@
 package com.qg.pojo.entity;
+
 import com.baomidou.mybatisplus.annotation.*;
-import com.qg.common.enums.ReportStatusEnum;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -41,7 +41,7 @@ public class BizReport implements Serializable {
     private String detail;
 
     /**
-     * 状态: PENDING, APPROVED, REJECTED
+     * 状态: 1.PENDING, 2.APPROVED, 3.REJECTED
      */
     private String status;
 

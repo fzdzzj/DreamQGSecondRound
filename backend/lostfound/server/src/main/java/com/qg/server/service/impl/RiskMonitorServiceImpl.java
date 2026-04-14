@@ -136,7 +136,7 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
         }
         log.info("物品描述中包含高价值物品关键词，开始发布风险事件通知");
         createRiskEvent(
-                RiskConstant.RISK_TYPE_SENSITIVE_ITEM,
+                RiskConstant.RISK_TYPE_HIGH_VALUE_ITEM,
                 RiskConstant.RISK_LEVEL_HIGH,
                 "疑似贵重物品丢失",
                 "检测到贵重物品丢失，建议管理员关注冒领风险",

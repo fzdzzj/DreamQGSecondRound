@@ -6,6 +6,10 @@ import lombok.Data;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 通知实体类
+ * 对应数据库表：notifications
+ */
 @Data
 @TableName("notifications")
 public class Notification implements Serializable {

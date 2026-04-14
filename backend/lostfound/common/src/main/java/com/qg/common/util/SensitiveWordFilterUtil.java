@@ -5,48 +5,75 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+/**
+ * 敏感词过滤工具类
+ */
 @Component
 public class SensitiveWordFilterUtil {
-    private final Map<String, Pattern>sensitivePatterns=new HashMap<>();
 
-    public SensitiveWordFilterUtil(){
-        addSensitiveWord("电话", true);
-        addSensitiveWord("手机", true);
-        addSensitiveWord("手机号", true);
-        addSensitiveWord("电话号码", true);
-        addSensitiveWord("微信", true);
-        addSensitiveWord("微信号", true);
-        addSensitiveWord("微信码", true);
-        addSensitiveWord("qq", true);
-        addSensitiveWord("QQ号", true);
-        addSensitiveWord("支付宝", true);
-        addSensitiveWord("银行卡", true);
-        addSensitiveWord("身份证", true);
-        addSensitiveWord("学号", true);
-        addSensitiveWord("宿舍号", true);
-        addSensitiveWord("寝室号", true);
-        addSensitiveWord("密码", true);
-        addSensitiveWord("password", true);
-        addSensitiveWord("支付密码", true);
+    private final Map<String, Pattern> sensitivePatterns = new HashMap<>();
+
+    public SensitiveWordFilterUtil() {
+        // 1. 中文标识类 + 数字/字母 (保留关键词，屏蔽后面内容)
+        addNumberAfterWord("电话");
+        addNumberAfterWord("手机");
+        addNumberAfterWord("手机号");
+        addNumberAfterWord("电话号码");
+        addNumberAfterWord("微信");
+        addNumberAfterWord("微信号");
+        addNumberAfterWord("微信码");
+        addNumberAfterWord("QQ");
+        addNumberAfterWord("QQ号");
+        addNumberAfterWord("支付宝");
+        addNumberAfterWord("银行卡");
+        addNumberAfterWord("身份证");
+
+        // 2. 校内标识类 + 数字 (保留关键词，屏蔽后面数字)
+        addNumberAfterWord("学号");
+        addNumberAfterWord("宿舍号");
+        addNumberAfterWord("寝室号");
+
+        // 3. 密码类：整词 + 后面内容全部屏蔽 → ***
+        addFullMask("密码");
+        addFullMask("password");
+        addFullMask("支付密码");
     }
 
-    public void addSensitiveWord(String word,boolean fuzzy){
-        if(word==null||word.isBlank())return;
-        String patternStr;
-        if(fuzzy){
-            patternStr="(?i)"+Pattern.quote(word)+"[\\w\\d\\\\u4e00-\\\\u9fa5]*";
-        }else{
-            patternStr="(?i)"+Pattern.quote(word);
-        }
-        sensitivePatterns.put(word,Pattern.compile(patternStr));
+    /**
+     * 保留关键词，只屏蔽后面内容
+     */
+    private void addNumberAfterWord(String word) {
+        if (word == null || word.isBlank()) return;
+        String regex = String.format("((?i)%s)[\\w\\d\\s]*", Pattern.quote(word));
+        sensitivePatterns.put(word, Pattern.compile(regex));
     }
 
-    public String filter(String text){
-        if(text==null||text.isEmpty())return text;
-        String filtered=text;
-        for(Pattern pattern:sensitivePatterns.values()){
-            filtered=pattern.matcher(filtered).replaceAll("***");
+    /**
+     * 密码专用：关键词 + 后面所有内容 全部变成 ***
+     */
+    private void addFullMask(String word) {
+        if (word == null || word.isBlank()) return;
+        String regex = String.format("(?i)%s[\\w\\d\\s]*", Pattern.quote(word));
+        sensitivePatterns.put(word + "_full", Pattern.compile(regex));
+    }
+
+    /**
+     * 过滤方法
+     */
+    public String filter(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
         }
-        return filtered;
+        String result = text;
+        for (Pattern pattern : sensitivePatterns.values()) {
+            // 密码类没有分组，直接替换成 ***
+            if (pattern.pattern().contains("_full")) {
+                result = pattern.matcher(result).replaceAll("***");
+            } else {
+                result = pattern.matcher(result).replaceAll("$1***");
+            }
+        }
+        return result;
     }
 }

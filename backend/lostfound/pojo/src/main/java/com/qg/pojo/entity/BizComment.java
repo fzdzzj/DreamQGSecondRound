@@ -5,7 +5,9 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-
+/**
+ * 留言表
+ */
 @Data
 @TableName("biz_comment")
 public class BizComment implements Serializable {

@@ -1,5 +1,8 @@
 package com.qg.common.enums;
 
+/**
+ * 帖子请求状态枚举类
+ */
 public enum PinRequestStatusEnum {
     PENDING("1", "待审核"),
     APPROVED("2", "审核通过"),

@@ -17,6 +17,7 @@ public class BaseException extends RuntimeException {
      * 错误码
      */
     private final Integer code;
+
     public BaseException(Integer code) {
         super();
         this.code = code;

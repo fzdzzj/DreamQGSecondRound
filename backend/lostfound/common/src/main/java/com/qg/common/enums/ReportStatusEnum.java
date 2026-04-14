@@ -1,8 +1,8 @@
 package com.qg.common.enums;
 
-import lombok.Getter;
-
-@Getter
+/**
+ * 举报状态枚举类
+ */
 public enum ReportStatusEnum {
 
     PENDING("1", "待审核"),

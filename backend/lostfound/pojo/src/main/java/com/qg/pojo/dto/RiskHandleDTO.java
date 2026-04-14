@@ -5,9 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "风险事件DTO")
-public class RiskHandleDTO {
+public class RiskHandleDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "风险事件ID")
     @NotNull(message = "风险事件ID不能为空")
     private Long riskEventId;

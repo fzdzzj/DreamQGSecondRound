@@ -10,8 +10,8 @@ public class AIMessageVO {
     private String role;
     private String content;
 
-
-
     public AIMessageVO(AiChatHistory aiChatHistory) {
+        this.role = aiChatHistory.getRole();
+        this.content = aiChatHistory.getContent();
     }
 }

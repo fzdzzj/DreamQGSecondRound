@@ -7,6 +7,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * AI 识别结果表
+ */
 @Data
 @TableName("biz_item_ai_result")
 public class BizItemAiResult implements Serializable {
@@ -14,19 +17,59 @@ public class BizItemAiResult implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-
-    private Long itemId; // 对应 BizItem
-    private Integer resultVersion; // 版本号
-    private String sourceType; // AUTO/REGENERATE
-    private String originText; // 用户原始描述
-    private String promptText; // AI Prompt
+    /**
+     * 物品ID
+     */
+    private Long itemId;
+    /**
+     * 识别结果版本
+     */
+    private Integer resultVersion;
+    /**
+     * 源数据类型
+     * 1:自动识别 2:重新识别
+     */
+    private String sourceType;
+    /**
+     * 源数据内容
+     */
+    private String originText;
+    /**
+     * 提示文本
+     */
+    private String promptText;
+    /**
+     * AI 描述
+     */
     private String aiDescription;
-    private String aiCategory; // 多分类逗号分隔
-    private List<String> imageUrls; // 多图片
+    /**
+     * AI 分类
+     */
+    private String aiCategory;
+    /**
+     * 图片URL列表
+     */
+    private List<String> imageUrls;
+    /**
+     * AI 模型名称
+     */
     private String modelName;
-    private String status; // SUCCESS/FAILURE
+    /**
+     * 识别结果状态
+     * SUCCESS/FAILURE
+     */
+    private String status;
+    /**
+     * 是否删除
+     */
     private Integer isDeleted;
+    /**
+     * 创建人
+     */
     private Long createUser;
+    /**
+     * 更新人
+     */
     private Long updateUser;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

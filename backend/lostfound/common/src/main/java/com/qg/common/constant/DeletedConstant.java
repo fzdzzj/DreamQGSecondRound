@@ -8,6 +8,12 @@ public class DeletedConstant {
     private DeletedConstant() {
     }
 
+    /**
+     * 未删除
+     */
     public static final Integer NOT_DELETED = 0;
+    /**
+     * 已删除
+     */
     public static final Integer DELETED = 1;
 }

@@ -7,7 +7,7 @@ import lombok.Getter;
  * 用于：token过期、无效、未登录、签名错误等
  */
 @Getter
-public class JwtException extends RuntimeException {
+public class JwtException extends BaseException {
 
     /**
      * 默认异常码：未授权 / 登录过期

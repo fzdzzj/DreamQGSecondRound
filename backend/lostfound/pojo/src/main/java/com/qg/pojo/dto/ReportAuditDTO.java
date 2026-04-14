@@ -17,8 +17,8 @@ public class ReportAuditDTO implements Serializable {
     private Long reportId;
 
     @Schema(description = "审核状态")
-    @NotBlank(message = "审核结果不能为空")
-    private String status; // APPROVED / REJECTED
+    @NotBlank(message = "审核状态不能为空 1.PENDING / 2.APPROVED / 3.REJECTED")
+    private String status;
     @Schema(description = "审核备注")
     @NotBlank(message = "审核备注不能为空")
     private String remark;

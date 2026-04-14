@@ -1,6 +1,6 @@
 package com.qg.server.controller.ai;
 
-import com.qg.common.constant.Ai_Output_Input;
+import com.qg.common.constant.AiInputOutput;
 import com.qg.common.context.BaseContext;
 import com.qg.common.properties.AIProperties;
 import com.qg.common.result.Result;
@@ -69,14 +69,14 @@ public class AIController {
     private String filterUserInput(String text){
         if(text==null)return "";
         text=text.replaceAll("[\\r\\n]+"," ").trim();
-        if(text.length()> Ai_Output_Input.MAX_USER_PROMPT){
-            text=text.substring(0,Ai_Output_Input.MAX_USER_PROMPT);
+        if(text.length()> AiInputOutput.MAX_USER_PROMPT){
+            text=text.substring(0, AiInputOutput.MAX_USER_PROMPT);
         }
         return text;
     }
     private String filterAIOutput(String text) {
         if (text == null) return "";
-        if (text.length() > Ai_Output_Input.MAX_AI_OUTPUT) text = text.substring(0, Ai_Output_Input.MAX_AI_OUTPUT);
+        if (text.length() > AiInputOutput.MAX_AI_OUTPUT) text = text.substring(0, AiInputOutput.MAX_AI_OUTPUT);
         text = sensitiveWordFilter.filter(text);
         return StringEscapeUtils.escapeHtml4(text);
     }
