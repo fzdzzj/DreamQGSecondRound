@@ -1,10 +1,13 @@
 package com.qg.server.controller.user;
 
 import com.qg.common.enums.OperationTypeEnum;
+import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
+import com.qg.pojo.dto.PageLogDTO;
 import com.qg.pojo.entity.UserActionLog;
 import com.qg.pojo.vo.UserActionLogVO;
 import com.qg.server.service.OperationLogService;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class LogController {
     private final OperationLogService logService;
     @RequestMapping("/list")
+    @Schema(description = "获取操作日志")
     public Result<List<UserActionLogVO>> list() {
         // 1. 查询数据
         List<UserActionLog> logList = logService.list();
@@ -40,5 +44,14 @@ public class LogController {
 
         log.info("获取操作日志成功，总条数：{}", voList.size());
         return Result.success(voList);
+    }
+
+    @RequestMapping("/page")
+    @Schema(description = "分页获取操作日志")
+    public Result<PageResult<UserActionLogVO>> page(PageLogDTO dto) {
+        log.info("分页获取操作日志开始，参数：{}", dto);
+        PageResult<UserActionLogVO> logList = logService.pageQuery(dto);
+        log.info("分页获取操作日志成功，总条数：{}", logList.getTotal());
+        return Result.success(logList);
     }
 }
