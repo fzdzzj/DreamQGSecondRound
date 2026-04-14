@@ -1,5 +1,6 @@
 package com.qg.server.controller.item;
 
+import com.qg.common.constant.LimitTypeConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
@@ -9,6 +10,7 @@ import com.qg.pojo.dto.UpdateBizItemDTO;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.vo.BizItemStatVO;
 import com.qg.pojo.vo.BizItemDetailVO;
+import com.qg.server.anno.AntiBot;
 import com.qg.server.service.ItemService;
 import com.qg.server.service.PinService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +32,7 @@ public class ItemController {
 
     @PostMapping("/lost")
     @Operation(summary = "发布丢失物品")
+    @AntiBot(value = LimitTypeConstant.USER_POST_LIMIT)
     public Result<Void> publishLostItem(@Validated @RequestBody LostBizItemDTO lostBizItemDTO) {
         Long userId = BaseContext.getCurrentId();
         log.info("发布丢失物品，用户ID={}", userId);
@@ -40,6 +43,7 @@ public class ItemController {
 
     @PostMapping("/found")
     @Operation(summary = "发布拾取物品")
+    @AntiBot(value = LimitTypeConstant.USER_POST_LIMIT)
     public Result<Void> publishFoundItem(@Validated @RequestBody LostBizItemDTO lostBizItemDTO) {
         Long userId = BaseContext.getCurrentId();
         log.info("发布拾取物品，用户ID={}", userId);
@@ -50,6 +54,7 @@ public class ItemController {
 
     @PutMapping("/{id}")
     @Operation(summary = "修改物品信息")
+    @AntiBot(value = LimitTypeConstant.USER_EDIT_POST_LIMIT)
     public Result<Void> updateItem(@PathVariable Long id,
                                    @Validated @RequestBody UpdateBizItemDTO updateBizItemDTO) {
         Long userId = BaseContext.getCurrentId();

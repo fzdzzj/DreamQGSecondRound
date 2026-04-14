@@ -14,4 +14,17 @@ public class RedisConstant {
     public static final String ITEM_PAGE_KEY = "ITEM_PAGE_KEY:%d:%d:%s:%s:%s:%s";
 
     public static final String USER_AI_LIMIT_KEY = "user:ai:limit:";
+
+    public static final String USER_CLAIM_LIMIT_KEY = "user:claim:limit:";
+    //一分钟内创建的认领帖子数量限制
+    public static final Integer USER_CLAIM_POST_LIMIT=5;
+    //一分钟内创建的编辑帖子数量限制
+    public static final String USER_EDIT_POST_LIMIT_KEY = "user:edit:post:limit:";
+    public static final Integer USER_EDIT_POST_LIMIT=5;
+
+    //一分钟内创建的帖子数量限制
+    public static final String USER_POST_LIMIT_KEY = "user:post:limit:";
+    public static final Integer USER_POST_LIMIT=5;
+
+    public static final String USER_BANNED_KEY = "user:banned:";
 }

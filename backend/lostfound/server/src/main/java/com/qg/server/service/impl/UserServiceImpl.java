@@ -2,10 +2,7 @@ package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qg.common.constant.CodeTypeConstant;
-import com.qg.common.constant.LoginTypeConstant;
-import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.UserStatusConstant;
+import com.qg.common.constant.*;
 import com.qg.common.exception.*;
 import com.qg.common.util.JwtUtil;
 import com.qg.common.util.PasswordUtil;
@@ -150,19 +147,21 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         String email = registerDTO.getEmail();
         String code = registerDTO.getCode();
 
-        // 1. 校验注册验证码（
-        boolean ok = emailVerificationCodeService.verifyCode(email, code, "REGISTER");
-        if (!ok) {
-            throw new BaseException(401, MessageConstant.CODE_ERROR);
-        }
-
-        // 2. 邮箱是否已注册
+        // 1. 邮箱是否已注册
         SysUser exist = userDao.selectOne(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getEmail, email)
                 .eq(SysUser::getDeleted, 0));
         if (exist != null) {
             throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
         }
+
+        // 2. 校验注册验证码（
+        boolean ok = emailVerificationCodeService.verifyCode(email, code, "REGISTER");
+        if (!ok) {
+            throw new BaseException(401, MessageConstant.CODE_ERROR);
+        }
+
+
         log.info("用户发起注册请求，用户名：{}", registerDTO.getUsername());
         String username = registerDTO.getUsername();
         String phone = registerDTO.getPhone();
@@ -186,7 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         user.setEmail(email);
         user.setPhone(phone);
         user.setPasswordHash(PasswordUtil.encrypt(registerDTO.getPassword()));
-        user.setRole("STUDENT");  // 默认角色为学生
+        user.setRole(RoleConstant.USER);  // 默认角色为1：普通用户
         user.setStatus(UserStatusConstant.ENABLE);
         user.setNickname(registerDTO.getNickname());
         userDao.insert(user);  // 保存用户到数据库

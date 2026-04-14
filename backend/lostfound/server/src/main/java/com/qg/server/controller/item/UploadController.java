@@ -2,7 +2,6 @@ package com.qg.server.controller.item;
 
 import com.qg.common.result.Result;
 import com.qg.common.util.AliyunOSSOperator;
-import com.qg.server.anno.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +31,6 @@ public class UploadController {
     private DataSize maxFileSize;
 
     @PostMapping("/upload")
-    @OperationLog("文件上传")
     @Operation(summary = "文件上传", description = "支持图片格式，上传成功返回OSS访问地址")
     public Result<String> upload(
             @Parameter(description = "上传文件", required = true)

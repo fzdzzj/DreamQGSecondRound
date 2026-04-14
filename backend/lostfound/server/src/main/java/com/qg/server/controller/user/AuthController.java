@@ -4,7 +4,6 @@ import com.qg.common.result.Result;
 import com.qg.pojo.dto.LoginDTO;
 import com.qg.pojo.dto.RegisterDTO;
 import com.qg.pojo.vo.LoginResponseVO;
-import com.qg.server.anno.OperationLog;
 import com.qg.server.service.EmailVerificationCodeService;
 import com.qg.server.service.TokenRefreshService;
 import com.qg.server.service.UserService;
@@ -50,7 +49,6 @@ public class AuthController {
      * 用户注册
      */
     @PostMapping("/register")
-    @OperationLog("用户注册")
     @Operation(summary = "用户注册", description = "新用户注册")
     public Result<Void> register(@Validated @RequestBody RegisterDTO registerDTO) {
         log.info("用户注册，账号={}", registerDTO.getUsername());
