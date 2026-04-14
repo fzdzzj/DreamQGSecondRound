@@ -48,7 +48,7 @@ public class WeComNotifyServiceImpl implements WeComNotifyService {
                         event.getContent(),
                         event.getRelatedItemId() == null ? "-" : event.getRelatedItemId(),
                         event.getRelatedUserId() == null ? "-" : event.getRelatedUserId(),
-                        event.getCreatedTime()
+                        event.getCreateTime()
                 );
 
         WeComTextMessage req = new WeComTextMessage();

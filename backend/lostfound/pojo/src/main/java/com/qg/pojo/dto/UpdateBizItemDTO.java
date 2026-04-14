@@ -12,6 +12,7 @@ import java.util.List;
 @Data
 public class UpdateBizItemDTO implements Serializable {
     private static final long serialVersionUID = 1L;
+
     @Schema(description = "标题/物品名称")
     @NotBlank(message = "标题/物品名称不能为空")
     private String title;
@@ -27,6 +28,9 @@ public class UpdateBizItemDTO implements Serializable {
     @Schema(description = "联系方式")
     @NotBlank(message = "联系方式不能为空")
     private String contactMethod;
+    @Schema(description = "物品状态，1：PENDING 未处理，2：MATCHED 已匹配，3：CLOSED 已关闭，4：REPORTED 已举报，5：DELETED 已删除")
+    @NotNull(message = "物品状态不能为空")
+    private String status;
     @Schema(description = "图片URL列表")
     private List<String> imageUrls;
 }

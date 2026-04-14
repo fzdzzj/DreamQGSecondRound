@@ -12,6 +12,7 @@ import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.result.PageResult;
+import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.dto.LostBizItemDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
@@ -65,6 +66,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final BizItemAiTagDao bizItemAiTagDao;
      private  final ObjectMapper objectMapper;
     private final RiskMonitorService riskMonitorService;
+    private final SensitiveWordFilterUtil sensitiveWordFilterUtil;
 
     // ===================== 发布/更新物品 =====================
 
@@ -158,6 +160,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 构造新的物品实体
         BizItem item = new BizItem();
         BeanUtils.copyProperties(dto, item);
+        log.info("更新物品状态：{}", dto.getStatus());
         item.setId(id);
         item.setUserId(oldItem.getUserId());
         item.setType(oldItem.getType());
@@ -165,6 +168,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         item.setIsPinned(oldItem.getIsPinned());
         item.setPinExpireTime(oldItem.getPinExpireTime());
         item.setContactMethod(dto.getContactMethod());
+        item.setStatus(dto.getStatus());
         // 清空旧 AI 结果
         item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
@@ -214,6 +218,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         BizItemDetailVO vo = new BizItemDetailVO();
         BeanUtils.copyProperties(item, vo);
+        if(item.getUserId().equals(BaseContext.getCurrentId())){
+            vo.setDescription(sensitiveWordFilterUtil.filter(item.getDescription()));
+        }
 
         // 图片
         List<String> images = bizItemImageDao.selectList(
@@ -441,7 +448,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
             BizItemStatVO vo = new BizItemStatVO();
             BeanUtils.copyProperties(item, vo);
             vo.setStatusDesc(BizItemStatusEnum.getDescByCode(item.getStatus()));
-            vo.setDescription(item.getDescription());
+            vo.setDescription(sensitiveWordFilterUtil.filter(item.getDescription()));
             vo.setAiCategory(itemIdToAiCategory.getOrDefault(item.getId(), "未知"));
             return vo;
         }).toList();

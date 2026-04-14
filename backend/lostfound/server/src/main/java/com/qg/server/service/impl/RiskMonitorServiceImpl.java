@@ -96,18 +96,20 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
             return;
         }
         log.info("物品已经找回");
-        BizRiskEvent event = new BizRiskEvent();
-        BizRiskEvent foundEvent = bizRiskEventDao.selectOne(new LambdaQueryWrapper<BizRiskEvent>()
+        BizRiskEvent event =new BizRiskEvent();
+        List<BizRiskEvent> foundEventList = bizRiskEventDao.selectList(new LambdaQueryWrapper<BizRiskEvent>()
                 .eq(BizRiskEvent::getRelatedItemId, item.getId()));
-        if(foundEvent!=null){
-            event.setId(foundEvent.getId());
-            event.setHandleStatus(RiskConstant.HANDLE_STATUS_RESOLVED);
-            event.setHandleRemark("物品已经找回");
-            event.setHandledTime(LocalDateTime.now());
-            event.setNotifyStatus(RiskConstant.NOTIFY_STATUS_SUCCESS);
-            event.setRiskType(RiskConstant.RISK_TYPE_ITEM_FOUND);
-            event.setRiskLevel(RiskConstant.RISK_LEVEL_NO);
-            bizRiskEventDao.updateById(event);
+        if(foundEventList!=null&&!foundEventList.isEmpty()){
+            for(BizRiskEvent foundEvent:foundEventList){
+                event.setId(foundEvent.getId());
+                event.setHandleStatus(RiskConstant.HANDLE_STATUS_RESOLVED);
+                event.setHandleRemark("物品已经找回");
+                event.setHandledTime(LocalDateTime.now());
+                event.setNotifyStatus(RiskConstant.NOTIFY_STATUS_SUCCESS);
+                event.setRiskType(RiskConstant.RISK_TYPE_ITEM_FOUND);
+                event.setRiskLevel(RiskConstant.RISK_LEVEL_NO);
+                bizRiskEventDao.updateById(event);
+            }
         }
         createRiskEvent(RiskConstant.RISK_TYPE_ITEM_FOUND,
                 RiskConstant.RISK_LEVEL_NO, "物品已经找回", "物品已经找回",
@@ -136,8 +138,8 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
         createRiskEvent(
                 RiskConstant.RISK_TYPE_SENSITIVE_ITEM,
                 RiskConstant.RISK_LEVEL_HIGH,
-                "疑似敏感证件类物品丢失",
-                "检测到证件类敏感物品丢失，建议管理员关注冒领风险",
+                "疑似贵重物品丢失",
+                "检测到贵重物品丢失，建议管理员关注冒领风险",
                 item.getId(),
                 item.getUserId(),
                 item.getLocation(),
