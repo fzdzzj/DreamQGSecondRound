@@ -1,5 +1,6 @@
 package com.qg.server.mapper;
 
+import com.qg.pojo.entity.Permission;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -9,5 +10,8 @@ import java.util.List;
  */
 @Mapper
 public interface PermissionDao {
-    List<String> selectPermissionsByRoleCode(String roleCode);
+    /**
+      * 根据角色编号查询权限
+    */
+    List<Permission> selectPermissionsByRole(String role);
 }

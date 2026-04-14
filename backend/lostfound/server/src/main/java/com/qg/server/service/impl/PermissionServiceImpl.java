@@ -1,10 +1,16 @@
 package com.qg.server.service.impl;
 
 import com.qg.common.constant.RoleConstant;
+import com.qg.pojo.entity.Permission;
+import com.qg.server.mapper.PermissionDao;
 import com.qg.server.service.PermissionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 角色权限服务
@@ -13,148 +19,19 @@ import java.util.Set;
  * 后续如果补了权限表，再切换为数据库驱动即可。
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {
-
+    private final PermissionDao permissionDao;
     @Override
     public Set<String> getPermissionsByRole(String role) {
 
-        // 管理员：默认拥有更高权限，后续可用户管理、统计用户管理、统计分析等接口
-        if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
-            return Set.of(
-                    "PUT:/admin/user/{id}/disable",
-                    "PUT:/admin/user/{id}/enable",
-                    "POST:/admin/user/list",
-                    "GET:/admin/user/{id}",
-                    "GET:/admin/statistics",
-                    "DELETE:/admin/item/{id}",
+        // 直接调用 DAO 查询数据库
+        List<Permission> permissions = permissionDao.selectPermissionsByRoleCode(role);
 
-                    "GET:/common/personal-info",
-                    "PUT:/common/personal-info",
-                    "PUT:/common/password",
-
-                    "POST:/item/lost",
-                    "POST:/item/found",
-                    "PUT:/item/{id}",
-                    "DELETE:/item/{id}",
-                    "POST:/item/page",
-                    "GET:/item/{id}",
-                    "PUT:/item/{id}/close",
-
-                    // AI 重新描述
-                    "POST:/ai/item/{id}/regenerate",
-
-                    "POST:/api/file/upload",
-
-                    "POST:/auth/logout",
-                    "POST:/auth/refresh",
-
-                    // 预留管理员接口权限
-                    "POST:/report",
-                    "POST:/report/audit",
-                    "POST:/report/list",
-                    "GET:/report/{id}",
-
-                    "POST:/pin/page",
-                    "POST:/pin/audit",
-                    "POST:/pin/cancel/{id}",
-                    "GET:/pin/{id}",
-
-                    "POST:/comment",
-                    "PUT:/comment/{id}/read",
-                    "GET:/comment/{id}",
-                    "DELETE:/comment/{id}",
-                    "GET:/comment/user/unread",
-                    "GET:/comment/item/{id}",
-                    "GET:/comment/item/{id}/unread",
-
-                    "GET:/notification/user/unread",
-                    "GET:/notification/user",
-                    "PUT:/notification/{id}/read",
-                    "DELETE:/notification/{id}",
-
-                    "POST:/message",
-                    "GET:/message/conversations",
-                    "GET:/message/history/{id}",
-                    "PUT:/message/{id}/read",
-                    "DELETE:/message/{id}",
-                    "GET:/message/unread/count",
-
-                    "POST:/ai/ask",
-
-                    "POST:/log/page",
-                    "GET:/log/list",
-
-                    "POST:/risk/page",
-                    "GET:/risk/{id}",
-                    "POST:/risk/handle"
-            );
-        }
-
-        // 普通用户（学生）权限
-        return Set.of(
-                // 刷新、登出接口
-                "POST:/auth/logout",
-                "POST:/auth/refresh",
-
-                // 个人信息接口
-                "GET:/common/personal-info",
-                "PUT:/common/personal-info",
-                "PUT:/common/password",
-
-                // 物品接口
-                "POST:/item/lost",
-                "POST:/item/found",
-                "PUT:/item/{id}",
-                "DELETE:/item/{id}",
-                "POST:/item/page",
-                "POST:/item/my/page",
-                "PUT:/item/{id}/close",
-                "GET:/item/{id}",
-
-
-                "PUT:/item/pin/apply",
-
-                "POST:/api/file/upload",
-
-                "POST:/pin/apply",
-                "POST:/pin/cancel/{id}",
-                "GET:/pin/{id}",
-                "GET:/pin/mylist",
-
-                "POST:/report",
-                "GET:/report/{id}",
-
-                "POST:/comment",
-                "PUT:/comment/{id}/read",
-                "GET:/comment/{id}",
-                "DELETE:/comment/{id}",
-                "GET:/comment/user/unread",
-                "GET:/comment/item/{id}",
-                "GET:/comment/item/{id}/unread",
-
-                "GET:/notification/user/unread",
-                "GET:/notification/user",
-                "PUT:/notification/{id}/read",
-                "DELETE:/notification/{id}",
-
-                "POST:/message",
-                "GET:/message/conversations",
-                "GET:/message/history/{id}",
-                "PUT:/message/{id}/read",
-                "DELETE:/message/{id}",
-                "DELETE:/message/conversation/{id}",
-                "GET:/message/unread/count",
-                "PUT:/message/conversation/{id}/clear",
-                "GET:/message/history/cursor/{id}",
-
-                "POST:/biz/claim/create",
-                "GET:/biz/claim/pending",
-                "POST:/biz/claim/approve",
-
-                "POST:/ai/item/{id}/regenerate",
-                "POST:/ai/ask",
-                "GET:/ai/history/chatIds",
-                "GET:/ai/history/chatHistory"
-        );
+        // 转化为 "METHOD:URL" 格式返回
+        return permissions.stream()
+                .map(p -> p.getMethod() + ":" + p.getUrl())
+                .collect(Collectors.toSet());
     }
 }
