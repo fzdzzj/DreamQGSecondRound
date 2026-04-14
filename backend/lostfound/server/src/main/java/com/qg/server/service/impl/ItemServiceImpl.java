@@ -63,8 +63,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final BizItemDao bizItemDao;
     private final BizItemAiTagDao bizItemAiTagDao;
      private  final ObjectMapper objectMapper;
-    private final ImageDescriptionClient imageDescriptionClient;
-    private final AIProperties aiProperties;
+    private final RiskMonitorService riskMonitorService;
 
     // ===================== 发布/更新物品 =====================
 
@@ -106,7 +105,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
-
+        // 新增：发布成功后检测风险
+        riskMonitorService.onItemPublished(item);
         // 清理缓存
         evictItemCaches(item.getId());
     }

@@ -7,13 +7,13 @@ import com.qg.pojo.dto.PageLogDTO;
 import com.qg.pojo.entity.UserActionLog;
 import com.qg.pojo.vo.UserActionLogVO;
 import com.qg.server.service.OperationLogService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 @Tag(name ="操作日志接口", description = "操作日志接口")
 public class LogController {
     private final OperationLogService logService;
-    @RequestMapping("/list")
-    @Schema(description = "获取操作日志")
+    @GetMapping("/list")
+    @Operation(summary = "获取操作日志")
     public Result<List<UserActionLogVO>> list() {
         // 1. 查询数据
         List<UserActionLog> logList = logService.list();
@@ -48,8 +48,8 @@ public class LogController {
         return Result.success(voList);
     }
 
-    @RequestMapping("/page")
-    @Schema(description = "分页获取操作日志")
+    @PostMapping("/page")
+    @Operation(summary = "分页获取操作日志")
     public Result<PageResult<UserActionLogVO>> page(PageLogDTO dto) {
         log.info("分页获取操作日志开始，参数：{}", dto);
         PageResult<UserActionLogVO> logList = logService.pageQuery(dto);

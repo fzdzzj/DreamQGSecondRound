@@ -6,6 +6,7 @@ import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.AiGenerateException;
+import com.qg.common.exception.BaseException;
 import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizItem;
@@ -213,6 +214,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
             aiTagDao.insert(t);
         } catch (Exception e) {
             log.error("序列化 AI tags 失败", e);
+            throw new BaseException("序列化 AI tags 失败");
         }
     }
 

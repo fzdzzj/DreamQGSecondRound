@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Schema(description = "分页查询操作日志DTO")
 @Data
@@ -22,7 +23,7 @@ public class PageLogDTO implements Serializable {
     @Schema(description = "操作类型")
     private String operationType;
     @Schema(description = "开始时间")
-    private String startTime;
+    private LocalDateTime startTime;
     @Schema(description = "结束时间")
-    private String endTime;
+    private LocalDateTime endTime;
 }
