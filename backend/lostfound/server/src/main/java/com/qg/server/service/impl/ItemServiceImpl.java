@@ -30,6 +30,7 @@ import com.qg.pojo.entity.BizItemAiTag;
 import com.qg.server.ai.client.ImageDescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient.ImageItem;
 import com.qg.common.properties.AIProperties;
+import com.qg.server.service.RiskMonitorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
