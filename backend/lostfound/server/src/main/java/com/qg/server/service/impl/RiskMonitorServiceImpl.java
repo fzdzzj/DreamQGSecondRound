@@ -89,6 +89,34 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
         log.info("时段聚集风险扫描完成");
     }
 
+    @Override
+    public void onItemFound(BizItem item) {
+        if(!judgeHighValueItemRisk(item)&&!judgeSensitiveItemRisk(item)&&!(judgeLocationClusterRisk(item)>0)){
+            log.info("物品状态正常修改");
+            return;
+        }
+        log.info("物品已经找回");
+        BizRiskEvent event = new BizRiskEvent();
+        BizRiskEvent foundEvent = bizRiskEventDao.selectOne(new LambdaQueryWrapper<BizRiskEvent>()
+                .eq(BizRiskEvent::getRelatedItemId, item.getId()));
+        if(foundEvent!=null){
+            event.setId(foundEvent.getId());
+            event.setHandleStatus(RiskConstant.HANDLE_STATUS_RESOLVED);
+            event.setHandleRemark("物品已经找回");
+            event.setHandledTime(LocalDateTime.now());
+            event.setNotifyStatus(RiskConstant.NOTIFY_STATUS_SUCCESS);
+            event.setRiskType(RiskConstant.RISK_TYPE_ITEM_FOUND);
+            event.setRiskLevel(RiskConstant.RISK_LEVEL_NO);
+            bizRiskEventDao.updateById(event);
+        }
+        createRiskEvent(RiskConstant.RISK_TYPE_ITEM_FOUND,
+                RiskConstant.RISK_LEVEL_NO, "物品已经找回", "物品已经找回",
+                item.getId(),
+                item.getUserId(),
+                item.getLocation(),
+                "{\"rule\":\"ITEM_FOUND\"}");
+    }
+
     /**
      * 生成时段
      */
@@ -101,10 +129,7 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
      * @param item
      */
     private void detectHighValueRisk(BizItem item) {
-        log.info("开始检测高价值物品丢失");
-        String text = buildText(item);
-        if (!containsAny(text, "单车", "自行车", "iphone", "苹果手机", "电脑", "笔记本", "相机", "平板", "手机")) {
-            log.info("物品描述中未包含高价值物品关键词，无需检测");
+        if (!judgeHighValueItemRisk(item)) {
             return;
         }
         log.info("物品描述中包含高价值物品关键词，开始发布风险事件通知");
@@ -119,11 +144,39 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
                 "{\"rule\":\"SENSITIVE_ITEM\"}"
         );
     }
+    private boolean judgeHighValueItemRisk(BizItem item) {
+        log.info("开始检测高价值物品丢失");
+        String text = buildText(item);
+        if (!containsAny(text, "单车", "自行车", "iphone", "苹果手机", "电脑", "笔记本", "相机", "平板", "手机")) {
+            log.info("物品描述中未包含高价值物品关键词，无需检测");
+            return false;
+        }
+        log.info("物品描述中包含高价值物品关键词，开始发布风险事件通知");
+        return true;
+    }
+
     private void detectLocationClusterRisk(BizItem item) {
+        if(judgeLocationClusterRisk(item)==0L){
+            return;
+        }
+        Long count = judgeLocationClusterRisk(item);
+        log.info("物品描述中包含地点聚集性关键词，开始发布风险事件通知");
+        createRiskEvent(
+                RiskConstant.RISK_TYPE_PERIODIC_CLUSTER,
+                RiskConstant.RISK_LEVEL_MEDIUM,
+                "疑似地点聚集性丢失",
+                "近30分钟内同地点多次出现失物信息，建议管理员排查是否存在聚集性失窃",
+                item.getId(),
+                item.getUserId(),
+                item.getLocation(),
+                "{\"rule\":\"LOCATION_CLUSTER\",\"count\":" + count + "}"
+        );
+    }
+    private Long judgeLocationClusterRisk(BizItem item) {
         log.info("开始检测地点聚集性");
         if (item.getLocation() == null || item.getLocation().isBlank()) {
             log.info("物品描述中未包含地点信息，无需检测");
-            return;
+            return 0L;
         }
         log.info("物品描述中包含地点信息，开始检测地点聚集性");
         LocalDateTime end = LocalDateTime.now();
@@ -135,28 +188,15 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
 
         if (count == null || count < 3) {
             log.info("物品描述中未包含地点聚集性关键词，无需检测");
-            return;
+            return 0L;
         }
         log.info("物品描述中包含地点聚集性关键词，开始发布风险事件通知");
-        createRiskEvent(
-                RiskConstant.RISK_TYPE_PERIODIC_CLUSTER,
-                RiskConstant.RISK_LEVEL_MEDIUM,
-                "疑似地点聚集性丢失",
-                "近7天内同地点多次出现失物信息，建议管理员排查是否存在聚集性失窃",
-                item.getId(),
-                item.getUserId(),
-                item.getLocation(),
-                "{\"rule\":\"LOCATION_CLUSTER\",\"count\":" + count + "}"
-        );
+        return count;
     }
     private void detectSensitiveItemRisk(BizItem item) {
-        log.info("开始检测敏感物品丢失");
-        String text = buildText(item);
-        if (!containsAny(text, "校园卡", "身份证", "学生证", "护照", "银行卡")) {
-            log.info("物品描述中未包含敏感物品关键词，无需检测");
+        if(!judgeSensitiveItemRisk(item)){
             return;
         }
-        log.info("物品描述中包含敏感物品关键词，开始发布风险事件通知");
         createRiskEvent(
                 RiskConstant.RISK_TYPE_SENSITIVE_ITEM,
                 RiskConstant.RISK_LEVEL_HIGH,
@@ -167,6 +207,16 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
                 item.getLocation(),
                 "{\"rule\":\"SENSITIVE_ITEM\"}"
         );
+    }
+    private boolean judgeSensitiveItemRisk(BizItem item) {
+        log.info("开始检测敏感物品丢失");
+        String text = buildText(item);
+        if (!containsAny(text, "校园卡", "身份证", "学生证", "护照", "银行卡")) {
+            log.info("物品描述中未包含敏感物品关键词，无需检测");
+            return false;
+        }
+        log.info("物品描述中包含敏感物品关键词，开始发布风险事件通知");
+        return true;
     }
     private void createRiskEvent(String riskType,
                                  String riskLevel,

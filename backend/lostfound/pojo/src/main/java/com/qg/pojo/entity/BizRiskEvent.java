@@ -22,11 +22,13 @@ public class BizRiskEvent {
      * 1=THEFT_SUSPECT 盗窃嫌疑
      * 2=PERIODIC_CLUSTER 时段聚集
      * 3=SENSITIVE_ITEM 敏感物品
+     * 4=ITEM_FOUND 物品已经找回
      */
     private String riskType;
 
     /**
      * 风险等级
+     * 0=NO 无风险
      * 1=LOW 低
      * 2=MEDIUM 中
      * 3=HIGH 高

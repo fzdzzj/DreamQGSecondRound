@@ -18,4 +18,6 @@ public class RiskConstant {
     public static final String HANDLE_STATUS_UNHANDLED = "1";
     public static final String HANDLE_STATUS_RESOLVED = "2";
     public static final String HANDLE_STATUS_IGNORED = "3";
+    public static final String RISK_TYPE_ITEM_FOUND = "4";
+    public static final String RISK_LEVEL_NO = "0";
 }

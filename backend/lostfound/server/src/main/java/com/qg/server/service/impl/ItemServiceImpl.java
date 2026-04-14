@@ -168,6 +168,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 清空旧 AI 结果
         item.setAiStatus(BizItemAiResultStatusConstant.PENDING);
         item.setCurrentAiResultId(null);
+        if(item.getType().equals(BizItemTypeConstant.LOST)&&(item.getStatus().equals(BizItemStatusConstant.CLOSED)||item.getStatus().equals(BizItemStatusConstant.DELETED)||item.getStatus().equals(BizItemStatusConstant.MATCHED))){
+            //通知风险监控服务
+            riskMonitorService.onItemFound(item);
+        }
 
         updateById(item);
 
