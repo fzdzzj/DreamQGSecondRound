@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.qg.server.mapper.PermissionDao">
-    <select id="selectPermissionsByRoleCode" resultType="com.qg.server.model.Permission">
+    <select id="selectPermissionsByRoleCode" resultType="com.qg.pojo.entity.Permission">
         SELECT p.id, p.perm_name, p.method, p.url
         FROM permissions p
                  JOIN role_permissions rp ON rp.perm_id = p.id
                  JOIN roles r ON r.id = rp.role_id
-        WHERE r.role_code = #{roleCode}
+        WHERE r.role_code = #{role}
     </select>
 </mapper>
