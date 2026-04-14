@@ -58,5 +58,4 @@ public interface UserService extends IService<SysUser> {
      */
     void changePasswordByCode(Long userId, ChangePasswordByCodeDTO dto);
 
-    SysUser getByEmail(String email);
 }

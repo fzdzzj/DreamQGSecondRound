@@ -505,7 +505,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         log.info("清除过期的置顶物品");
         List<BizItem> expiredPinnedItems = list(new LambdaQueryWrapper<BizItem>()
                 .eq(BizItem::getIsPinned, 1)
-                .ge(BizItem::getPinExpireTime, LocalDateTime.now()));
+                .lt(BizItem::getPinExpireTime, LocalDateTime.now()));
         expiredPinnedItems.forEach(item -> {
             item.setPinExpireTime(null);
             item.setIsPinned(0);

@@ -42,7 +42,8 @@ public class TokenFilter extends OncePerRequestFilter {
             "/auth/login", "/auth/register", "/auth/refresh",
             "/swagger-ui.html", "/swagger-ui/**",
             "/v3/api-docs/**", "/error",
-            "/api/file/upload", "/item/page"
+            "/api/file/upload", "/item/page",
+            "/email/sendCode", "/email/verifyCode"
     );
 
     @Override

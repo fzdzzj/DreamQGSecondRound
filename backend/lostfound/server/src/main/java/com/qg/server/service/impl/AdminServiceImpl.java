@@ -12,12 +12,15 @@ import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.entity.UserActionLog;
 import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.AdminService;
+import com.qg.server.service.OperationLogService;
+import com.qg.server.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -25,6 +28,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,6 +39,8 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
 
     private final BizItemDao bizItemDao;  // 物品数据访问层
     private final UserDao userDao;
+    private final UserService userService;
+    private final OperationLogService operationLogService;
     private final RedisTemplate<String, Object> redisTemplate;
     /**
      * 用户分页列表
@@ -116,10 +122,13 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         updateUser.setStatus(UserStatusConstant.DISABLE);
 
         baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
+        banUser(userId,null);
 
         log.info("管理员封禁用户成功，userId={}, oldStatus={}, newStatus={}",
                 userId, user.getStatus(), UserStatusConstant.DISABLE);
     }
+
+
 
     /**
      * 解封用户
@@ -151,6 +160,7 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         updateUser.setStatus(UserStatusConstant.ENABLE);
 
         baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
+        redisTemplate.delete(RedisConstant.USER_BANNED_KEY + userId);
 
         log.info("管理员解封用户成功，userId={}, oldStatus={}, newStatus={}",
                 userId, user.getStatus(), UserStatusConstant.ENABLE);
@@ -248,5 +258,18 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
     private void evictItemCaches(Long itemId) {
         // 清理物品缓存
         redisTemplate.delete("item:detail:" + itemId);
+    }
+    public void banUser(Long userId,String actionType) {
+        redisTemplate.opsForValue().set(RedisConstant.USER_BANNED_KEY + userId, true);
+        redisTemplate.expire(RedisConstant.USER_BANNED_KEY + userId, Duration.ofDays(8));
+        log.info("用户 {} 被封禁，封禁原因：{}", userId,actionType);
+        SysUser sysUser = userService.getById(userId);
+        sysUser.setStatus(0);
+        userService.updateById(sysUser);
+        log.info("用户 {} 封禁成功", userId);
+        UserActionLog userActionLog = new UserActionLog();
+        userActionLog.setUserId(userId);
+        userActionLog.setActionType(actionType);
+        operationLogService.save(userActionLog);
     }
 }

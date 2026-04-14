@@ -149,6 +149,7 @@ public class PermissionServiceImpl implements PermissionService {
 
                 "POST:/ai/item/{id}/regenerate",
                 "POST:/ai/ask"
+
         );
     }
 }

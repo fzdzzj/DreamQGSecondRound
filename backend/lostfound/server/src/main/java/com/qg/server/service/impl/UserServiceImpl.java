@@ -155,8 +155,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
             throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
         }
 
-        // 2. 校验注册验证码（
-        boolean ok = emailVerificationCodeService.verifyCode(email, code, "REGISTER");
+        // 2. 校验注册验证码（REGISTER 类型）
+        boolean ok = emailVerificationCodeService.verifyCode(email, CodeTypeConstant.REGISTER, code);
         if (!ok) {
             throw new BaseException(401, MessageConstant.CODE_ERROR);
         }
@@ -356,11 +356,6 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
         log.info("修改密码成功，userId={}", userId);
     }
 
-    @Override
-    public SysUser getByEmail(String email) {
-        log.info("根据邮箱查询用户，email={}", email);
-        return userDao.selectOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getEmail, email));
-    }
 
     /**
      * 获取客户端真实IP

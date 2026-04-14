@@ -1,5 +1,6 @@
 package com.qg.server.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qg.common.constant.CodeTimeConstant;
 import com.qg.common.constant.EmailTypeConstant;
@@ -8,6 +9,7 @@ import com.qg.common.properties.MailProperties;
 import com.qg.pojo.entity.EmailVerificationCode;
 import com.qg.pojo.entity.SysUser;
 import com.qg.server.mapper.EmailVerificationCodeDao;
+import com.qg.server.mapper.UserDao;
 import com.qg.server.service.EmailVerificationCodeService;
 import com.qg.server.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +30,7 @@ public class EmailVerificationCodeServiceImpl implements EmailVerificationCodeSe
 
     private final JavaMailSender mailSender;
     private final EmailVerificationCodeDao dao;
-    private final UserService userService;
+    private final UserDao userDao;
     private final MailProperties mailProperties;
 
     /**
@@ -38,15 +40,20 @@ public class EmailVerificationCodeServiceImpl implements EmailVerificationCodeSe
     public void sendCode(String email, String type) {
         log.info("发送邮箱验证码，邮箱：{}，类型：{}", email, type);
         //登录或改密码判断账号存在
-        SysUser user = userService.getByEmail(email);
+        SysUser user = userDao.selectOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getEmail, email));
         if (user == null&&(type.equals(EmailTypeConstant.LOGIN)||type.equals(EmailTypeConstant.CHANGE_PASSWORD))) {
             throw new BaseException("账号不存在");
         }
+        if(type.equals(EmailTypeConstant.REGISTER)){
+            if (user != null) {
+                throw new BaseException(400,"账号已存在");
+            }
+        }
         // 查询最近一次发送时间（邮箱 + 类型）
-        QueryWrapper<EmailVerificationCode> wrapper = new QueryWrapper<>();
-        wrapper.eq("email", email)
-                .eq("type", type)
-                .orderByDesc("create_time")
+        LambdaQueryWrapper<EmailVerificationCode> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(EmailVerificationCode::getEmail, email)
+                .eq(EmailVerificationCode::getType, type)
+                .orderByDesc(EmailVerificationCode::getExpireTime)
                 .last("LIMIT 1");
 
         EmailVerificationCode last = dao.selectOne(wrapper);
@@ -54,7 +61,7 @@ public class EmailVerificationCodeServiceImpl implements EmailVerificationCodeSe
         if (last != null) {
             long secondsSinceLast = Duration.between(last.getExpireTime(), LocalDateTime.now()).getSeconds();
             if (secondsSinceLast < CodeTimeConstant.CODE_INTERVAL) {
-                throw new RuntimeException("验证码发送过于频繁，请稍后再试");
+                throw new BaseException(400,"验证码发送过于频繁，请稍后再试");
             }
         }
         // 生成安全的6位验证码
@@ -77,7 +84,7 @@ public class EmailVerificationCodeServiceImpl implements EmailVerificationCodeSe
             message.setText("您的验证码是：" + code + "，" + CodeTimeConstant.CODE_EXPIRE_TIME + "秒内有效，请不要泄露给他人。");
             mailSender.send(message);
         } catch (MailException e) {
-            throw new RuntimeException("邮件发送失败，请稍后重试");
+            throw new BaseException(500,"邮件发送失败，请稍后重试",e);
         }
     }
 

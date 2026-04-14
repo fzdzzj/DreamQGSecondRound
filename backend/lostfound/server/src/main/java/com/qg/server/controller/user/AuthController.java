@@ -109,17 +109,5 @@ public class AuthController {
         }
         return authHeader.substring(7).trim();
     }
-    @PostMapping("/sendCode")
-    public Result<Void> sendCode(@RequestParam String email, @RequestParam String type) {
-        codeService.sendCode(email, type);
-        return Result.success();
-    }
 
-    @PostMapping("/verifyCode")
-    public Result<Void> verifyCode(@RequestParam String email,
-                                   @RequestParam String type,
-                                   @RequestParam String code) {
-        boolean ok = codeService.verifyCode(email, type, code);
-        return ok ? Result.success() : Result.error(401,"验证码错误或已过期");
-    }
 }

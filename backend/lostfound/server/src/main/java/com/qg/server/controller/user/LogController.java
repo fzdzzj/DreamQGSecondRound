@@ -8,6 +8,7 @@ import com.qg.pojo.entity.UserActionLog;
 import com.qg.pojo.vo.UserActionLogVO;
 import com.qg.server.service.OperationLogService;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/log")
 @Slf4j
 @RequiredArgsConstructor
+@Tag(name ="操作日志接口", description = "操作日志接口")
 public class LogController {
     private final OperationLogService logService;
     @RequestMapping("/list")

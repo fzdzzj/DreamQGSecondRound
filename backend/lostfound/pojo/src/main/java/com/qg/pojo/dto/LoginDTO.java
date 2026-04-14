@@ -19,7 +19,6 @@ public class LoginDTO implements Serializable {
     @Schema(description = "登录标识（邮箱或手机号）",example = "dreamqg@example.com")
     private String identifier;
 
-    @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 20, message = "密码长度为6-20位")
     @Schema(description = "密码",  example = "123456")
     @Pattern(regexp = RegexConstant.PASSWORD, message = "密码格式错误")
