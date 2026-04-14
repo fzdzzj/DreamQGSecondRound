@@ -82,7 +82,11 @@ public class PermissionServiceImpl implements PermissionService {
                     "POST:/ai/ask",
 
                     "POST:/log/page",
-                    "GET:/log/list"
+                    "GET:/log/list",
+
+                    "POST:/risk/page",
+                    "GET:/risk/{id}",
+                    "POST:/risk/handle"
             );
         }
 
