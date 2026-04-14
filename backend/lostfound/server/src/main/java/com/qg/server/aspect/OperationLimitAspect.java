@@ -86,7 +86,7 @@ public class OperationLimitAspect {
     }
     public void banUser(Long userId,String actionType) {
         redisTemplate.opsForValue().set(RedisConstant.USER_BANNED_KEY + userId, true);
-        redisTemplate.expire(RedisConstant.USER_BANNED_KEY + userId, Duration.ofDays(7));
+        redisTemplate.expire(RedisConstant.USER_BANNED_KEY + userId, Duration.ofDays(8));
         log.info("用户 {} 被封禁，封禁原因：{}", userId,actionType);
         SysUser sysUser = userService.getById(userId);
         sysUser.setStatus(0);
