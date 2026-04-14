@@ -123,6 +123,14 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
 
         baseMapper.updateById(updateUser);  // 使用 IService 提供的 updateById 方法
         banUser(userId,null);
+        //查找该用户的所有物品
+        List<BizItem> items = bizItemDao.selectList(new LambdaQueryWrapper<BizItem>()
+                .eq(BizItem::getUserId, userId));
+        //禁用该用户的所有物品
+        items.forEach(item -> {
+            item.setStatus(BizItemStatusConstant.CLOSED);
+            bizItemDao.updateById(item);
+        });
 
         log.info("管理员封禁用户成功，userId={}, oldStatus={}, newStatus={}",
                 userId, user.getStatus(), UserStatusConstant.DISABLE);
