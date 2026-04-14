@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *AI异步服务实现类
+ * AI异步服务实现类
  * 用于处理异步的AI生成任务，如物品描述、物品图片描述等。
  */
 @Service
@@ -55,14 +55,14 @@ public class AiAsyncServiceImpl implements AiAsyncService {
      * 文本生成物品描述异步任务
      * 用于异步生成物品的描述，包括物品标题、物品描述、物品位置、用户ID、物品ID。
      *
-     * @param title     物品标题
+     * @param title       物品标题
      * @param description 物品描述
      * @param location    物品位置
-     * @param userId    用户ID
-     * @param itemId    物品ID
-     *                  1. 调用AI模型生成物品描述
-     *                  2. 保存生成的描述到数据库
-     *                  3. 保存物品的当前AI结果ID
+     * @param userId      用户ID
+     * @param itemId      物品ID
+     *                    1. 调用AI模型生成物品描述
+     *                    2. 保存生成的描述到数据库
+     *                    3. 保存物品的当前AI结果ID
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -87,19 +87,19 @@ public class AiAsyncServiceImpl implements AiAsyncService {
      * 图片多模态生成物品图片描述异步任务
      * 用于异步生成物品的图片描述，包括物品标题、物品描述、物品位置、用户ID、物品ID、图片列表。
      *
-     * @param title     物品标题
+     * @param title       物品标题
      * @param description 物品描述
      * @param location    物品位置
-     * @param userId    用户ID
-     * @param itemId    物品ID
-     * @param imageItems 图片列表
-     *                  1. 调用AI模型生成物品图片描述
-     *                  2. 保存生成的图片描述到数据库
-     *                  3. 插入tag
-     *                  4. 更新ai结果ID
+     * @param userId      用户ID
+     * @param itemId      物品ID
+     * @param imageItems  图片列表
+     *                    1. 调用AI模型生成物品图片描述
+     *                    2. 保存生成的图片描述到数据库
+     *                    3. 插入tag
+     *                    4. 更新ai结果ID
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void generateItemImageDescription(String title, String description, String location,
                                              Long userId, Long itemId, List<ImageDescriptionClient.ImageItem> imageItems) {
         //1. 调用AI模型生成物品图片描述
@@ -148,15 +148,13 @@ public class AiAsyncServiceImpl implements AiAsyncService {
 
     /**
      * 重新生成物品描述异步任务
+     *
      * @param itemId
-     * @param userId
-     * 1. 获取物品描述
-     * 2. 先把主表中的AI状态改为处理中
-     * 3. 保存生成的描述到数据库
-     * 4. 更新物品的当前AI结果ID
+     * @param userId 1. 获取物品描述
+     *               2. 先把主表中的AI状态改为处理中
+     *               3. 调用AI模型生成物品描述
      */
     @Override
-    @Transactional
     public void regenerateItemDescription(Long itemId, Long userId) {
         log.info("重新生成物品描述,用户ID:{},物品ID:{}", userId, itemId);
         //1. 获取物品描述
@@ -165,7 +163,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
             log.warn("物品不存在,或已删除,物品ID:{}", itemId);
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
-        log.info("重新生成物品描述,用户ID:{},物品ID:{},物品用户ID:{}", userId, itemId,item.getUserId());
+        log.info("重新生成物品描述,用户ID:{},物品ID:{},物品用户ID:{}", userId, itemId, item.getUserId());
         if (!item.getUserId().equals(userId)) {
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
@@ -185,7 +183,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         List<ImageDescriptionClient.ImageItem> imageItems = imageList.stream()
                 .map(img -> new ImageDescriptionClient.ImageItem(img.getUrl(), null)).toList();
 
-        // 有图走多模态，无图走文本
+        //3. 有图走多模态，无图走文本
         if (imageItems != null && !imageItems.isEmpty()) {
             generateItemImageDescription(
                     item.getTitle(),
@@ -207,17 +205,27 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     }
 
     /**
-     * 持久化 AI 结果（不存 tags）
+     *
+     * @param title
+     * @param location
+     * @param userId
+     * @param itemId
+     * @param generatedDesc
+     * @param originDesc
+     * @param status
+     * @param aiCategory
+     * @return 1. 插入结果表
+     * 2. 返回插入结果ID和版本号
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Map<String, String> persistAiDescription(String title, String location, Long userId, Long itemId,
-                                     String generatedDesc, String originDesc, String status,
-                                     String aiCategory) {
+                                                    String generatedDesc, String originDesc, String status,
+                                                    String aiCategory) {
 
         BizItemAiResult lastResult = aiResultDao.selectLatestByItemId(itemId);
         int newVersion = (lastResult == null ? 1 : lastResult.getResultVersion() + 1);
-
+        // 1. 插入结果表
         BizItemAiResult result = new BizItemAiResult();
         result.setItemId(itemId);
         result.setResultVersion(newVersion);
@@ -233,7 +241,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         result.setUpdateUser(userId);
 
         aiResultDao.insert(result);
-
+        // 2. 返回插入结果ID和版本号
         Map<String, String> resultInfo = new HashMap<>();
         resultInfo.put("resultId", result.getId().toString());
         resultInfo.put("resultVersion", newVersion + "");
@@ -259,16 +267,10 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     }
 
 
-
-
-
-
-
     /**
      * 更新 item 的当前 AI 状态
      */
     @Override
-    @Transactional
     public void updateItemCurrentAiResultId(Long itemId, Long aiResultId, String aiStatus) {
         BizItem item = itemDao.selectById(itemId);
         if (item != null) {
