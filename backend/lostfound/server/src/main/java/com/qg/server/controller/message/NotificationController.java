@@ -4,6 +4,7 @@ import com.qg.common.context.BaseContext;
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.vo.NotificationVO;
+import com.qg.pojo.vo.UnreadCountVO;
 import com.qg.server.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,12 +31,12 @@ public class NotificationController {
      */
     @GetMapping("/user/unread")
     @Operation(summary = "获取用户未读通知数量")
-    public Result<Long> getUserUnreadNotificationCount() {
+    public Result<UnreadCountVO> getUserUnreadNotificationCount() {
         Long userId = BaseContext.getCurrentId();
         log.info("查询用户未读通知数量，userId={}", userId);
         Long count = notificationService.getUserUnreadNotificationCount(userId);
         log.info("查询用户未读通知数量成功，userId={}, count={}", userId, count);
-        return Result.success(count);
+        return Result.success(new UnreadCountVO(count));
     }
 
     /**

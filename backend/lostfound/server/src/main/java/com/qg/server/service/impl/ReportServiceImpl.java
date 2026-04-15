@@ -1,13 +1,9 @@
 package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qg.common.constant.BizItemStatusConstant;
-import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.ReportStatusConstant;
-import com.qg.common.constant.RoleConstant;
+import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.ReportStatusEnum;
 import com.qg.common.exception.AbsentException;
@@ -16,7 +12,6 @@ import com.qg.common.exception.ViewNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.ReportAuditDTO;
 import com.qg.pojo.dto.ReportDTO;
-import com.qg.pojo.dto.ReportPageQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizReport;
 import com.qg.pojo.vo.ReportDetailVO;
@@ -93,18 +88,18 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void auditReport(ReportAuditDTO reportAuditDTO) {
+    public void auditReport(Long reportId, ReportAuditDTO reportAuditDTO) {
         Long adminId = BaseContext.getCurrentId();
-        log.info("管理员审核举报，reportId={}, adminId={}", reportAuditDTO.getReportId(), adminId);
+        log.info("管理员审核举报，reportId={}, adminId={}", reportId, adminId);
         // 1. 校验举报记录是否存在
-        BizReport report = getById((Serializable) reportAuditDTO.getReportId());  // 使用 IService 提供的 getById 方法
+        BizReport report = getById((Serializable) reportId);  // 使用 IService 提供的 getById 方法
         if (report == null) {
-            log.info("举报记录不存在，reportId={}", reportAuditDTO.getReportId());
+            log.info("举报记录不存在，reportId={}", reportId);
             throw new AbsentException(MessageConstant.REPORT_NOT_FOUND);
         }
         // 2. 校验举报记录状态为待审核
         if (!report.getStatus().equals(ReportStatusConstant.PENDING)) {
-            log.info("举报记录状态不是待审核，reportId={}", reportAuditDTO.getReportId());
+            log.info("举报记录状态不是待审核，reportId={}", reportId);
             throw new BaseException(400, MessageConstant.REPORT_NOT_PENDING);
         }
 
@@ -126,31 +121,43 @@ public class ReportServiceImpl extends ServiceImpl<BizReportDao, BizReport> impl
             log.info("物品删除成功，itemId={}", report.getItemId());
         }
 
-        log.info("举报审核完成，reportId={}, result={}", reportAuditDTO.getReportId(), reportAuditDTO.getStatus());
+        log.info("举报审核完成，reportId={}, result={}", reportId, reportAuditDTO.getStatus());
     }
 
     /**
      * 分页查询举报列表
      *
-     * @param queryDTO 分页查询参数对象
+     * @param pageNum    页码
+     * @param pageSize   每页数量
+     * @param status     举报状态
+     * @param startTime  开始时间
+     * @param endTime    结束时间
+     * @param reporterId 举报人ID
+     * @param itemId     物品ID
      * @return 1. 分页对象
      * 2. 条件构造器
      * 3. 分页查询
      * 4. 转换为VO并返回
      */
     @Override
-    public PageResult<ReportListVO> list(ReportPageQueryDTO queryDTO) {
+    public PageResult<ReportListVO> page(Integer pageNum, Integer pageSize, Integer status, LocalDateTime startTime, LocalDateTime endTime, Long reporterId, Long itemId) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = DefaultPageConstant.DEFAULT_PAGE_NUM;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = DefaultPageConstant.DEFAULT_PAGE_SIZE;
+        }
         // 1. 分页对象
-        Page<BizReport> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
-        log.info("分页查询举报列表，pageNum={}, pageSize={}", queryDTO.getPageNum(), queryDTO.getPageSize());
+        Page<BizReport> page = new Page<>(pageNum, pageSize);
+        log.info("分页查询举报列表，pageNum={}, pageSize={}", pageNum, pageSize);
 
         // 2. 条件构造器
         LambdaQueryWrapper<BizReport> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(queryDTO.getReporterId() != null, BizReport::getReporterId, queryDTO.getReporterId())
-                .eq(StringUtils.isNotBlank(queryDTO.getStatus()), BizReport::getStatus, queryDTO.getStatus())
-                .eq(queryDTO.getItemId() != null, BizReport::getItemId, queryDTO.getItemId())
-                .ge(queryDTO.getStartTime() != null, BizReport::getCreateTime, queryDTO.getStartTime())
-                .le(queryDTO.getEndTime() != null, BizReport::getCreateTime, queryDTO.getEndTime())
+        wrapper.eq(reporterId != null, BizReport::getReporterId, reporterId)
+                .eq(status != null, BizReport::getStatus, status)
+                .eq(itemId != null, BizReport::getItemId, itemId)
+                .ge(startTime != null, BizReport::getCreateTime, startTime)
+                .le(endTime != null, BizReport::getCreateTime, endTime)
                 .orderByDesc(BizReport::getCreateTime); // 按时间倒序更合理
 
         // 3. 分页查询

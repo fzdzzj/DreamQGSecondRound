@@ -23,7 +23,7 @@ public class WsPrivateMessagePayload {
         payload.setSenderId(vo.getSenderId());
         payload.setReceiverId(vo.getReceiverId());
         payload.setContent(vo.getContent());
-        payload.setMessageType(Integer.parseInt(vo.getMessageType()));
+        payload.setMessageType(vo.getMessageType());
         payload.setImageUrl(vo.getImageUrl());
         payload.setStatus(vo.getStatus());
         payload.setCreateTime(vo.getCreateTime());

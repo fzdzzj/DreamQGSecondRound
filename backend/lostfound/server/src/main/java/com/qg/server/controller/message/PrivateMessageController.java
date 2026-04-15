@@ -62,7 +62,7 @@ public class PrivateMessageController {
             @RequestParam(required = false) Long lastMessageId,
             @RequestParam(defaultValue = "20") Integer pageSize) {
         log.info("获取聊天记录，peerId={}, lastMessageId={}, pageSize={}", peerId, lastMessageId, pageSize);
-        List<PrivateMessageVO> list = privateMessageService.getChatHistoryByCursor(peerId, lastMessageId, pageSize);
+        List<PrivateMessageVO> list = privateMessageService.getHistoryByCursor(peerId, lastMessageId, pageSize);
         log.info("获取聊天记录成功，peerId={}, lastMessageId={}, pageSize={}, total={}",
                 peerId, lastMessageId, pageSize, list.size());
         return Result.success(list);
@@ -81,7 +81,7 @@ public class PrivateMessageController {
         Long userId = BaseContext.getCurrentId();
         log.info("将会话全部标记为已读，userId={}, peerId={}", userId, peerId);
 
-        privateMessageService.markConversationAsRead(peerId);
+        privateMessageService.markConversationRead(peerId);
 
         log.info("将会话全部标记为已读成功，userId={}, peerId={}", userId, peerId);
         return Result.success();
@@ -97,7 +97,7 @@ public class PrivateMessageController {
     public Result<List<ConversationVO>> getConversationList() {
         Long userId = BaseContext.getCurrentId();
         log.info("获取会话列表，userId={}", userId);
-        List<ConversationVO> list = privateMessageService.getConversationList();
+        List<ConversationVO> list = privateMessageService.getConversations();
         log.info("获取会话列表成功，userId={}, total={}", userId, list.size());
         return Result.success(list);
     }

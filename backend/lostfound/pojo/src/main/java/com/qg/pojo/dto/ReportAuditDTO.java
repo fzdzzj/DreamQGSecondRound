@@ -12,10 +12,6 @@ import java.io.Serializable;
 public class ReportAuditDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "举报ID")
-    @NotNull(message = "举报ID不能为空")
-    private Long reportId;
-
     @Schema(description = "审核状态")
     @NotBlank(message = "审核状态不能为空 1.PENDING / 2.APPROVED / 3.REJECTED")
     private String status;

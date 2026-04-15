@@ -32,5 +32,5 @@ public interface BizClaimRequestService extends IService<BizClaimRequest> {
      *
      * @param dto 审批请求DTO
      */
-    void approveRequest(ApproveRequestDTO dto);
+    void approveRequest(Long id, ApproveRequestDTO dto);
 }

@@ -6,6 +6,7 @@ import com.qg.common.result.Result;
 import com.qg.pojo.dto.CommentAddDTO;
 import com.qg.pojo.vo.CommentDetailVO;
 import com.qg.pojo.vo.CommentStatVO;
+import com.qg.pojo.vo.UnreadCountVO;
 import com.qg.server.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,19 +46,19 @@ public class CommentController {
     /**
      * 获取物品留言列表
      *
-     * @param id       物品ID
+     * @param itemId 物品ID
      * @param pageNum  页码
      * @param pageSize 每页数量
      * @return 分页查询结果
      */
-    @GetMapping("/item/{id}")
+    @GetMapping("/item/{itemId}")
     @Operation(summary = "获取物品留言列表")
-    public Result<PageResult<CommentStatVO>> getCommentList(@PathVariable Long id,
+    public Result<PageResult<CommentStatVO>> getCommentList(@PathVariable Long itemId,
                                                             @RequestParam(defaultValue = "1") int pageNum,
                                                             @RequestParam(defaultValue = "10") int pageSize) {
-        log.info("管理员请求查看留言列表，id={}, pageNum={}, pageSize={}", id, pageNum, pageSize);
-        PageResult<CommentStatVO> pageResult = commentService.getCommentList(id, pageNum, pageSize);
-        log.info("管理员查看留言列表成功，id={}, pageNum={}, pageSize={}", id, pageNum, pageSize);
+        log.info("管理员请求查看留言列表，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
+        PageResult<CommentStatVO> pageResult = commentService.getCommentList(itemId, pageNum, pageSize);
+        log.info("管理员查看留言列表成功，itemId={}, pageNum={}, pageSize={}", itemId, pageNum, pageSize);
         return Result.success(pageResult);
     }
 
@@ -65,63 +66,63 @@ public class CommentController {
     /**
      * 删除留言
      *
-     * @param id 留言ID
+     * @param commentId 留言ID
      * @return 删除留言结果
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{commentId}")
     @Operation(summary = "删除留言")
-    public Result<Void> deleteComment(@PathVariable Long id) {
+    public Result<Void> deleteComment(@PathVariable Long commentId) {
         Long userId = BaseContext.getCurrentId();
-        log.info("用户请求删除留言，id={}, userId={}", id, userId);
-        commentService.deleteComment(id);
-        log.info("用户删除留言成功，id={}, userId={}", id, userId);
+        log.info("用户请求删除留言，commentId={}, userId={}", commentId, userId);
+        commentService.deleteComment(commentId);
+        log.info("用户删除留言成功，commentId={}, userId={}", commentId, userId);
         return Result.success();
     }
 
     /**
      * 获取留言详情
      *
-     * @param id 留言ID
+     * @param commentId 留言ID
      * @return 留言详情
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{commentId}")
     @Operation(summary = "获取留言详情")
-    public Result<CommentDetailVO> getCommentDetail(@PathVariable Long id) {
-        log.info("查询留言详情，id={}", id);
-        CommentDetailVO commentVO = commentService.getCommentDetail(id);
-        log.info("查询留言详情成功，id={} commentContent={}", id, commentVO.getContent());
+    public Result<CommentDetailVO> getCommentDetail(@PathVariable Long commentId) {
+        log.info("查询留言详情，commentId={}", commentId);
+        CommentDetailVO commentVO = commentService.getCommentDetail(commentId);
+        log.info("查询留言详情成功，commentId={} commentContent={}", commentId, commentVO.getContent());
         return Result.success(commentVO);
     }
 
     /**
      * 标记留言为已读
      *
-     * @param id 留言ID
+     * @param commentId 留言ID
      * @return 标记留言为已读结果
      */
-    @PutMapping("/{id}/read")
+    @PutMapping("/{commentId}/read")
     @Operation(summary = "标记留言为已读")
-    public Result<Void> markAsRead(@PathVariable Long id) {
+    public Result<Void> markAsRead(@PathVariable Long commentId) {
         Long userId = BaseContext.getCurrentId();
-        log.info("用户请求标记留言为已读，id={}, userId={}", id, userId);
-        commentService.markAsRead(id);
-        log.info("用户标记留言为已读成功，id={}, userId={}", id, userId);
+        log.info("用户请求标记留言为已读，commentId={}, userId={}", commentId, userId);
+        commentService.markAsRead(commentId);
+        log.info("用户标记留言为已读成功，commentId={}, userId={}", commentId, userId);
         return Result.success();
     }
 
     /**
      * 获取物品下未读留言数量
      *
-     * @param id 物品ID
+     * @param itemId 物品ID
      * @return 未读留言数量
      */
-    @GetMapping("/item/{id}/unread")
+    @GetMapping("/item/{itemId}/unread")
     @Operation(summary = "获取物品下未读留言数量")
-    public Result<Long> getUnreadCount(@PathVariable Long id) {
-        log.info("查询物品下未读留言数量，id={}", id);
-        Long count = commentService.getUnreadCount(id);
-        log.info("查询物品下未读留言数量成功，id={}, count={}", id, count);
-        return Result.success(count);
+    public Result<UnreadCountVO> getUnreadCount(@PathVariable Long itemId) {
+        log.info("查询物品下未读留言数量，itemId={}", itemId);
+        Long count = commentService.getUnreadCount(itemId);
+        log.info("查询物品下未读留言数量成功，itemId={}, count={}", itemId, count);
+        return Result.success(new UnreadCountVO(count));
     }
 
     /**
@@ -131,12 +132,12 @@ public class CommentController {
      */
     @GetMapping("/user/unread")
     @Operation(summary = "获取用户未读留言数量")
-    public Result<Long> getUserUnreadCount() {
+    public Result<UnreadCountVO> getUserUnreadCount() {
         Long userId = BaseContext.getCurrentId();
         log.info("查询用户未读留言数量，userId={}", userId);
         Long count = commentService.getUserUnreadCount(userId);
         log.info("查询用户未读留言数量成功，userId={}, count={}", userId, count);
-        return Result.success(count);
+        return Result.success(new UnreadCountVO(count));
     }
 
 }

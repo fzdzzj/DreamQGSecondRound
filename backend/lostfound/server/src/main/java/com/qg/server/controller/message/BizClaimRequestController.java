@@ -35,7 +35,7 @@ public class BizClaimRequestController {
      *
      * @param request 认领申请请求参数
      */
-    @PostMapping("/create")
+    @PostMapping
     @Operation(summary = "失主发起认领申请")
     @AntiBot(value = LimitTypeConstant.USER_CLAIM_LIMIT)
     public Result<Void> create(@RequestBody BizClaimRequestDTO request) {
@@ -62,11 +62,11 @@ public class BizClaimRequestController {
      *
      * @param approveRequestDTO 审批认领申请请求参数
      */
-    @PostMapping("/approve")
+    @PostMapping("/{id}/audit")
     @Operation(summary = "拾取者审批")
-    public Result<Void> approve(@RequestBody ApproveRequestDTO approveRequestDTO) {
+    public Result<Void> approve(@PathVariable Long id, @RequestBody ApproveRequestDTO approveRequestDTO) {
         log.info("用户 {} 审批认领申请: {}", BaseContext.getCurrentId(), approveRequestDTO);
-        claimRequestService.approveRequest(approveRequestDTO);
+        claimRequestService.approveRequest(id, approveRequestDTO);
         log.info("用户 {} 审批认领申请成功", BaseContext.getCurrentId());
         return Result.success();
     }

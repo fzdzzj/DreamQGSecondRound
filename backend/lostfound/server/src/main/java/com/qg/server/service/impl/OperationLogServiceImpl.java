@@ -62,7 +62,7 @@ public class OperationLogServiceImpl extends ServiceImpl<UserActionLogDao, UserA
      * @return VO结果
      */
     private PageResult<UserActionLogVO> convert(Page<UserActionLog> page) {
-        PageResult<UserActionLogVO> result = new PageResult<>();
+        PageResult<UserActionLogVO> result = new PageResult<UserActionLogVO>();
         result.setTotal(page.getTotal());
         result.setPageNum((int) page.getCurrent());
         result.setPageSize((int) page.getSize());

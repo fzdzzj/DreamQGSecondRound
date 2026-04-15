@@ -33,9 +33,9 @@ public class AdminController {
      * @param queryDTO 查询参数
      * @return 分页结果
      */
-    @PostMapping("/user/list")
+    @GetMapping("/user")
     @Operation(summary = "用户分页列表")
-    public Result<PageResult<SysUserStatVO>> userList(@Validated @RequestBody(required = false) UserPageQueryDTO queryDTO) {
+    public Result<PageResult<SysUserStatVO>> userList(@Validated UserPageQueryDTO queryDTO) {
         log.info("管理员获取用户列表，pageNum={}, pageSize={}", queryDTO.getPageNum(), queryDTO.getPageSize());
         PageResult<SysUserStatVO> pageResult = adminService.userList(queryDTO);
         log.info("用户列表获取成功，total={}, pageNum={}, pageSize={}",

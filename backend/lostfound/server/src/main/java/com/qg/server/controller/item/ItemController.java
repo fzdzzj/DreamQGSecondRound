@@ -6,7 +6,6 @@ import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.ItemPageQueryDTO;
 import com.qg.pojo.dto.LostBizItemDTO;
-import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.UpdateBizItemDTO;
 import com.qg.pojo.vo.BizItemDetailVO;
 import com.qg.pojo.vo.BizItemStatVO;
@@ -33,8 +32,10 @@ public class ItemController {
 
     private final ItemService itemService;
     private final PinService pinService;
+
     /**
      * 发布丢失物品
+     *
      * @param lostBizItemDTO 丢失物品请求参数
      */
     @PostMapping("/lost")
@@ -47,8 +48,10 @@ public class ItemController {
         log.info("发布丢失物品成功，用户ID={}", userId);
         return Result.success();
     }
+
     /**
      * 发布拾取物品
+     *
      * @param lostBizItemDTO 拾取物品请求参数
      */
     @PostMapping("/found")
@@ -61,9 +64,11 @@ public class ItemController {
         log.info("发布拾取物品成功，用户ID={}", userId);
         return Result.success();
     }
+
     /**
      * 修改物品信息
-     * @param id 物品ID
+     *
+     * @param id               物品ID
      * @param updateBizItemDTO 更新物品信息请求参数
      */
     @PutMapping("/{id}")
@@ -77,8 +82,10 @@ public class ItemController {
         log.info("修改物品信息成功，物品ID={}, 用户ID={}", id, userId);
         return Result.success();
     }
+
     /**
      * 获取物品详情
+     *
      * @param id 物品ID
      * @return 物品详情
      */
@@ -93,6 +100,7 @@ public class ItemController {
 
     /**
      * 删除物品
+     *
      * @param id 物品ID
      * @return 删除物品结果
      */
@@ -105,35 +113,41 @@ public class ItemController {
         log.info("删除物品成功，物品ID={}, 用户ID={}", id, userId);
         return Result.success();
     }
+
     /**
      * 分页查询列表
+     *
      * @param query 分页查询参数
      * @return 分页查询结果
      */
-    @PostMapping("/page")
+    @GetMapping
     @Operation(summary = "分页查询列表")
-    public Result<PageResult<BizItemStatVO>> page(@Validated @RequestBody ItemPageQueryDTO query) {
+    public Result<PageResult<BizItemStatVO>> page(@Validated  ItemPageQueryDTO query) {
         log.info("分页查询列表，请求参数={}", query);
         PageResult<BizItemStatVO> pageResult = itemService.pageList(query);
         log.info("分页查询列表成功，大小={}, 总记录数={}", pageResult.getPageSize(), pageResult.getTotal());
         return Result.success(pageResult);
     }
+
     /**
      * 分页查询我的物品
+     *
      * @param query 分页查询参数
      * @return 分页查询结果
      */
-    @PostMapping("/my/page")
+    @GetMapping("/my")
     @Operation(summary = "分页查询我的物品")
-    public Result<PageResult<BizItemStatVO>> myPage(@Validated @RequestBody ItemPageQueryDTO query) {
+    public Result<PageResult<BizItemStatVO>> myPage(@Validated  ItemPageQueryDTO query) {
         Long userId = BaseContext.getCurrentId();
         log.info("分页查询我的物品，userId={}, query={}", userId, query);
         PageResult<BizItemStatVO> pageResult = itemService.myPageList(query);
         log.info("分页查询我的物品成功，userId={}", userId);
         return Result.success(pageResult);
     }
+
     /**
      * 关闭物品
+     *
      * @param id 物品ID
      * @return 关闭物品结果
      */

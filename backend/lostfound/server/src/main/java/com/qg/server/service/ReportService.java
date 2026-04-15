@@ -9,6 +9,8 @@ import com.qg.pojo.entity.BizReport;
 import com.qg.pojo.vo.ReportDetailVO;
 import com.qg.pojo.vo.ReportListVO;
 
+import java.time.LocalDateTime;
+
 /**
  * 举报服务
  */
@@ -25,16 +27,13 @@ public interface ReportService extends IService<BizReport> {  // 继承 IService
      *
      * @param reportAuditDTO 审核参数DTO
      */
-    void auditReport(ReportAuditDTO reportAuditDTO);
+    void auditReport(Long reportId, ReportAuditDTO reportAuditDTO);
 
     /**
-     * 获取举报
+     * 分页获取举报列表
      *
-     * @param pageQueryDTO 分页查询参数DTO
-     * @return 分页查询结果
      */
-    PageResult<ReportListVO> list(ReportPageQueryDTO pageQueryDTO);
-
+    PageResult<ReportListVO> page(Integer pageNum, Integer pageSize, Integer status, LocalDateTime startTime, LocalDateTime endTime, Long reporterId, Long itemId);
     /**
      * 获取举报详情
      *

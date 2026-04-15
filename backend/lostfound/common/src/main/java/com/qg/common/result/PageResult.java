@@ -1,6 +1,7 @@
 package com.qg.common.result;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
  * @param <T>
  */
 @Data
+@NoArgsConstructor
 public class PageResult<T> implements Serializable {
 
     private List<T> list;

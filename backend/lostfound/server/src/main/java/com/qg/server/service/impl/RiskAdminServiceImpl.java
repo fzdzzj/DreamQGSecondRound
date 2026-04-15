@@ -78,9 +78,9 @@ public class RiskAdminServiceImpl extends ServiceImpl<BizRiskEventDao, BizRiskEv
      * @param dto     处理信息
      */
     @Override
-    public void handleRiskEvent(Long adminId, RiskHandleDTO dto) {
-        BizRiskEvent event = bizRiskEventDao.selectById(dto.getRiskEventId());
-        log.info("处理风险事件，adminId={},dto={}", adminId, dto);
+    public void handleRiskEvent(Long id, Long adminId, RiskHandleDTO dto) {
+        BizRiskEvent event = bizRiskEventDao.selectById(id);
+        log.info("处理风险事件，id={}, adminId={},dto={}", id, adminId, dto);
         if (event == null) {
             throw new RuntimeException("风险事件不存在");
         }

@@ -50,7 +50,7 @@ public class PinController {
      * @param dto 置顶审核DTO
      * @return 审核结果
      */
-    @PostMapping("/audit")
+    @PutMapping("/audit")
     @Operation(summary = "审核置顶")
     public Result<Void> audit(@Validated @RequestBody PinAuditDTO dto) {
         log.info("审核置顶，申请ID：{}，审核状态：{}，审核备注：{}", dto.getRequestId(), dto.getStatus(), dto.getRemark());
@@ -62,14 +62,23 @@ public class PinController {
     /**
      * 查询置顶申请列表
      *
-     * @param query 置顶申请查询DTO
-     * @return 置顶申请列表
+     * @param pageNum 页码
+     * @param pageSize 每页数量
+     * @param status 状态
+     * @param applicantId 申请人ID
+     * @param itemId 物品ID
+     * @return 分页查询结果
      */
     @PostMapping("/page")
     @Operation(summary = "分页查询置顶申请列表")
-    public Result<PageResult<PinRequestStatVO>> page(@Validated @RequestBody PinRequestQueryDTO query) {
-        log.info("查询置顶申请列表，查询参数：{}", query);
-        PageResult<PinRequestStatVO> pageResult = pinService.queryPinRequests(query);
+    public Result<PageResult<PinRequestStatVO>> page(@RequestParam(defaultValue = "1") Integer pageNum,
+                                                     @RequestParam(defaultValue = "10") Integer pageSize,
+                                                     @RequestParam(required = false) Integer status,
+                                                     @RequestParam(required = false) Long applicantId,
+                                                     @RequestParam(required = false) Long itemId) {
+        log.info("查询置顶申请列表，查询参数：pageNum={}, pageSize={}, status={}, applicantId={}, itemId={}",
+                pageNum, pageSize, status, applicantId, itemId);
+        PageResult<PinRequestStatVO> pageResult = pinService.queryPinRequests(pageNum, pageSize, status, applicantId, itemId);
         log.info("查询置顶申请列表，查询结果：大小={}，总记录数={}", pageResult.getList().size(), pageResult.getTotal());
         return Result.success(pageResult);
     }
@@ -80,7 +89,7 @@ public class PinController {
      * @param id 置顶申请ID
      * @return 取消置顶申请结果
      */
-    @PostMapping("/cancel/{id}")
+    @PutMapping("/cancel/{id}")
     @Operation(summary = "取消置顶申请", description = "用户或管理员取消置顶申请")
     public Result<Void> cancel(@PathVariable Long id) {
         log.info("取消置顶申请，pinRequestId={}", id);

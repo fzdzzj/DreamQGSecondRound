@@ -34,5 +34,5 @@ public interface RiskAdminService extends IService<BizRiskEvent> {
      * @param adminId 管理员ID
      * @param dto     处理参数
      */
-    void handleRiskEvent(Long adminId, RiskHandleDTO dto);
+    void handleRiskEvent(Long id, Long adminId, RiskHandleDTO dto);
 }

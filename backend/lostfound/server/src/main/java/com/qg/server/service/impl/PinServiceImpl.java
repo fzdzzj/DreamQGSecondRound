@@ -231,19 +231,30 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
     /**
      * 查询置顶申请列表
      *
-     * @param queryDTO 查询参数
+     * @param pageNum 页码
+     * @param pageSize 每页数量
+     * @param status 状态
+     * @param applicantId 申请人ID
+     * @param itemId 物品ID
+     * @return 分页查询结果
      *                 1. 校验参数
      *                 2. 查询置顶申请列表
      *                 3. 转换为 VO
      */
     @Override
-    public PageResult<PinRequestStatVO> queryPinRequests(PinRequestQueryDTO queryDTO) {
+    public PageResult<PinRequestStatVO> queryPinRequests(Integer pageNum, Integer pageSize, Integer status, Long applicantId, Long itemId) {
+        if(pageNum == null || pageNum < 1){
+            pageNum=DefaultPageConstant.DEFAULT_PAGE_NUM;
+        }
+        if(pageSize == null || pageSize < 1){
+            pageSize=DefaultPageConstant.DEFAULT_PAGE_SIZE;
+        }
         //1.构建查询参数
-        Page<BizPinRequest> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+        Page<BizPinRequest> page = new Page<>(pageNum, pageSize);
         //2.构建查询条件
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
-        if (queryDTO.getApplicantId() != null) wrapper.eq(BizPinRequest::getApplicantId, queryDTO.getApplicantId());
-        if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizPinRequest::getStatus, queryDTO.getStatus());
+        if (applicantId != null) wrapper.eq(BizPinRequest::getApplicantId, applicantId);
+        if (StringUtils.isNotBlank(status.toString())) wrapper.eq(BizPinRequest::getStatus, status);
         //3.查询置顶申请列表
         baseMapper.selectPage(page, wrapper);
         //4.转换为 VO

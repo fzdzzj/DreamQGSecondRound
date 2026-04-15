@@ -32,10 +32,14 @@ public interface PinService extends IService<BizPinRequest> {  // 继承 IServic
 
     /**
      * 查询页置顶申请
-     * @param queryDTO 查询参数DTO
+     * @param pageNum 页码
+     * @param pageSize 每页数量
+     * @param status 状态
+     * @param applicantId 申请人ID
+     * @param itemId 物品ID
      * @return 分页查询结果
      */
-    PageResult<PinRequestStatVO> queryPinRequests(PinRequestQueryDTO queryDTO);
+    PageResult<PinRequestStatVO> queryPinRequests(Integer pageNum, Integer pageSize, Integer status, Long applicantId, Long itemId);
 
     /**
      * 获取置顶申请详情

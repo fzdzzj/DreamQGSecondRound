@@ -119,18 +119,18 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
      **/
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void approveRequest(ApproveRequestDTO dto) {
+    public void approveRequest(Long id, ApproveRequestDTO dto) {
         //1. 获取认领申请
-        BizClaimRequest request = getById(dto.getRequestId());
+        BizClaimRequest request = getById(id);
         Long operatorId = BaseContext.getCurrentId();
         if (request == null) {
-            log.warn("认领申请 {} 不存在", dto.getRequestId());
+            log.warn("认领申请 {} 不存在", id);
             throw new BaseException(MessageConstant.CLAIM_REQUEST_ABSENT);
         }
 
         //2. 权限检查：只有拾取者才能审批
         if (!operatorId.equals(request.getOwnerId())) {
-            log.warn("用户 {} 无权限审批认领申请 {}", operatorId, dto.getRequestId());
+            log.warn("用户 {} 无权限审批认领申请 {}", operatorId, id);
             throw new BaseException(MessageConstant.NO_PERMISSION);
         }
         //3. 审批状态检查
@@ -138,13 +138,13 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
         if (BizClaimRequestStatusConstant.APPROVED.equals(dto.getStatus())) {
             request.setPickupCode(UUID.randomUUID().toString().substring(0, 8));
             log.info("生成取货码: {}", request.getPickupCode());
-            notificationService.createNotification(request.getApplicantId(), dto.getRequestId(), MessageConstant.CLAIM_REQUEST_AUDIT_PASS + request.getPickupCode() + dto.getRemark());
+            notificationService.createNotification(request.getApplicantId(), id, MessageConstant.CLAIM_REQUEST_AUDIT_PASS + request.getPickupCode() + dto.getRemark());
         } else if (BizClaimRequestStatusConstant.REJECTED.equals(dto.getStatus())) {
             log.info("审批拒绝，通知申请人: {}", dto.getRemark());
-            notificationService.createNotification(request.getApplicantId(), dto.getRequestId(), MessageConstant.CLAIM_REQUEST_AUDIT_REJECT + dto.getRemark());
+            notificationService.createNotification(request.getApplicantId(), id, MessageConstant.CLAIM_REQUEST_AUDIT_REJECT + dto.getRemark());
         } else if (BizClaimRequestStatusConstant.MORE_INFO_REQUIRED.equals(dto.getStatus())) {
             log.info("审批需要更多信息，通知申请人: {}", dto.getRemark());
-            notificationService.createNotification(request.getApplicantId(), dto.getRequestId(), MessageConstant.CLAIM_REQUEST_AUDIT_MORE_INFO_REQUIRED + dto.getRemark());
+            notificationService.createNotification(request.getApplicantId(), id, MessageConstant.CLAIM_REQUEST_AUDIT_MORE_INFO_REQUIRED + dto.getRemark());
         }
         //4. 保存认领申请
         updateById(request);

@@ -27,4 +27,6 @@ public class AdminStatisticsVO implements Serializable {
      */
     @Schema(description = "活跃用户数（近7天登录）")
     private Long activeUserCount;
+
+    private AdminStatisticsQueryRangeVO range;
 }

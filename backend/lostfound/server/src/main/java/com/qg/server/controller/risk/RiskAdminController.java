@@ -35,7 +35,7 @@ public class RiskAdminController {
      * @return 分页结果
      */
 
-    @GetMapping("/page")
+    @GetMapping
     @Operation(summary = "分页查询风险事件")
     public Result<PageResult<BizRiskEvent>> page(@RequestParam(defaultValue = "1") int pageNum,
                                                  @RequestParam(defaultValue = "10") int pageSize,
@@ -68,13 +68,13 @@ public class RiskAdminController {
      * @param dto 处理风险事件的DTO
      * @return 成功结果
      */
-    @PostMapping("/handle")
+    @PutMapping("/{id}/handle")
     @Operation(summary = "处理风险事件")
-    public Result<Void> handle(@RequestBody RiskHandleDTO dto) {
-        log.info("处理风险事件，dto={}", dto);
+    public Result<Void> handle(@PathVariable Long id, @RequestBody RiskHandleDTO dto) {
+        log.info("处理风险事件，id={}, dto={}", id, dto);
         Long adminId = BaseContext.getCurrentId();
-        riskAdminService.handleRiskEvent(adminId, dto);
-        log.info("处理风险事件成功，adminId={}", adminId);
+        riskAdminService.handleRiskEvent(id, adminId, dto);
+        log.info("处理风险事件成功，id={}, adminId={}, dto={}", id, adminId, dto);
         return Result.success();
     }
 }
