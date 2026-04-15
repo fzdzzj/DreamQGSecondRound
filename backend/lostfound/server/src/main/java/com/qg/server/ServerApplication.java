@@ -5,14 +5,17 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+/**
+ * 校园失物招领系统服务启动类
+ */
 @Slf4j
+//扫描spring mvc 组件
 @ComponentScan(basePackages = "com.qg", excludeFilters = {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.qg\\.server\\.mapper\\..*")
 })
@@ -22,7 +25,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         SecurityAutoConfiguration.class,
         org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class,
         org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class
-})    // SpringBoot 自动配置
+})
 @EnableAsync               // 开启异步任务支持
 @EnableScheduling
 public class ServerApplication {

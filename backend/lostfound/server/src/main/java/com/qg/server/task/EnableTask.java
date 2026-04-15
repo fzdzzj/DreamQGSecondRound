@@ -12,15 +12,28 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 自动解封用户任务
+ * 每5分钟执行一次
+ * 找出【剩余过期时间 = 1天】的封禁用户，自动解封
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class EnableTask {
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserService userService;
+
     /**
      * 定时任务：自动解封过期封禁用户
      * 找出【剩余过期时间 = 1天】的封禁用户，自动解封
+     * <p>
+     * 1. 匹配所有封禁 key，格式为：user_banned:userId
+     * 2. 获取剩余过期时间（秒）
+     * 3. 过滤：剩余时间 = 1天（86400秒）才处理
+     * 4. 截取用户ID
+     * 5. 执行解封：删除封禁key
+     * 6. 解封用户
      */
     @Scheduled(cron = "0 0/5 * * * ?")
     public void enableUser() {

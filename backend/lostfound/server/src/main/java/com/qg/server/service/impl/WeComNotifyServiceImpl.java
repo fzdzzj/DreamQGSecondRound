@@ -14,6 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * 企业微信群机器人通知服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,14 +24,24 @@ public class WeComNotifyServiceImpl implements WeComNotifyService {
 
     private final WeComRobotProperties properties;
     private final RestTemplateBuilder restTemplateBuilder;
-
+    /**
+     * 通知企业微信群机器人
+     *
+     * @param event 风险事件
+     * 1. 校验企业微信群机器人是否启用
+     * 2. 校验 webhook 是否配置
+     * 3. 构建企业微信群机器人消息内容
+     * 4. 发送企业微信群机器人消息
+     */
     @Override
     public void notifyRiskEvent(BizRiskEvent event) {
+        log.info("开始发送企业微信群机器人告警，事件={}", event);
+        // 1. 校验企业微信群机器人是否启用 2. 校验 webhook 是否配置
         if (Boolean.FALSE.equals(properties.getEnabled()) || properties.getWebhook() == null || properties.getWebhook().isBlank()) {
             log.warn("企业微信群机器人未启用或 webhook 未配置");
             return;
         }
-
+        // 3. 构建企业微信群机器人消息内容
         String content = """
                 【校园AI失物招领平台风险告警】
                 风险类型：%s
@@ -50,7 +63,8 @@ public class WeComNotifyServiceImpl implements WeComNotifyService {
                         event.getRelatedUserId() == null ? "-" : event.getRelatedUserId(),
                         event.getCreateTime()
                 );
-
+        log.info("构建企业微信群机器人消息内容，内容={}", content);
+        // 4. 发送企业微信群机器人消息
         WeComTextMessage req = new WeComTextMessage();
         req.setMsgType("text");
         WeComTextMessage.Text text = new WeComTextMessage.Text();
@@ -64,8 +78,12 @@ public class WeComNotifyServiceImpl implements WeComNotifyService {
         restTemplate.postForObject(properties.getWebhook(), new HttpEntity<>(req, headers), String.class);
     }
 
+    /**
+     * 企业微信群机器人消息
+     */
     @Data
     public static class WeComTextMessage {
+        // 消息类型，固定为 text
         @JsonProperty("msgtype")
         private String msgType;
         private Text text;

@@ -34,114 +34,175 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 置顶服务实现类
+ * 置顶申请 管理物品置顶申请等
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest> implements PinService {  // 继承 ServiceImpl 和实现 PinService
 
-    private final BizItemDao bizItemDao;  // 物品数据访问层
-    private final BizPinRequestDao bizPinRequestDao;  // 置顶请求数据访问层
+    private final BizItemDao bizItemDao;
+    private final BizPinRequestDao bizPinRequestDao;
     private final NotificationService notificationService;
 
+    /**
+     * 申请置顶
+     *
+     * @param pinApplyDTO 置顶申请DTO
+     *                    1. 校验物品是否存在
+     *                    2. 校验物品状态是否为开放或匹配中
+     *                    3. 不允许重复申请（未处理）
+     *                    4. 创建置顶请求
+     *                    5. 保存置顶请求
+     *                    6. 发送通知
+     */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void apply(PinApplyDTO pinApplyDTO) {
         Long userId = BaseContext.getCurrentId();
-
+        // 1.校验物品是否存在
         BizItem item = bizItemDao.selectById(pinApplyDTO.getItemId());
         if (item == null) {
+            log.warn("物品{}不存在", pinApplyDTO.getItemId());
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
         if (!item.getUserId().equals(userId)) {
+            log.warn("物品{}的用户{}不是当前用户{}", pinApplyDTO.getItemId(), item.getUserId(), userId);
             throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
-        // 检查物品状态
+        // 2.检查物品状态是否为开放或匹配中
         if (!item.getStatus().equals(BizItemStatusConstant.OPEN) && !item.getStatus().equals(BizItemStatusConstant.MATCHED)) {
+            log.warn("物品{}状态不是开放或匹配中", pinApplyDTO.getItemId());
             throw new BaseException(400, MessageConstant.ITEM_STATUS_INVALID);
         }
 
-        // 不允许重复申请（未处理）
+        // 3.不允许重复申请（未处理）
         Long count = bizPinRequestDao.selectCount(
                 new LambdaQueryWrapper<BizPinRequest>()
                         .eq(BizPinRequest::getItemId, pinApplyDTO.getItemId())
                         .eq(BizPinRequest::getStatus, PinRequestStatusConstant.PENDING)
         );
+        log.warn("物品{}有{}个待审核的置顶申请", pinApplyDTO.getItemId(), count);
 
         if (count != null && count > 0) {
             throw new BaseException(400, "已有待审核的置顶申请");
         }
 
-        // 创建置顶请求
+        // 4.创建置顶请求
         BizPinRequest request = new BizPinRequest();
         request.setItemId(pinApplyDTO.getItemId());
         request.setApplicantId(userId);
         request.setReason(pinApplyDTO.getReason());
         request.setStatus(PinRequestStatusConstant.PENDING);
-
+        // 5.保存置顶请求
         save(request); // 使用 IService 提供的 save 方法
-
+        log.info("创建置顶请求成功，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
+        // 6.发送通知
+        notificationService.createNotification(userId, pinApplyDTO.getItemId(), "您申请物品置顶的申请已提交");
+        notificationService.createNotification(item.getUserId(), pinApplyDTO.getItemId(), "有新的置顶申请");
         log.info("提交置顶申请成功，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
     }
 
+    /**
+     * 取消置顶申请
+     *
+     * @param pinRequestId 用户处理申请ID
+     *                     1. 校验置顶申请是否存在
+     *                     2. 校验置顶申请状态是否为待处理
+     *                     3. 校验用户角色
+     *                     4. 删除置顶申请
+     *                     5. 撤销物品置顶
+     *                     6. 发送通知
+     *                     <p>
+     *                     管理员处理置顶申请
+     *                     1. 校验置顶申请是否存在
+     *                     2. 校验置顶申请状态是否为已批准
+     *                     3. 撤销物品置顶
+     *                     4. 删除置顶申请
+     *                     5. 发送通知
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelPin(Long pinRequestId) {
         Long currentUserId = BaseContext.getCurrentId();
         String currentRole = BaseContext.getCurrentRole(); // RBAC 获取角色
         log.info("取消置顶申请，userId={}, pinRequestId={}", currentUserId, pinRequestId);
-        // 查询置顶申请
+        // 1.校验置顶申请是否存在
         BizPinRequest pinRequest = getById((Serializable) pinRequestId);  // 使用 IService 提供的 getById 方法
         if (pinRequest == null) {
             throw new AbsentException("置顶申请不存在");
         }
-
+        // 2.校验置顶申请状态是否为待处理
         // 用户角色逻辑：只能取消自己的申请，且状态为 PENDING
         if (RoleConstant.USER.equals(currentRole)) {
             if (!pinRequest.getApplicantId().equals(currentUserId)) {
+                log.warn("用户{}不能取消别人的申请", currentUserId);
                 throw new BaseException(403, "不能取消他人申请");
             }
+            // 3.校验用户角色
             if (!PinRequestStatusConstant.PENDING.equals(pinRequest.getStatus())) {
+                log.warn("置顶申请{}状态不是待处理", pinRequestId);
                 throw new BaseException(400, "已处理的申请无法取消");
             }
+            // 4.删除置顶申请
             pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
-            updateById(pinRequest);  // 使用 IService 提供的 updateById 方法
+            updateById(pinRequest);
             log.info("学生取消自己的置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
 
         // 管理员逻辑：可以取消任意申请
         if (RoleConstant.ADMIN.equals(currentRole) || RoleConstant.SYSTEM.equals(currentRole)) {
+            //2.校验置顶申请状态是否为已批准
             if (PinRequestStatusConstant.APPROVED.equals(pinRequest.getStatus())) {
-                // 如果管理员取消已批准的申请，同时撤销物品置顶
+                //3. 如果管理员取消已批准的申请，同时撤销物品置顶
                 BizItem item = bizItemDao.selectById(pinRequest.getItemId());
                 if (item != null) {
-                    item.setIsPinned(0);
+                    // 3. 撤销物品置顶
+                    log.warn("物品{}的置顶状态从已置顶{}更改为未置顶{}", pinRequest.getItemId(), PinConstant.PINNED, PinConstant.NOT_PINNED);
+                    item.setIsPinned(PinConstant.NOT_PINNED);
                     item.setPinExpireTime(null);
                     bizItemDao.updateById(item);
                 }
             }
+            //4. 删除置顶申请
             pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
-            updateById(pinRequest);  // 使用 IService 提供的 updateById 方法
+            updateById(pinRequest);
             log.info("管理员取消置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
-
+        log.warn("用户{}没有权限取消置顶申请", currentUserId);
         throw new BaseException(403, MessageConstant.NO_PERMISSION);
     }
 
+    /**
+     * 审核置顶申请
+     *
+     * @param pinAuditDTO 审核信息
+     *                    1. 校验置顶申请是否存在
+     *                    2. 校验置顶申请状态是否为待处理
+     *                    3. 更新置顶申请
+     *                    4. 操作物品置顶
+     *                    5. 发送通知
+     */
     @Override
     public void audit(PinAuditDTO pinAuditDTO) {
         Long adminId = BaseContext.getCurrentId();
-
+        // 1. 校验置顶申请是否存在
+        log.info("审核置顶申请，requestId={}", pinAuditDTO.getRequestId());
         BizPinRequest request = getById((Serializable) pinAuditDTO.getRequestId());  // 使用 IService 提供的 getById 方法
         if (request == null) {
+            log.warn("置顶申请{}不存在", pinAuditDTO.getRequestId());
             throw new AbsentException("置顶申请不存在");
         }
-
+        // 2. 校验置顶申请状态是否为待处理
         if (!PinRequestStatusConstant.PENDING.equals(request.getStatus())) {
             throw new BaseException(400, "该申请已处理");
         }
 
-        // 更新申请
+        // 3. 更新置顶申请状态
         BizPinRequest update = new BizPinRequest();
         update.setId(request.getId());
         update.setStatus(pinAuditDTO.getStatus());
@@ -150,55 +211,96 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         update.setAuditTime(LocalDateTime.now());
 
         updateById(update);  // 使用 IService 提供的 updateById 方法
-
-        // 审核通过 → 真正置顶
+        log.info("更新置顶申请状态，requestId={}, status={}", pinAuditDTO.getRequestId(), pinAuditDTO.getStatus());
+        // 4. 操作物品置顶
         if (PinRequestStatusConstant.APPROVED.equals(pinAuditDTO.getStatus())) {
             BizItem item = new BizItem();
             item.setId(request.getItemId());
-            item.setIsPinned(1);
+            item.setIsPinned(PinConstant.PINNED);
             item.setPinExpireTime(LocalDateTime.now().plusHours(PinConstant.PIN_EXPIRE_HOURS));
 
             bizItemDao.updateById(item);  // 使用 bizItemDao 的 updateById 方法
+            log.info("物品{}的置顶状态从未置顶{}更改为已置顶{}", request.getItemId(), PinConstant.NOT_PINNED, PinConstant.PINNED);
         }
-        notificationService.createNotification(request.getApplicantId(), request.getId(), MessageConstant.PIN_REQUEST_AUDIT_PASS);
+        // 5. 发送通知
+        notificationService.createNotification(request.getApplicantId(), request.getId(), PinRequestStatusEnum.getDescByCode(update.getStatus() + request.getId()));
 
         log.info("置顶审核完成，requestId={}, status={}", request.getId(), update.getStatus());
     }
 
+    /**
+     * 查询置顶申请列表
+     *
+     * @param queryDTO 查询参数
+     *                 1. 校验参数
+     *                 2. 查询置顶申请列表
+     *                 3. 转换为 VO
+     */
     @Override
     public PageResult<PinRequestStatVO> queryPinRequests(PinRequestQueryDTO queryDTO) {
+        //1.构建查询参数
         Page<BizPinRequest> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+        //2.构建查询条件
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
         if (queryDTO.getApplicantId() != null) wrapper.eq(BizPinRequest::getApplicantId, queryDTO.getApplicantId());
         if (StringUtils.isNotBlank(queryDTO.getStatus())) wrapper.eq(BizPinRequest::getStatus, queryDTO.getStatus());
-        baseMapper.selectPage(page, wrapper);  // 使用 baseMapper 进行分页查询
-
+        //3.查询置顶申请列表
+        baseMapper.selectPage(page, wrapper);
+        //4.转换为 VO
+        log.info("查询置顶申请列表结束,总条数：{}", page.getTotal());
         return convertToVOPage(page);
     }
 
+    /**
+     * 获取置顶申请详情
+     *
+     * @param id 置顶申请id
+     *           1. 校验参数
+     *           2. 获取置顶申请详情
+     *           3. 转换为 VO
+     *           <p>
+     *           管理员逻辑：可以查看任意申请详情
+     *           1.检测置顶申请是否存在
+     *           2.转换为 VO
+     *           <p>
+     *           用户逻辑：只能查看自己的申请详情
+     *           1.检测置顶申请是否存在
+     *           2.校验置顶申请是否为当前用户
+     *           3.转换为 VO
+     */
     @Override
     public PinRequestDetailVO getById(Long id) {
         String role = BaseContext.getCurrentRole();
-        BizPinRequest request = null;
+        BizPinRequest request;
         PinRequestDetailVO vo = new PinRequestDetailVO();
+        // 管理员逻辑：可以查看任意申请详情
         if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
             request = getById((Serializable) id);  // 使用 IService 提供的 getById 方法
+            // 1.校验置顶申请是否存在
             if (request == null) {
+                log.warn("置顶申请{}不存在", id);
                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
             }
-
+            // 2.转换为 VO
             BeanUtils.copyProperties(request, vo);
             vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
             return vo;
         }
+        // 用户逻辑：只能查看自己的申请详情
         if (RoleConstant.USER.equals(role)) {
+            // 1.校验置顶申请是否存在
             request = bizPinRequestDao.selectOne(new LambdaQueryWrapper<BizPinRequest>()
                     .eq(BizPinRequest::getId, id));
             if (request == null) {
+                log.warn("置顶申请{}不存在", id);
                 throw new AbsentException(MessageConstant.PIN_REQUEST_ABSENT);
+                // 2.校验置顶申请是否为当前用户
             } else if (!request.getApplicantId().equals(BaseContext.getCurrentId())) {
+                log.warn("用户无查看权限，requestId={}", id);
                 throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
             }
+
+            // 3.转换为 VO
             vo = new PinRequestDetailVO();
             BeanUtils.copyProperties(request, vo);
             vo.setStatusDesc(PinRequestStatusEnum.getDescByCode(request.getStatus()));
@@ -207,9 +309,15 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         throw new ViewNotAllowedException(MessageConstant.VIEW_NOT_ALLOWED);
     }
 
+    /**
+     * 获取当前用户置顶申请列表
+     *
+     * @return 置顶申请列表
+     */
     @Override
     public List<PinRequestStatVO> myList() {
         Long currentUserId = BaseContext.getCurrentId();
+        log.info("获取当前用户{}的置顶申请列表开始", currentUserId);
         List<PinRequestStatVO> list = bizPinRequestDao.selectList(new LambdaQueryWrapper<BizPinRequest>()
                         .eq(BizPinRequest::getApplicantId, currentUserId))
                 .stream()
@@ -223,6 +331,12 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         return list;
     }
 
+    /**
+     * 转换为 VO
+     *
+     * @param page 置顶申请列表
+     * @return 置顶申请列表
+     */
     private PageResult<PinRequestStatVO> convertToVOPage(Page<BizPinRequest> page) {
         List<PinRequestStatVO> voList = page.getRecords().stream()
                 .map(item -> {

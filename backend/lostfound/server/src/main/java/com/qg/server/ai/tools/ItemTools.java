@@ -108,7 +108,7 @@ public class ItemTools {
         if (description != null && !description.isEmpty()) {
             wrapper.or().like(true, "tag", description);
         }
-        log.info("查询物品AI标签成功，物品ID={},物品概括描述={},标签列表={}", itemId, description, tags);
+        log.info("查询物品AI标签成功，物品ID={},物品概括描述={},标签列表={}", itemId, description, wrapper.list());
         List<BizItemAiTag> tags = wrapper.list();
 
         return tags.stream()

@@ -21,6 +21,10 @@ public class RiskScanTask {
 
     private final RiskMonitorService riskMonitorService;
 
+    /**
+     * 每30分钟执行一次
+     * 扫描30分钟内的风险
+     */
     @Scheduled(cron = "0 0/30 * * * ?")
     public void scanPeriodicClusterRisk() {
         log.info("开始执行周期性风险扫描");

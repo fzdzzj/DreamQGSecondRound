@@ -9,6 +9,8 @@ import com.qg.pojo.vo.BizItemStatVO;
 import com.qg.pojo.vo.BizItemDetailVO;
 import com.baomidou.mybatisplus.extension.service.IService;  // 引入 IService
 
+import java.util.List;
+
 public interface ItemService extends IService<BizItem> { // 继承 IService
 
     /**
@@ -64,4 +66,8 @@ public interface ItemService extends IService<BizItem> { // 继承 IService
     void closeItem(Long id);
 
     void clearExpiredPinnedItems();
+
+    void saveItemAndImages(BizItem item, List<String> imageUrls);
+    void saveItemImages(Long itemId, List<String> imageUrls);
+    void updateItemDb(Long id, BizItem item, List<String> imageUrls);
 }

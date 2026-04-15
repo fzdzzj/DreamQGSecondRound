@@ -3,6 +3,8 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.qg.common.constant.DefaultPageConstant;
+import com.qg.common.constant.DeletedConstant;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;
@@ -15,20 +17,22 @@ import com.qg.server.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 通知服务实现类
+ * 提供通知相关的业务逻辑实现
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notification> implements NotificationService {  // 继承 ServiceImpl 和实现 NotificationService
 
-    private final NotificationDao notificationDao;  // 通知数据访问层
+    private final NotificationDao notificationDao;
 
     /**
      * 创建通知
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void createNotification(Long userId, Long commentId, String content) {
         log.info("生成通知，userId={}, commentId={}", userId, commentId);
 
@@ -36,9 +40,9 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
         notification.setUserId(userId);
         notification.setCommentId(commentId);
         notification.setContent(content);
-        notification.setIsRead(0); // 默认未读
+        notification.setIsRead(ReadStatusConstant.UNREAD); // 默认未读
 
-        save(notification); // 使用 IService 提供的 save 方法
+        save(notification);
 
         log.info("通知生成成功，notificationId={}", notification.getId());
     }
@@ -48,11 +52,14 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
      */
     @Override
     public Long getUserUnreadNotificationCount(Long userId) {
-        return count(
+        log.info("查询用户未读通知数量，userId={}", userId);
+        Long count = count(
                 new LambdaQueryWrapper<Notification>()
                         .eq(Notification::getUserId, userId)
                         .eq(Notification::getIsRead, ReadStatusConstant.UNREAD)
-        );  // 使用 IService 提供的 count 方法
+        );
+        log.info("用户未读通知数量为：{}", count);
+        return count;
     }
 
     /**
@@ -61,31 +68,38 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
     @Override
     public PageResult<NotificationVO> getUserNotifications(Long userId, int pageNum, int pageSize) {
         log.info("查询用户所有通知，userId={}, pageNum={}, pageSize={}", userId, pageNum, pageSize);
-
+        if (pageNum <= 0) {
+            pageNum = DefaultPageConstant.DEFAULT_PAGE_NUM;
+        }
+        if (pageSize <= 0) {
+            pageSize = DefaultPageConstant.DEFAULT_PAGE_SIZE;
+        }
         Page<NotificationVO> page = new Page<>(pageNum, pageSize);
 
         // 查询通知
         Page<NotificationVO> notificationPage = notificationDao.selectUserNotifications(page, userId);
-
+        log.info("用户所有通知数量为：{}", notificationPage.getTotal());
         return new PageResult<>(notificationPage.getRecords(), notificationPage.getTotal(), pageNum, pageSize);
     }
 
     /**
      * 标记通知为已读
+     * 1. 查询通知是否存在
+     * 2. 标记为已读
+     * 3. 更新通知状态
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void markNotificationAsRead(Long notificationId) {
         log.info("将通知标记为已读，notificationId={}", notificationId);
-
-        Notification notification = getById(notificationId);  // 使用 IService 提供的 getById 方法
+        // 1 查询通知是否存在
+        Notification notification = getById(notificationId);
         if (notification == null) {
             log.warn("通知不存在，notificationId={}", notificationId);
             throw new AbsentException(MessageConstant.NOTIFICATION_NOT_FOUND);
         }
 
-        // 标记为已读
-        notification.setIsRead(1);
+        //2 标记为已读
+        notification.setIsRead(ReadStatusConstant.READ);
         updateById(notification);  // 使用 IService 提供的 updateById 方法
 
         log.info("通知标记为已读成功，notificationId={}", notificationId);
@@ -93,24 +107,28 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
 
     /**
      * 删除通知
+     * 1. 查询通知是否存在
+     * 2. 校验用户是否有权限删除该通知
+     * 3. 逻辑删除通知
+     * 4. 更新通知状态
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void deleteNotification(Long notificationId) {
         log.info("删除通知，notificationId={}", notificationId);
-
-        Notification notification = getById(notificationId);  // 使用 IService 提供的 getById 方法
+        // 1 查询通知是否存在
+        Notification notification = getById(notificationId);
         if (notification == null) {
             log.warn("通知不存在，notificationId={}", notificationId);
             throw new AbsentException(MessageConstant.NOTIFICATION_NOT_FOUND);
         }
+        // 2 校验用户是否有权限删除该通知
         if (!notification.getUserId().equals(BaseContext.getCurrentId())) {
             log.warn("用户无权限删除该通知，notificationId={}", notificationId);
             throw new AbsentException(MessageConstant.NO_PERMISSION);
         }
 
-        // 逻辑删除通知
-        notification.setDeleted(1); // 设置已删除
+        // 3. 逻辑删除通知
+        notification.setDeleted(DeletedConstant.DELETED); // 设置已删除
         updateById(notification);  // 使用 IService 提供的 updateById 方法
 
         log.info("通知删除成功，notificationId={}", notificationId);

@@ -24,4 +24,7 @@ public interface PrivateMessageService {
     void deleteConversation(Long id);
 
     void deleteMessage(Long id);
+    public PrivateMessageRealtimeVO saveMessageAndConversation(PrivateMessageSendDTO sendDTO,
+                                                               Long senderId,
+                                                               Long receiverId);
 }

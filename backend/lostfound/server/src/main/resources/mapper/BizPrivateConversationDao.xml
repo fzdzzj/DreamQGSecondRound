@@ -5,8 +5,10 @@
 <mapper namespace="com.qg.server.mapper.BizPrivateConversationDao">
 
     <select id="selectByUserIdAndPeerId" resultType="com.qg.pojo.entity.BizPrivateConversation">
-        SELECT * FROM biz_private_conversation
-        WHERE user_id = #{userId} AND peer_id = #{peerId}
+        SELECT *
+        FROM biz_private_conversation
+        WHERE user_id = #{userId}
+          AND peer_id = #{peerId}
     </select>
 
 </mapper>

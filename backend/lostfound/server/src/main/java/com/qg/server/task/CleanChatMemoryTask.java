@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+/**
+ * 清理AI聊天记录任务
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -16,8 +19,13 @@ public class CleanChatMemoryTask {
     private final TemporaryChatMemory chatMemory;
     private final ChatHistoryRepository chatHistoryRepository;
 
-    // 每小时执行一次
-    @Scheduled(fixedRate = 60 * 60 * 1000)
+    /**
+     * 清理过期会话
+     * 每小时执行一次
+     * 1️ 清理内存中的过期会话
+     * 2️ 清理数据库中的过期聊天记录
+     */
+    @Scheduled(cron = "0 0 * * * ?")
     public void cleanExpiredSessions() {
         long ttlSeconds = 24 * 3600; // 超过一天
 

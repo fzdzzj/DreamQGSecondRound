@@ -9,9 +9,9 @@ public class ReadStatusConstant {
     /**
      * 未读
      */
-    public static final String UNREAD = "0";
+    public static final Integer UNREAD = 0;
     /**
      * 已读
      */
-    public static final String READ = "1";
+    public static final Integer READ = 1;
 }

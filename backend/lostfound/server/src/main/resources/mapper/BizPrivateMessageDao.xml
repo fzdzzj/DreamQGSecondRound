@@ -24,35 +24,35 @@
     <update id="updateStatusToRead">
         UPDATE biz_private_message
         SET status = 1
-        WHERE sender_id = #{peerId} AND receiver_id = #{currentUserId} AND status = 0 AND receiver_deleted = 0
+        WHERE sender_id = #{peerId}
+          AND receiver_id = #{currentUserId}
+          AND status = 0
+          AND receiver_deleted = 0
     </update>
     <select id="selectConversationList" resultType="com.qg.pojo.vo.ConversationVO">
-        SELECT
-            u.id AS peerId,
-            u.nickname AS peerNickname,
-            u.avatar AS peerAvatar,
-            m.content AS lastMessage,
-            m.message_type AS lastMessageType,
-            m.image_url AS lastImageUrl,
-            m.create_time AS lastMessageTime,
-            (SELECT COUNT(1)
-             FROM biz_private_message
-             WHERE sender_id = u.id
-               AND receiver_id = #{currentUserId}
-               AND status = 0
-               AND receiver_deleted = 0) AS unreadCount
+        SELECT u.id                         AS peerId,
+               u.nickname                   AS peerNickname,
+               u.avatar                     AS peerAvatar,
+               m.content                    AS lastMessage,
+               m.message_type               AS lastMessageType,
+               m.image_url                  AS lastImageUrl,
+               m.create_time                AS lastMessageTime,
+               (SELECT COUNT(1)
+                FROM biz_private_message
+                WHERE sender_id = u.id
+                  AND receiver_id = #{currentUserId}
+                  AND status = 0
+                  AND receiver_deleted = 0) AS unreadCount
         FROM sys_user u
-                 INNER JOIN (
-            SELECT
-                CASE
-                    WHEN sender_id = #{currentUserId} THEN receiver_id
-                    ELSE sender_id
-                    END AS peer_id,
-                MAX(id) AS last_message_id
-            FROM biz_private_message
-            WHERE sender_id = #{currentUserId} OR receiver_id = #{currentUserId}
-            GROUP BY peer_id
-        ) lastMsg ON lastMsg.peer_id = u.id
+                 INNER JOIN (SELECT CASE
+                                        WHEN sender_id = #{currentUserId} THEN receiver_id
+                                        ELSE sender_id
+                                        END AS peer_id,
+                                    MAX(id) AS last_message_id
+                             FROM biz_private_message
+                             WHERE sender_id = #{currentUserId}
+                                OR receiver_id = #{currentUserId}
+                             GROUP BY peer_id) lastMsg ON lastMsg.peer_id = u.id
                  INNER JOIN biz_private_message m ON m.id = lastMsg.last_message_id
         ORDER BY m.create_time DESC
     </select>

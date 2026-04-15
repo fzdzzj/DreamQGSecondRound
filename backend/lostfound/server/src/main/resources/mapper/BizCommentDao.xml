@@ -15,17 +15,16 @@
     </resultMap>
 
     <select id="selectCommentList" resultMap="CommentStatVOMap">
-        SELECT
-            c.id,
-            c.item_id,
-            c.user_id,
-            c.parent_id,
-            c.content,
-            c.is_read,
-            c.deleted,
-            c.create_time,
-            u.nickname,
-            u.avatar
+        SELECT c.id,
+               c.item_id,
+               c.user_id,
+               c.parent_id,
+               c.content,
+               c.is_read,
+               c.deleted,
+               c.create_time,
+               u.nickname,
+               u.avatar
         FROM biz_comment c
                  LEFT JOIN sys_user u ON c.user_id = u.id
         WHERE c.item_id = #{itemId}
@@ -54,7 +53,6 @@
         </foreach>
         ORDER BY c.create_time ASC
     </select>
-
 
 
 </mapper>

@@ -18,6 +18,6 @@ public class PinConstant {
     /**
      * 已置顶
      */
-    public static final String PINNED = "1";
-    public static final String NOT_PINNED = "0";
+    public static final Integer PINNED = 1;
+    public static final Integer NOT_PINNED = 0;
 }

@@ -7,6 +7,9 @@ import com.qg.pojo.entity.BizComment;
 import com.qg.pojo.vo.CommentDetailVO;
 import com.qg.pojo.vo.CommentStatVO;
 
+/**
+ * 留言服务
+ */
 public interface CommentService extends IService<BizComment> {
 
     /**
@@ -19,8 +22,8 @@ public interface CommentService extends IService<BizComment> {
     /**
      * 获取物品留言列表（分页）
      *
-     * @param itemId 物品ID
-     * @param pageNum 页码
+     * @param itemId   物品ID
+     * @param pageNum  页码
      * @param pageSize 每页数量
      * @return 分页查询结果
      */

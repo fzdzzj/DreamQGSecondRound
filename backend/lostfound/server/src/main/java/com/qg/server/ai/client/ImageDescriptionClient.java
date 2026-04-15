@@ -36,10 +36,6 @@ public class ImageDescriptionClient {
     private final SensitiveWordFilterUtil sensitiveWordFilterUtil;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * 超时配置
-     */
-    private final int LLM_TIMEOUT_SECONDS = aiProperties.getTimeoutMs() / 1000;
 
     /**
      * 生成图片描述 VO
@@ -164,12 +160,12 @@ public class ImageDescriptionClient {
             };
 
             // 执行并超时控制
-            List<ImageAiResponseVO> aiResultList = executor.submit(aiTask).get(LLM_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            List<ImageAiResponseVO> aiResultList = executor.submit(aiTask).get(aiProperties.getTimeoutMs(),  TimeUnit.MILLISECONDS);
             results.addAll(aiResultList);
             hasSuccess = !aiResultList.isEmpty();
 
         } catch (TimeoutException e) {
-            log.error("AI多模态调用超时（{}秒），item标题：{}", LLM_TIMEOUT_SECONDS, title);
+            log.error("AI多模态调用超时（{}毫秒），item标题：{}", aiProperties.getTimeoutMs(), title);
         } catch (Exception e) {
             log.error("AI生成失败", e);
         }

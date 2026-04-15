@@ -51,4 +51,9 @@ public class RedisConstant {
      * 用户封禁缓存 key 前缀
      */
     public static final String USER_BANNED_KEY = "user:banned:";
+
+    /**
+     * 令牌黑名单缓存 key 前缀
+     */
+    public static final String TOKEN_BLACKLIST_KEY = "token:blacklist:";
 }

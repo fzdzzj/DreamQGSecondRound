@@ -7,8 +7,9 @@ import com.qg.pojo.vo.LoginResponseVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.Map;
-
+/**
+ * 用户服务
+ */
 public interface UserService extends IService<SysUser> {
 
     /**
@@ -37,7 +38,7 @@ public interface UserService extends IService<SysUser> {
     /**
      * 更新用户个人信息
      *
-     * @param userId 用户ID
+     * @param userId        用户ID
      * @param updateUserDTO 更新的用户信息
      */
     void updatePersonalInfo(Long userId, UpdateUserDTO updateUserDTO);
@@ -45,7 +46,7 @@ public interface UserService extends IService<SysUser> {
     /**
      * 修改用户密码
      *
-     * @param userId 用户ID
+     * @param userId            用户ID
      * @param changePasswordDTO 新密码的DTO
      */
     void changePassword(Long userId, ChangePasswordDTO changePasswordDTO);
@@ -54,7 +55,7 @@ public interface UserService extends IService<SysUser> {
      * 通过验证码修改密码
      *
      * @param userId 用户ID
-     * @param dto 验证码和密码的DTO
+     * @param dto    验证码和密码的DTO
      */
     void changePasswordByCode(Long userId, ChangePasswordByCodeDTO dto);
 

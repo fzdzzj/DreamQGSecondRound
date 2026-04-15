@@ -8,11 +8,16 @@ import com.qg.pojo.entity.SysUser;
 import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
-
+/**
+ * 管理员服务
+ */
 public interface AdminService extends IService<SysUser> {
 
     /**
      * 用户分页列表
+     *
+     * @param queryDTO 查询条件
+     * @return 用户分页列表
      */
     PageResult<SysUserStatVO> userList(UserPageQueryDTO queryDTO);
 
