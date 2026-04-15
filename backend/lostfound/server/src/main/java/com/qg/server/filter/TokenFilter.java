@@ -5,7 +5,9 @@ import com.qg.common.constant.RoleConstant;
 import com.qg.common.constant.TokenConstant;
 import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.context.BaseContext;
+import com.qg.common.result.Result;
 import com.qg.common.util.JwtUtil;
+import com.qg.common.util.ResponseUtil;
 import com.qg.pojo.entity.SysUser;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.TokenRefreshService;
@@ -87,14 +89,14 @@ public class TokenFilter extends OncePerRequestFilter {
         try {
             // 1. Token 检查
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                writeJson(response, 401, "未登录，请先登录");
+                ResponseUtil.write(response, Result.error(401, "未登录，请先登录"));
                 return;
             }
 
             String token = authHeader.substring(7).trim();
 
             if (tokenRefreshService.isBlacklisted(token)) {
-                writeJson(response, 401, "Token已失效，请重新登录");
+                ResponseUtil.write(response, Result.error(401, "Token已失效，请重新登录"));
                 return;
             }
 
@@ -105,13 +107,13 @@ public class TokenFilter extends OncePerRequestFilter {
                 log.info("Token 解析成功：{}", claims);
             } catch (Exception e) {
                 log.warn("Token 解析失败：{}", e.getMessage());
-                writeJson(response, 401, "Token无效或已过期");
+                ResponseUtil.write(response, Result.error(401, "Token无效或已过期"));
                 return;
             }
 
             String tokenType = claims.get("type", String.class);
             if (!TokenConstant.ACCESS.equals(tokenType)) {
-                writeJson(response, 401, "Token类型错误");
+                ResponseUtil.write(response, Result.error(401, "Token类型错误"));
                 return;
             }
             // 3. Token 校验
@@ -124,7 +126,7 @@ public class TokenFilter extends OncePerRequestFilter {
 
 
             if (userId == null || username == null || role == null) {
-                writeJson(response, 401, "Token信息不完整");
+                ResponseUtil.write(response, Result.error(401, "Token信息不完整"));
                 return;
             }
             // 5. 设置上下文
@@ -133,7 +135,7 @@ public class TokenFilter extends OncePerRequestFilter {
             if (RoleConstant.ADMIN.equals(role) || RoleConstant.USER.equals(role)) {
                 SysUser user = userDao.selectById(userId);
                 if (UserStatusConstant.DISABLE.equals(user.getStatus())) {
-                    writeJson(response, 403, "用户已被禁用");
+                    ResponseUtil.write(response, Result.error(403, "用户已被禁用"));
                     return;
                 }
             }
@@ -141,7 +143,7 @@ public class TokenFilter extends OncePerRequestFilter {
             // 6.2 RBAC 权限校验
             if (!hasPermission(uri, method, role, permissions)) {
                 log.warn("用户: {} 无权限访问: {}", username, uri);
-                writeJson(response, 403, "权限不足");
+                ResponseUtil.write(response, Result.error(403, "权限不足"));
                 return;
             }
             filterChain.doFilter(request, response);
@@ -182,14 +184,5 @@ public class TokenFilter extends OncePerRequestFilter {
 
             return pathMatcher.match(permUri, uri);
         });
-    }
-
-    /**
-     * 响应 JSON
-     */
-    private void writeJson(HttpServletResponse response, int code, String msg) throws IOException {
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(code == 401 ? HttpServletResponse.SC_UNAUTHORIZED : HttpServletResponse.SC_FORBIDDEN);
-        response.getWriter().write(String.format("{\"code\":%d,\"message\":\"%s\",\"data\":null}", code, msg));
     }
 }

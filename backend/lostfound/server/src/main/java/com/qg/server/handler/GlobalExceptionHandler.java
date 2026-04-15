@@ -60,12 +60,11 @@ public class GlobalExceptionHandler {
     /**
      * 请求体不能为空或格式错误
      *
-     * @param e 异常对象
      * @return 错误结果
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public Result<String> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
-        return Result.error(400, "请求体不能为空或格式错误");
+    public Result<?> handleBodyError() {
+        return Result.error(400, "请求体格式错误");
     }
 
     /**
@@ -132,5 +131,17 @@ public class GlobalExceptionHandler {
     public Result<Void> handleUnknown(Exception e) {
         log.error("服务器未知异常：", e);
         return Result.error(500, DEFAULT_ERROR);
+    }
+
+    /**
+     * 运行时异常
+     *
+     * @param e 运行时异常对象
+     * @return 错误结果
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public Result<?> handleRuntime(RuntimeException e) {
+        log.error("系统异常", e);
+        return Result.error(500, "系统繁忙，请稍后再试");
     }
 }
