@@ -8,7 +8,6 @@ import com.qg.server.ai.client.DescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient;
 import com.qg.server.ai.tools.ItemTools;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
@@ -18,22 +17,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.time.Duration;
+
 /**
  * AI 配置类
  */
 @Configuration
 public class AiConfiguration {
+    /**
+     * 敏感词过滤工具
+     */
     @Autowired
     private SensitiveWordFilterUtil sensitiveWordFilterUtil;
 
-    @Bean
-    public ChatMemory chatMemory() {
-        return new InMemoryChatMemory();
-    }
 
-    /**
-     * 描述客户端
-     */
+        /**
+         * 描述客户端
+         */
     @Bean
     public ChatClient descriptionChatClient(OpenAiChatModel chatModel) {
         return ChatClient.builder(chatModel)
@@ -41,7 +41,6 @@ public class AiConfiguration {
                 .defaultAdvisors(new SimpleLoggerAdvisor())
                 .build();
     }
-
     /**
      * 管理员统计客户端
      */
@@ -52,20 +51,17 @@ public class AiConfiguration {
                 .defaultAdvisors(new SimpleLoggerAdvisor())
                 .build();
     }
-
     /**
-     * 回答客户端
+     * 回复客户端
      */
     @Bean
-    public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools, ChatMemory chatMemory) {
+    public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(AiPromptConstant.ANSWER_SYSTEM_PROMPT)
-                .defaultAdvisors(new SimpleLoggerAdvisor(),
-                        new MessageChatMemoryAdvisor(chatMemory))
+                .defaultAdvisors(new SimpleLoggerAdvisor())
                 .defaultTools(itemTools)
                 .build();
     }
-
     /**
      * 描述客户端
      */
@@ -75,7 +71,6 @@ public class AiConfiguration {
                                                AIProperties aiProperties) {
         return new DescriptionClient(descriptionChatClient, redisTemplate, aiProperties, sensitiveWordFilterUtil);
     }
-
     /**
      * 图片描述客户端
      */
@@ -84,7 +79,6 @@ public class AiConfiguration {
                                                          RedisTemplate<String, Object> redisTemplate) {
         return new ImageDescriptionClient(aiProperties, redisTemplate, sensitiveWordFilterUtil);
     }
-
     /**
      * 管理员统计客户端
      */

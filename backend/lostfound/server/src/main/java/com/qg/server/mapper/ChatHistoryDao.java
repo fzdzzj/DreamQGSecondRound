@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 /**
  *
@@ -32,4 +34,14 @@ public interface ChatHistoryDao extends BaseMapper<AiChatHistory> {
      */
     @Delete("DELETE FROM ai_chat_history WHERE type=#{type} AND chat_id=#{chatId}")
     void deleteChatHistory(@Param("type") String type, @Param("chatId") String chatId);
+    /**
+         * 获取对话历史记录
+     *
+     * @param chatId 会话 ID
+     * @param userId 用户 ID
+     * @return 对话历史记录列表
+     */
+    @Select("SELECT * FROM ai_chat_history WHERE chat_id=#{chatId} AND user_id=#{userId}")
+    List<AiChatHistory> selectByChatId(@Param("chatId") String chatId,
+                                       @Param("userId") Long userId);
 }

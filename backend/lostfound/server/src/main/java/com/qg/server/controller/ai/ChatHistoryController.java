@@ -1,6 +1,7 @@
 package com.qg.server.controller.ai;
 
 import com.qg.common.context.BaseContext;
+import com.qg.common.result.Result;
 import com.qg.pojo.vo.MessageVO;
 import com.qg.server.ai.repository.ChatHistoryRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,10 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -37,35 +35,33 @@ public class ChatHistoryController {
      */
     @GetMapping("/chatIds")
     @Operation(summary = "获取所有聊天记录的ID")
-    public List<String> getChatIds(@RequestParam("type") String type)
+    public Result<List<String>> getChatIds(@RequestParam("type") String type)
     {
         Long userId= BaseContext.getCurrentId();
         log.info("获取所有聊天记录的ID，消息类型={}", type);
         List<String> chatIds = chatHistoryRepository.getChatIds(type, userId);
         log.info("从数据库中获取的聊天记录ID，用户ID={},消息类型={},ID数量={}", userId, type, chatIds.size());
-        return chatIds;
+        return Result.success(chatIds);
     }
 
     /**
      * 获取聊天历史记录
-     *
-     * @param type   消息类型
      * @param chatId 聊天ID
-     * @param userId 用户ID
-     * @return 聊天历史记录列表
+
      */
-    @GetMapping("/chatHistory")
+    @GetMapping("/{chatId}")
     @Operation(summary = "获取聊天历史记录")
-    public List<MessageVO> getChatHistory(@RequestParam("type") String type, @RequestParam("chatId") String chatId, @RequestParam("userId") Long userId) {
+    public Result<List<MessageVO>> getChatHistory(@PathVariable("chatId") String chatId) {
         // 从数据库中获取聊天记录
         log.info("从数据库中获取聊天记录，chatId: {}", chatId);
-        List<Message> messages = chatMemory.get(chatId, Integer.MAX_VALUE);
+        Long userId= BaseContext.getCurrentId();
+        List<MessageVO> messages = chatHistoryRepository.list(chatId, userId);
         // 如果数据库中没有记录，返回空记录
         if (messages == null) {
             log.info("数据库中没有记录，chatId: {}", chatId);
-            return List.of();
+            return Result.success(List.of());
         }
         log.info("从数据库中获取的聊天记录，chatId: {}, messages大小: {}", chatId, messages.size());
-        return messages.stream().map(MessageVO::new).toList();
+        return Result.success(messages);
     }
 }

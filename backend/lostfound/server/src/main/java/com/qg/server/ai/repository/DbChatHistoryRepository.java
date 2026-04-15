@@ -2,6 +2,7 @@ package com.qg.server.ai.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qg.pojo.entity.AiChatHistory;
+import com.qg.pojo.vo.MessageVO;
 import com.qg.server.ai.AIMessageVO;
 import com.qg.server.mapper.ChatHistoryDao;
 import lombok.RequiredArgsConstructor;
@@ -10,17 +11,28 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
+/**
+ * 数据库聊天历史存储实现
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class DbChatHistoryRepository implements ChatHistoryRepository {
 
     private final ChatHistoryDao dao;
-
+    /**
+     * 保存聊天消息
+     *
+     * @param type      消息类型
+     * @param userId    用户ID
+     * @param chatId    聊天ID
+     * @param role      角色
+     * @param content   内容
+     */
     @Override
     public void saveMessage(String type, Long userId, String chatId, String role, String content) {
-        log.info("保存消息，用户ID={},聊天ID={},消息类型={},角色={},内容={}", userId, chatId, type, role, content);
         AiChatHistory history = new AiChatHistory();
         history.setChatId(chatId);
         history.setType(type);
@@ -28,54 +40,77 @@ public class DbChatHistoryRepository implements ChatHistoryRepository {
         history.setContent(content);
         history.setUserId(userId);
         dao.insert(history);
-        log.info("保存消息成功，用户ID={},聊天ID={},消息类型={},角色={},内容={}", userId, chatId, type, role, content);
     }
-
+    /**
+     * 获取聊天ID列表
+     *
+     * @param type  消息类型
+     * @param userId 用户ID
+     * @return 聊天ID列表
+     */
     @Override
     public List<String> getChatIds(String type, Long userId) {
-        log.info("获取聊天ID列表，用户ID={},消息类型={}", userId, type);
-        // 获取用户的所有聊天ID
-        List<AiChatHistory> list=dao.selectList(new LambdaQueryWrapper<AiChatHistory>()
-                .eq(AiChatHistory::getType,type)
-                .eq(AiChatHistory::getUserId,userId));
-        log.info("获取聊天ID列表成功，用户ID={},消息类型={},聊天ID列表={}", userId, type, list);
-        List<String> chatIds=list.stream().map(AiChatHistory::getChatId).toList();
-        return chatIds;
-    }
+        List<AiChatHistory> list = dao.selectList(new LambdaQueryWrapper<AiChatHistory>()
+                .eq(AiChatHistory::getType, type)
+                .eq(AiChatHistory::getUserId, userId)
+                .orderByDesc(AiChatHistory::getCreateTime));
 
+        return list.stream()
+                .map(AiChatHistory::getChatId)
+                .distinct()
+                .toList();
+    }
+    /**
+     * 获取所有聊天ID列表
+     *
+     * @param type  消息类型
+     * @return 聊天ID列表
+     */
     @Override
     public List<String> getAllChatIds(String type) {
-        log.info("获取所有聊天ID列表，消息类型={}", type);
-        // 获取所有聊天ID
-        List<AiChatHistory> list=dao.selectList(new LambdaQueryWrapper<AiChatHistory>()
-                .eq(AiChatHistory::getType,type));
-        log.info("获取所有聊天ID列表成功，消息类型={},聊天ID列表={}", type, list);
-        List<String> chatIds=list.stream().map(AiChatHistory::getChatId).toList();
-        return chatIds;
-    }
+        List<AiChatHistory> list = dao.selectList(new LambdaQueryWrapper<AiChatHistory>()
+                .eq(AiChatHistory::getType, type)
+                .orderByDesc(AiChatHistory::getCreateTime));
 
-    @Override
-    public List<AIMessageVO> getChatHistory(String chatId, Long userId, String type) {
-        log.info("获取聊天历史，用户ID={},聊天ID={},消息类型={}", userId, chatId, type);
-        // 获取聊天历史记录
-        List<AiChatHistory> list=dao.selectList(new LambdaQueryWrapper<AiChatHistory>()
-                .eq(AiChatHistory::getChatId,chatId)
-                .eq(AiChatHistory::getUserId,userId)
-                .eq(AiChatHistory::getType,type));
-        log.info("获取聊天历史成功，用户ID={},聊天ID={},消息类型={},消息列表={}", userId, chatId, type, list);
-        // 转换为AIMessageVO
-        List<AIMessageVO> messages=list.stream().map(AIMessageVO::new).toList();
-        return messages;
+        return list.stream()
+                .map(AiChatHistory::getChatId)
+                .distinct()
+                .toList();
     }
+    /**
+     * 获取聊天历史
+     *
+     * @param chatId 聊天ID
+     * @param type   聊天类型
+     * @return 第一条消息时间
+     */
     @Override
     public Instant getFirstMessageTime(String type, String chatId) {
-        log.info("获取第一条消息时间，聊天ID={},消息类型={}", chatId, type);
         return dao.getFirstMessageTime(type, chatId);
     }
+    /**
+     * 获取聊天历史
+     *
+     * @param chatId 聊天ID
+     * @param userId 用户ID
+     * @return 聊天历史列表
+     */
+    @Override
+    public List<MessageVO> list(String chatId, Long userId) {
+        return dao.selectByChatId(chatId, userId)
+                .stream()
+                .map(e -> new MessageVO(e.getRole(), e.getContent()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 删除聊天历史
+     *
+     * @param type 消息类型
+     * @param chatId 聊天ID
+     */
     @Override
     public void deleteChatHistory(String type, String chatId) {
-        log.info("删除聊天历史，聊天ID={},消息类型={}", chatId, type);
         dao.deleteChatHistory(type, chatId);
-        log.info("删除聊天历史成功，聊天ID={},消息类型={}", chatId, type);
     }
 }

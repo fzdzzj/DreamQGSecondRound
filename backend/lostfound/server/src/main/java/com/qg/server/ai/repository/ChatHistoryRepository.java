@@ -1,6 +1,8 @@
 package com.qg.server.ai.repository;
 
+import com.qg.pojo.vo.MessageVO;
 import com.qg.server.ai.AIMessageVO;
+import org.springframework.ai.chat.messages.Message;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,15 +33,6 @@ public interface ChatHistoryRepository {
     List<String> getAllChatIds(String type);
 
     /**
-     * 获取聊天历史记录
-     * @param chatId 聊天ID
-     * @param userId 用户ID
-     * @param type 消息类型
-     * @return 聊天历史记录列表
-     */
-    List<AIMessageVO> getChatHistory(String chatId, Long userId,String type);
-
-    /**
      * 删除聊天历史记录
      * @param type 消息类型
      * @param chatId 聊天ID
@@ -53,4 +46,11 @@ public interface ChatHistoryRepository {
      * @return 第一条消息时间
      */
     Instant getFirstMessageTime(String type, String chatId);
+    /**
+     * 获取聊天记录
+     * @param chatId 聊天ID
+     * @param userId 用户ID
+     * @return 聊天记录
+     */
+    List<MessageVO> list(String chatId, Long userId);
 }

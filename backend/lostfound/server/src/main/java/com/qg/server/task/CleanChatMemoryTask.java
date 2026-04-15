@@ -9,32 +9,26 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+
 /**
- * 清理AI聊天记录任务
+ * 清理聊天记录任务
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class CleanChatMemoryTask {
-    private final TemporaryChatMemory chatMemory;
+
     private final ChatHistoryRepository chatHistoryRepository;
+    private final TemporaryChatMemory temporaryChatMemory;
 
-    /**
-     * 清理过期会话
-     * 每小时执行一次
-     * 1️ 清理内存中的过期会话
-     * 2️ 清理数据库中的过期聊天记录
-     */
-    @Scheduled(cron = "0 0 * * * ?")
+    @Scheduled(cron = "0 0 0 * * ?")
     public void cleanExpiredSessions() {
-        long ttlSeconds = 24 * 3600; // 超过一天
+        long ttlSeconds = 24 * 3600;
 
-        // 1️ 清理内存
-        chatMemory.cleanExpired(ttlSeconds);
-
-        // 2️ 清理数据库
         List<String> chatIds = chatHistoryRepository.getAllChatIds("answer");
+
         Instant now = Instant.now();
+
         for (String chatId : chatIds) {
             Instant firstMsgTime = chatHistoryRepository.getFirstMessageTime("answer", chatId);
             if (firstMsgTime != null && now.getEpochSecond() - firstMsgTime.getEpochSecond() > ttlSeconds) {
@@ -42,5 +36,19 @@ public class CleanChatMemoryTask {
                 log.info("删除过期聊天记录，聊天ID={}", chatId);
             }
         }
+        List<String> chatIds2 = chatHistoryRepository.getAllChatIds("assistant");
+        for (String chatId : chatIds2) {
+            Instant firstMsgTime = chatHistoryRepository.getFirstMessageTime("assistant", chatId);
+            if (firstMsgTime != null && now.getEpochSecond() - firstMsgTime.getEpochSecond() > ttlSeconds) {
+                chatHistoryRepository.deleteChatHistory("assistant", chatId);
+                log.info("删除过期聊天记录，聊天ID={}", chatId);
+            }
+        }
+    }
+
+    // 每10分钟清理一次，过期时间 1 天（86400秒）
+    @Scheduled(cron = "0 */10 * * * ?")
+    public void clean() {
+        temporaryChatMemory.cleanExpired(86400);
     }
 }
