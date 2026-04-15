@@ -146,18 +146,4 @@ public class ItemController {
         log.info("关闭物品成功，itemId={}, userId={}", id, userId);
         return Result.success();
     }
-    /**
-     * 申请置顶
-     * @param pinApplyDTO 申请置顶参数
-     * @return 申请结果
-     */
-    @PutMapping("/pin/apply")
-    @Operation(summary = "申请置顶")
-    public Result<Void> applyPin(@Validated @RequestBody PinApplyDTO pinApplyDTO) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("申请置顶，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
-        pinService.apply(pinApplyDTO);
-        log.info("申请置顶成功，itemId={}, userId={}", pinApplyDTO.getItemId(), userId);
-        return Result.success();
-    }
 }

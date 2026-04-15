@@ -1,5 +1,6 @@
 package com.qg.server.controller.ai;
 
+import com.qg.common.context.BaseContext;
 import com.qg.pojo.vo.MessageVO;
 import com.qg.server.ai.repository.ChatHistoryRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,8 +37,10 @@ public class ChatHistoryController {
      */
     @GetMapping("/chatIds")
     @Operation(summary = "获取所有聊天记录的ID")
-    public List<String> getChatIds(@RequestParam("type") String type, @RequestParam("userId") Long userId) {
-        log.info("获取所有聊天记录的ID，用户ID={},消息类型={}", userId, type);
+    public List<String> getChatIds(@RequestParam("type") String type)
+    {
+        Long userId= BaseContext.getCurrentId();
+        log.info("获取所有聊天记录的ID，消息类型={}", type);
         List<String> chatIds = chatHistoryRepository.getChatIds(type, userId);
         log.info("从数据库中获取的聊天记录ID，用户ID={},消息类型={},ID数量={}", userId, type, chatIds.size());
         return chatIds;

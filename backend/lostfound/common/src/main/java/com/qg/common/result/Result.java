@@ -1,54 +1,63 @@
 package com.qg.common.result;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-
+import java.time.LocalDateTime;
+/**
+ * 统一返回结果类
+ * @param <T>
+ */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Result<T> implements Serializable {
-    private static final long serialVersionUID = 1L;
-    /**
-     * 状态码
-     */
+
     private Integer code;
-    /**
-     * 状态信息
-     */
     private String message;
-    /**
-     * 数据
-     */
     private T data;
 
+    private Boolean success;
+    private LocalDateTime timestamp;
     /**
-     * 返回成功结果(包含数据)
+     * 成功返回结果
+     *
+     * @param data 获取的数据
      */
     public static <T> Result<T> success(T data) {
-        return new Result<>(200, "操作成功", data);
+        Result<T> r = new Result<>();
+        r.code = 200;
+        r.message = "操作成功";
+        r.data = data;
+        r.success = true;
+        r.timestamp = LocalDateTime.now();
+        return r;
     }
-
     /**
-     * 返回成功结果(不包含数据)
+     * 成功返回结果
+     * @return 成功结果
      */
     public static <T> Result<T> success() {
-        return new Result<>(200, "操作成功", null);
+        return success(null);
     }
-
     /**
-     * 返回失败结果(自定义错误码和错误信息)
+     * 失败返回结果
+     *
+     * @param code 状态码
+     * @param message 错误信息
      */
     public static <T> Result<T> error(Integer code, String message) {
-        return new Result<>(code, message, null);
+        Result<T> r = new Result<>();
+        r.code = code;
+        r.message = message;
+        r.success = false;
+        r.timestamp = LocalDateTime.now();
+        return r;
     }
-
     /**
-     * 返回失败结果(默认错误码500,错误信息)
+     * 失败返回结果
+     * @param message 错误信息
+     * @return 错误结果
      */
     public static <T> Result<T> error(String message) {
-        return new Result<>(500, message, null);
+        return error(500, message);
     }
 }
