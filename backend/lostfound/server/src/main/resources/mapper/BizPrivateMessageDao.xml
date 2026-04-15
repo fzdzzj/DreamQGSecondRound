@@ -4,58 +4,99 @@
 
 <mapper namespace="com.qg.server.mapper.BizPrivateMessageDao">
 
-    <select id="selectChatHistoryByCursor" resultType="com.qg.pojo.vo.PrivateMessageVO">
-        SELECT id, sender_id AS senderId, receiver_id AS receiverId,
-        content, message_type AS messageType, image_url AS imageUrl,
-        status, create_time AS createTime
-        FROM biz_private_message
-        WHERE ((sender_id = #{currentUserId} AND receiver_id = #{peerId} AND sender_deleted = 0)
-        OR (sender_id = #{peerId} AND receiver_id = #{currentUserId} AND receiver_deleted = 0))
-        <if test="clearBeforeTime != null">
-            AND create_time &gt; #{clearBeforeTime}
-        </if>
-        <if test="lastMessageId != null">
-            AND id &lt; #{lastMessageId}
-        </if>
-        ORDER BY id DESC
+    <select id="selectHistoryByCursor" resultType="com.qg.pojo.vo.PrivateMessageVO">
+        SELECT m.id,
+               m.sender_id     AS senderId,
+               m.receiver_id   AS receiverId,
+               m.content,
+               m.message_type  AS messageType,
+               m.image_url     AS imageUrl,
+               m.status,
+               m.client_msg_id AS clientMsgId,
+               m.create_time   AS createTime
+        FROM biz_private_message m
+                 LEFT JOIN biz_private_conversation c
+                           ON c.user_id = #{currentUserId}
+                               AND c.peer_id = #{peerId}
+        WHERE (
+            (m.sender_id = #{currentUserId} AND m.receiver_id = #{peerId} AND m.sender_deleted = 0)
+                OR
+            (m.sender_id = #{peerId} AND m.receiver_id = #{currentUserId} AND m.receiver_deleted = 0)
+            )
+          AND (#{lastMessageId} IS NULL OR m.id &lt; #{lastMessageId})
+          AND (
+            c.clear_before_time IS NULL
+                OR m.create_time &gt;= c.clear_before_time
+            )
+        ORDER BY m.id DESC
         LIMIT #{pageSize}
     </select>
 
-    <update id="updateStatusToRead">
+    <select id="selectConversationList" resultType="com.qg.pojo.vo.ConversationVO">
+        SELECT t.peer_id                        AS peerId,
+               u.nickname                       AS peerNickname,
+               u.avatar                         AS peerAvatar,
+               t.last_message                   AS lastMessage,
+               t.last_message_type              AS lastMessageType,
+               t.last_image_url                 AS lastImageUrl,
+               t.last_message_time              AS lastMessageTime,
+               COALESCE(unread.unread_count, 0) AS unreadCount
+        FROM (SELECT CASE
+                         WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
+                         ELSE m.sender_id
+                         END        AS peer_id,
+                     m.content      AS last_message,
+                     m.message_type AS last_message_type,
+                     m.image_url    AS last_image_url,
+                     m.create_time  AS last_message_time,
+                     ROW_NUMBER() OVER (
+                         PARTITION BY CASE
+                                          WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
+                                          ELSE m.sender_id
+                             END
+                         ORDER BY m.id DESC
+                         )          AS rn
+              FROM biz_private_message m
+                       LEFT JOIN biz_private_conversation c
+                                 ON c.user_id = #{currentUserId}
+                                     AND c.peer_id = CASE
+                                                         WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
+                                                         ELSE m.sender_id
+                                         END
+              WHERE (
+                  (m.sender_id = #{currentUserId} AND m.sender_deleted = 0)
+                      OR
+                  (m.receiver_id = #{currentUserId} AND m.receiver_deleted = 0)
+                  )
+                AND (
+                  c.clear_before_time IS NULL
+                      OR m.create_time &gt;= c.clear_before_time
+                  )) t
+                 INNER JOIN sys_user u ON u.id = t.peer_id
+                 LEFT JOIN (SELECT sender_id AS peer_id,
+                                   COUNT(*)  AS unread_count
+                            FROM biz_private_message
+                            WHERE receiver_id = #{currentUserId}
+                              AND status = 0
+                              AND receiver_deleted = 0
+                            GROUP BY sender_id) unread ON unread.peer_id = t.peer_id
+        WHERE t.rn = 1
+        ORDER BY t.last_message_time DESC
+    </select>
+
+    <update id="markConversationDeletedForSender">
         UPDATE biz_private_message
-        SET status = 1
+        SET sender_deleted = 1
+        WHERE sender_id = #{currentUserId}
+          AND receiver_id = #{peerId}
+    </update>
+
+    <update id="markConversationDeletedForReceiver">
+        UPDATE biz_private_message
+        SET receiver_deleted = 1
         WHERE sender_id = #{peerId}
           AND receiver_id = #{currentUserId}
-          AND status = 0
-          AND receiver_deleted = 0
     </update>
-    <select id="selectConversationList" resultType="com.qg.pojo.vo.ConversationVO">
-        SELECT u.id                         AS peerId,
-               u.nickname                   AS peerNickname,
-               u.avatar                     AS peerAvatar,
-               m.content                    AS lastMessage,
-               m.message_type               AS lastMessageType,
-               m.image_url                  AS lastImageUrl,
-               m.create_time                AS lastMessageTime,
-               (SELECT COUNT(1)
-                FROM biz_private_message
-                WHERE sender_id = u.id
-                  AND receiver_id = #{currentUserId}
-                  AND status = 0
-                  AND receiver_deleted = 0) AS unreadCount
-        FROM sys_user u
-                 INNER JOIN (SELECT CASE
-                                        WHEN sender_id = #{currentUserId} THEN receiver_id
-                                        ELSE sender_id
-                                        END AS peer_id,
-                                    MAX(id) AS last_message_id
-                             FROM biz_private_message
-                             WHERE sender_id = #{currentUserId}
-                                OR receiver_id = #{currentUserId}
-                             GROUP BY peer_id) lastMsg ON lastMsg.peer_id = u.id
-                 INNER JOIN biz_private_message m ON m.id = lastMsg.last_message_id
-        ORDER BY m.create_time DESC
-    </select>
 
 
 </mapper>

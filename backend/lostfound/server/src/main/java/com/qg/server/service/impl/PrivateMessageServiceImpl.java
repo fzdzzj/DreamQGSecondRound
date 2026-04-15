@@ -1,11 +1,10 @@
 package com.qg.server.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qg.common.constant.DeletedConstant;
-import com.qg.common.constant.MessageTypeConstant;
 import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;
-import com.qg.common.exception.AbsentException;
 import com.qg.common.exception.BaseException;
 import com.qg.pojo.dto.PrivateMessageSendDTO;
 import com.qg.pojo.entity.BizPrivateConversation;
@@ -19,299 +18,415 @@ import com.qg.server.mapper.BizPrivateMessageDao;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.PrivateMessageService;
 import com.qg.server.websocket.PrivateChatWebSocketHandler;
+import com.qg.server.websocket.model.WsMessageType;
+import com.qg.server.websocket.model.WsPrivateMessagePayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
-/**
- * 私信消息服务实现
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PrivateMessageServiceImpl
-        extends ServiceImpl<BizPrivateMessageDao, BizPrivateMessage>
-        implements PrivateMessageService {
+public class PrivateMessageServiceImpl extends ServiceImpl<BizPrivateMessageDao, BizPrivateMessage> implements PrivateMessageService {
 
-    private final BizPrivateMessageDao messageDao;
-    private final BizPrivateConversationDao conversationDao;
-    private final UserDao userDao;
-    private final PrivateChatWebSocketHandler wsHandler;
-
+    private final BizPrivateMessageDao privateMessageDao;
+    private final BizPrivateConversationDao privateConversationDao;
+    private final UserDao sysUserDao;
+    private final PrivateChatWebSocketHandler privateChatWebSocketHandler;
     private final ApplicationContext applicationContext;
+
     private PrivateMessageServiceImpl getSelf() {
         return applicationContext.getBean(PrivateMessageServiceImpl.class);
     }
+
     /**
-     * 发送私信消息
+     * 发送私聊消息
      *
-     * @param sendDTO
-     * @return
-     * @return 私信消息实时VO
-     * @throws AbsentException 接收用户不存在
-     *                         1. 验证用户是否存在
-     *                         2. 验证消息内容是否为空
-     *                         3. 核心事务（仅DB）
-     *                         4. 推送消息
+     * @param dto 消息发送DTO
+     *            1. 检查当前用户是否登录
+     *            2. 检查当前用户是否是接收用户
+     *            3. 检查接收用户是否存在
+     *            4. 检查消息类型是否支持
+     *            5. 检查消息内容是否为空
+     *            6. 检查图片地址是否为空
+     *            7. 创建并插入私聊消息
+     *            8. 给接收方推送新消息
+     *            9. 给接收方推送未读数变化
      */
     @Override
-    public PrivateMessageRealtimeVO sendMessage(PrivateMessageSendDTO sendDTO) {
+    public void sendMessage(PrivateMessageSendDTO dto) {
         Long senderId = BaseContext.getCurrentId();
-        Long receiverId = sendDTO.getReceiverId();
-
-        // 1. 验证用户
-        SysUser receiver = userDao.selectById(receiverId);
+        // 1. 检查当前用户是否登录
+        if (senderId == null) {
+            log.warn("当前用户未登录");
+            throw new BaseException(401, "当前用户未登录");
+        }
+        // 2. 检查当前用户是否是接收用户
+        if (senderId.equals(dto.getReceiverId())) {
+            log.warn("不能给自己发送消息");
+            throw new BaseException(400, "不能给自己发送消息");
+        }
+        // 3. 检查接收用户是否存在
+        SysUser receiver = sysUserDao.selectById(dto.getReceiverId());
         if (receiver == null) {
-            log.warn("接收用户不存在，ID: {}", receiverId);
-            throw new AbsentException("接收用户不存在");
+            log.warn("接收用户不存在");
+            throw new BaseException(400, "接收用户不存在");
         }
-        // 2. 验证消息内容
-        String messageType = sendDTO.getMessageType();
-        if (MessageTypeConstant.TEXT.equals(messageType) && (sendDTO.getContent() == null || sendDTO.getContent().trim().isEmpty())) {
-            log.warn("文本消息不能为空");
-            throw new BaseException(400, "文本消息不能为空");
-        }
-        if (MessageTypeConstant.IMAGE.equals(messageType) && (sendDTO.getImageUrl() == null || sendDTO.getImageUrl().trim().isEmpty())) {
-            log.warn("图片地址不能为空");
-            throw new BaseException(400, "图片地址不能为空");
-        }
-
-        // 3 核心事务（仅DB）
-        PrivateMessageRealtimeVO vo = getSelf().saveMessageAndConversation(sendDTO, senderId, receiverId);
-        log.info("发送私信消息，VO: {}", vo);
-        // 4. 推送消息
-        wsHandler.sendToUser(receiverId, vo);
-
-        return vo;
-    }
-
-
-    /*
-     * 获取私信消息历史记录
-     * @param peerId 对方用户ID
-     * @param lastMessageId 上一条消息ID
-     * @param pageSize 分页大小
-     * @return 私信消息VO列表
-     */
-    @Override
-    public List<PrivateMessageVO> getChatHistoryByCursor(Long peerId, Long lastMessageId, Integer pageSize) {
-        Long currentUserId = BaseContext.getCurrentId();
-
-        SysUser peer = userDao.selectById(peerId);
-        if (peer == null) {
-            log.warn("对方用户不存在，ID: {}", peerId);
-            throw new AbsentException("对方用户不存在");
-        }
-        BizPrivateConversation conversation = conversationDao.selectByUserIdAndPeerId(currentUserId, peerId);
-        // 获取对话清除时间
-        LocalDateTime clearBefore = conversation != null ? conversation.getClearBeforeTime() : null;
-        log.info("获取私信消息历史记录，用户ID: {}, 对方用户ID: {}, 上一条消息ID: {}, 分页大小: {}", currentUserId, peerId, lastMessageId, pageSize);
-        List<PrivateMessageVO> list = messageDao.selectChatHistoryByCursor(currentUserId, peerId, clearBefore, lastMessageId, pageSize);
-        log.info("获取私信消息历史记录，用户ID: {}, 对方用户ID: {}, 上一条消息ID: {}, 分页大小: {}, 消息数量: {}", currentUserId, peerId, lastMessageId, pageSize, list.size());
-        Collections.reverse(list);
-        return list;
-    }
-
-    /**
-     * 标记对话为已读
-     *
-     * @param peerId 对方用户ID
-     */
-    @Override
-    public void markConversationAsRead(Long peerId) {
-        Long currentUserId = BaseContext.getCurrentId();
-        messageDao.updateStatusToRead(peerId, currentUserId);
-    }
-
-    /**
-     * 清空对话
-     *
-     * @param peerId 对方用户ID
-     */
-    @Override
-    public void clearConversation(Long peerId) {
-        Long currentUserId = BaseContext.getCurrentId();
-        log.info("清空对话，用户ID: {}, 对方用户ID: {}", currentUserId, peerId);
-        BizPrivateConversation conversation = conversationDao.selectByUserIdAndPeerId(currentUserId, peerId);
-        if (conversation == null) {
-            log.info("对话不存在，创建新对话");
-            conversation = new BizPrivateConversation();
-            conversation.setUserId(currentUserId);
-            conversation.setPeerId(peerId);
-            // 设置清除时间当前时间
-            conversation.setClearBeforeTime(LocalDateTime.now());
-            conversationDao.insert(conversation);
+        // 1 = 文本，2 = 图片
+        if (dto.getMessageType().equals("1")) {
+            // 文本消息
+            if (dto.getContent() == null || dto.getContent().isBlank()) {
+                log.warn("文本消息内容不能为空");
+                throw new BaseException(400, "文本消息内容不能为空");
+            }
+        } else if (dto.getMessageType().equals("2")) {
+            // 检查图片地址是否为空
+            if (dto.getImageUrl() == null || dto.getImageUrl().isBlank()) {
+                log.warn("图片消息地址不能为空");
+                throw new BaseException(400, "图片消息地址不能为空");
+            }
         } else {
-            log.info("对话存在，更新清除时间");
-            conversation.setClearBeforeTime(LocalDateTime.now());
-            conversationDao.updateById(conversation);
+            // 不支持的消息类型
+            log.warn("不支持的消息类型");
+            throw new BaseException(400, "不支持的消息类型");
         }
+        // 创建并插入私聊消息
+        log.info("创建并插入私聊消息");
+        BizPrivateMessage entity = getSelf().createAndInsertMessage(senderId, dto);
+        PrivateMessageRealtimeVO realtimeVO = new PrivateMessageRealtimeVO();
+        BeanUtils.copyProperties(entity, realtimeVO);
+
+        // 6. 给接收方推送新消息
+        privateChatWebSocketHandler.sendToUser(
+                dto.getReceiverId(),
+                WsPrivateMessagePayload.from(realtimeVO),
+                WsMessageType.PRIVATE_MESSAGE
+        );
+
+        // 7. 给接收方推送未读数变化
+        long receiverTotalUnread = getUnreadCountByUserId(dto.getReceiverId());
+        long receiverConversationUnread = getConversationUnreadCount(dto.getReceiverId(), senderId);
+        privateChatWebSocketHandler.sendToUser(
+                dto.getReceiverId(),
+                new UnreadChangedPayload(receiverTotalUnread, receiverConversationUnread, senderId),
+                WsMessageType.UNREAD_CHANGED
+        );
+
+        // 8. 给发送方也推送一次当前会话未读变化（通常为 0），便于前端统一刷新会话列表
+        long senderTotalUnread = getUnreadCountByUserId(senderId);
+        long senderConversationUnread = getConversationUnreadCount(senderId, dto.getReceiverId());
+        privateChatWebSocketHandler.sendToUser(
+                senderId,
+                new UnreadChangedPayload(senderTotalUnread, senderConversationUnread, dto.getReceiverId()),
+                WsMessageType.UNREAD_CHANGED
+        );
+    }
+
+    @Override
+    public List<PrivateMessageVO> getHistoryByCursor(Long peerId, Long lastMessageId, Integer pageSize) {
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null) {
+            throw new BaseException("当前用户未登录");
+        }
+        if (peerId == null) {
+            throw new BaseException("会话对象不能为空");
+        }
+        if (pageSize == null || pageSize <= 0) {
+            pageSize = 20;
+        }
+        return privateMessageDao.selectHistoryByCursor(currentUserId, peerId, lastMessageId, pageSize);
     }
 
     /**
-     * 获取私信对话列表
-     *
-     * @return
+     * 标记对话已读
+     * 1. 检查当前用户是否登录
+     * 2. 检查当前用户是否是会话对象
+     * 3. 给发送方推送未读数变化
      */
     @Override
-    public List<ConversationVO> getConversationList() {
+    public void markConversationRead(Long peerId) {
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("获取私信对话列表，用户ID: {}", currentUserId);
-        List<ConversationVO> list = messageDao.selectConversationList(currentUserId);
-        log.info("获取私信对话列表成功，用户ID: {}, 总对话数: {}", currentUserId, list.size());
-        return list;
+        log.info("标记对话已读");
+        // 1. 检查当前用户是否登录
+        if (currentUserId == null) {
+            log.warn("当前用户未登录");
+            throw new BaseException(401, "当前用户未登录");
+        }
+        // 2. 检查当前用户是否是会话对象
+        if (peerId == null) {
+            log.warn("会话对象不能为空");
+            throw new BaseException(400, "会话对象不能为空");
+        }
+        // 3. 标记对话已读
+        privateMessageDao.update(
+                null,
+                new LambdaUpdateWrapper<BizPrivateMessage>()
+                        .eq(BizPrivateMessage::getSenderId, peerId)
+                        .eq(BizPrivateMessage::getReceiverId, currentUserId)
+                        .eq(BizPrivateMessage::getStatus, ReadStatusConstant.UNREAD)
+                        .set(BizPrivateMessage::getStatus, ReadStatusConstant.READ)
+        );
+        // 4. 给发送方推送未读数变化
+        long totalUnread = getUnreadCountByUserId(currentUserId);
+        privateChatWebSocketHandler.sendToUser(
+                currentUserId,
+                new UnreadChangedPayload(totalUnread, 0L, peerId),
+                WsMessageType.UNREAD_CHANGED
+        );
+    }
+
+    /**
+     * 获取未读消息列表
+     */
+    @Override
+    public List<ConversationVO> getConversations() {
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null) {
+            throw new BaseException("当前用户未登录");
+        }
+        return privateMessageDao.selectConversationList(currentUserId);
     }
 
     /**
      * 删除消息
-     *
-     * @param messageId 消息ID
-     *                  <p>
-     *                  1. 验证消息是否存在
-     *                  2. 验证用户权限
-     *                  3. 更新消息状态
-     *                  4. 更新数据库
+     * 1. 检查当前用户是否登录
+     * 2. 检查消息ID是否为空
+     * 3. 检查消息是否存在
+     * 4. 检查当前用户是否是发送方或接收方
+     * 5. 删除消息
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteMessage(Long messageId) {
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("删除私信消息，用户ID: {}, 消息ID: {}", currentUserId, messageId);
-        //1. 验证消息
-        BizPrivateMessage message = getById(messageId);
+        // 1. 检查当前用户是否登录
+        if (currentUserId == null) {
+            log.warn("当前用户未登录");
+            throw new BaseException(401, "当前用户未登录");
+        }
+        // 2. 检查消息ID是否为空
+        if (messageId == null) {
+            log.warn("消息ID不能为空");
+            throw new BaseException(400, "消息ID不能为空");
+        }
+        // 3. 检查消息是否存在
+        BizPrivateMessage message = privateMessageDao.selectById(messageId);
         if (message == null) {
-            log.warn("消息不存在，ID: {}", messageId);
-            throw new AbsentException("消息不存在");
+            log.warn("消息不存在");
+            throw new BaseException(400, "消息不存在");
         }
-        //2. 验证用户权限
-        if (!currentUserId.equals(message.getSenderId()) && !currentUserId.equals(message.getReceiverId())) {
-            log.warn("用户{}无权删除消息{}", currentUserId, messageId);
-            throw new BaseException(403, "无权删除该消息");
-        }
-        //3. 更新消息状态
+        // 4. 检查当前用户是否是发送方或接收方
         if (currentUserId.equals(message.getSenderId())) {
-            message.setSenderDeleted(DeletedConstant.DELETED);
-        } else {
-            message.setReceiverDeleted(DeletedConstant.DELETED);
+            privateMessageDao.update(
+                    null,
+                    new LambdaUpdateWrapper<BizPrivateMessage>()
+                            .eq(BizPrivateMessage::getId, messageId)
+                            .set(BizPrivateMessage::getSenderDeleted, 1)
+            );
+            return;
         }
-        //4. 更新数据库
-        updateById(message);
+
+        if (currentUserId.equals(message.getReceiverId())) {
+            privateMessageDao.update(
+                    null,
+                    new LambdaUpdateWrapper<BizPrivateMessage>()
+                            .eq(BizPrivateMessage::getId, messageId)
+                            .set(BizPrivateMessage::getReceiverDeleted, 1)
+            );
+            return;
+        }
+        log.warn("当前用户不是发送方或接收方");
+        throw new BaseException(403, "无权删除该消息");
     }
 
     /**
-     * 删除对话
-     *
-     * @param peerId 对方用户ID
-     *               1. 发送方视角
-     *               2. 接收方视角
+     * 删除会话
+     * 1. 检查当前用户是否登录
+     * 2. 检查会话对象是否为空
+     * 3. 删除会话
+     * 4. 给发送方推送未读数变化
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteConversation(Long peerId) {
+        log.info("删除会话", peerId);
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("删除私信对话，用户ID: {}, 对方用户ID: {}", currentUserId, peerId);
-        // 1发送方视角
-        lambdaUpdate()
-                .eq(BizPrivateMessage::getSenderId, currentUserId)
-                .eq(BizPrivateMessage::getReceiverId, peerId)
-                .set(BizPrivateMessage::getSenderDeleted, DeletedConstant.DELETED)
-                .update();
-
-        // 2接收方视角
-        lambdaUpdate()
-                .eq(BizPrivateMessage::getSenderId, peerId)
-                .eq(BizPrivateMessage::getReceiverId, currentUserId)
-                .set(BizPrivateMessage::getReceiverDeleted, DeletedConstant.DELETED)
-                .update();
+        // 1. 检查当前用户是否登录
+        if (currentUserId == null) {
+            log.warn("当前用户未登录");
+            throw new BaseException(401, "当前用户未登录");
+        }
+        // 2. 检查会话对象是否为空
+        if (peerId == null) {
+            log.warn("会话对象不能为空");
+            throw new BaseException(400, "会话对象不能为空");
+        }
+        // 3. 删除会话
+        privateMessageDao.markConversationDeletedForSender(currentUserId, peerId);
+        privateMessageDao.markConversationDeletedForReceiver(currentUserId, peerId);
+        // 4. 给发送方推送未读数变化
+        long totalUnread = getUnreadCountByUserId(currentUserId);
+        privateChatWebSocketHandler.sendToUser(
+                currentUserId,
+                new UnreadChangedPayload(totalUnread, 0L, peerId),
+                WsMessageType.UNREAD_CHANGED
+        );
     }
 
     /**
-     * 获取未读消息数量
-     *
-     * @return
+     * 获取未读数
      */
     @Override
     public Long getUnreadCount() {
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("获取未读消息数量，用户ID: {}", currentUserId);
-        Long count = lambdaQuery()
-                .eq(BizPrivateMessage::getReceiverId, currentUserId)
-                .eq(BizPrivateMessage::getStatus, ReadStatusConstant.UNREAD) // 0 = UNREAD
-                .eq(BizPrivateMessage::getReceiverDeleted, DeletedConstant.DELETED)
-                .count();
-        log.info("获取未读消息数量成功，用户ID: {}, 未读消息数: {}", currentUserId, count);
-        return count;
+        if (currentUserId == null) {
+            throw new BaseException("当前用户未登录");
+        }
+        return getUnreadCountByUserId(currentUserId);
     }
-
 
     /**
-     * 事务方法：保存消息 + 会话（原子性）
-     *
-     * @param sendDTO    私信消息发送DTO
-     * @param senderId   发送者ID
-     * @param receiverId 接收者ID
-     *                   <p>
-     *                   1. 保存消息
-     *                   2. 更新发送者会话
-     *                   3. 接收者会话（不存在则创建）
-     *                   4. 返回VO
+     * 清空会话
+     * 1. 检查当前用户是否登录
+     * 2. 检查会话对象是否为空
+     * 3. 删除会话
+     * 4. 给发送方推送未读数变化
      */
+    @Override
     @Transactional(rollbackFor = Exception.class)
-    public PrivateMessageRealtimeVO saveMessageAndConversation(PrivateMessageSendDTO sendDTO,
-                                                               Long senderId,
-                                                               Long receiverId) {
-        // 1.保存消息
-        BizPrivateMessage message = new BizPrivateMessage();
-        message.setSenderId(senderId);
-        message.setReceiverId(receiverId);
-        message.setContent(sendDTO.getContent());
-        message.setMessageType(sendDTO.getMessageType());
-        message.setImageUrl(sendDTO.getImageUrl());
-        message.setStatus(ReadStatusConstant.UNREAD);
-        message.setClientMsgId(sendDTO.getClientMsgId());
-        message.setSenderDeleted(0);
-        message.setReceiverDeleted(0);
-        save(message);
-
-        // 2. 更新发送者会话
-        BizPrivateConversation senderConversation = conversationDao.selectByUserIdAndPeerId(senderId, receiverId);
-        if (senderConversation == null) {
-            senderConversation = new BizPrivateConversation();
-            senderConversation.setUserId(senderId);
-            senderConversation.setPeerId(receiverId);
-            senderConversation.setLastReadMessageId(message.getId());
-            conversationDao.insert(senderConversation);
+    public void clearConversation(Long peerId) {
+        Long currentUserId = BaseContext.getCurrentId();
+        // 1. 检查当前用户是否登录
+        if (currentUserId == null) {
+            log.warn("当前用户未登录");
+            throw new BaseException(401, "当前用户未登录");
+        }
+        if (peerId == null) {
+            log.warn("会话对象不能为空");
+            throw new BaseException(400, "会话对象不能为空");
+        }
+        // 2. 检查会话是否存在
+        BizPrivateConversation conversation = privateConversationDao.selectOne(
+                new LambdaQueryWrapper<BizPrivateConversation>()
+                        .eq(BizPrivateConversation::getUserId, currentUserId)
+                        .eq(BizPrivateConversation::getPeerId, peerId)
+                        .last("limit 1")
+        );
+        // 3. 清空会话
+        if (conversation == null) {
+            log.warn("会话不存在");
+            conversation = new BizPrivateConversation();
+            conversation.setUserId(currentUserId);
+            conversation.setPeerId(peerId);
+            conversation.setClearBeforeTime(LocalDateTime.now());
+            privateConversationDao.insert(conversation);
         } else {
-            senderConversation.setLastReadMessageId(message.getId());
-            conversationDao.updateById(senderConversation);
+            log.info("清空会话{}", conversation);
+            conversation.setClearBeforeTime(LocalDateTime.now());
+            privateConversationDao.updateById(conversation);
         }
-
-        // 3. 接收者会话（不存在则创建）
-        BizPrivateConversation receiverConversation = conversationDao.selectByUserIdAndPeerId(receiverId, senderId);
-        if (receiverConversation == null) {
-            receiverConversation = new BizPrivateConversation();
-            receiverConversation.setUserId(receiverId);
-            receiverConversation.setPeerId(senderId);
-            conversationDao.insert(receiverConversation);
-        }
-
-        // 4.返回VO
-        PrivateMessageRealtimeVO vo = new PrivateMessageRealtimeVO();
-        vo.setId(message.getId());
-        vo.setSenderId(senderId);
-        vo.setReceiverId(receiverId);
-        vo.setContent(message.getContent());
-        vo.setMessageType(message.getMessageType());
-        vo.setImageUrl(message.getImageUrl());
-        vo.setStatus(message.getStatus());
-        vo.setCreateTime(message.getCreateTime());
-        return vo;
+        // 4. 给发送方推送未读数变化
+        long totalUnread = getUnreadCountByUserId(currentUserId);
+        privateChatWebSocketHandler.sendToUser(
+                currentUserId,
+                new UnreadChangedPayload(totalUnread, 0L, peerId),
+                WsMessageType.UNREAD_CHANGED
+        );
     }
 
+    /**
+     * 创建并插入消息
+     *
+     * @param senderId
+     * @param dto
+     * @return
+     */
+    @Transactional(rollbackFor = Exception.class)
+    protected BizPrivateMessage createAndInsertMessage(Long senderId, PrivateMessageSendDTO dto) {
+        log.info("创建并插入消息{}", dto);
+        BizPrivateMessage entity = new BizPrivateMessage();
+        entity.setSenderId(senderId);
+        entity.setReceiverId(dto.getReceiverId());
+        entity.setContent(dto.getContent());
+        entity.setMessageType(dto.getMessageType());
+        entity.setImageUrl(dto.getImageUrl());
+        entity.setClientMsgId(dto.getClientMsgId());
+        entity.setStatus(0);
+        entity.setSenderDeleted(0);
+        entity.setReceiverDeleted(0);
+        privateMessageDao.insert(entity);
+        log.info("创建并插入消息{}", entity);
+        upsertConversation(senderId, dto.getReceiverId());
+        upsertConversation(dto.getReceiverId(), senderId);
+
+        return entity;
+    }
+
+    /**
+     * 创建并插入会话
+     */
+    private void upsertConversation(Long userId, Long peerId) {
+        BizPrivateConversation conversation = privateConversationDao.selectOne(
+                new LambdaQueryWrapper<BizPrivateConversation>()
+                        .eq(BizPrivateConversation::getUserId, userId)
+                        .eq(BizPrivateConversation::getPeerId, peerId)
+                        .last("limit 1")
+        );
+
+        if (conversation == null) {
+            conversation = new BizPrivateConversation();
+            conversation.setUserId(userId);
+            conversation.setPeerId(peerId);
+            privateConversationDao.insert(conversation);
+        } else {
+            privateConversationDao.updateById(conversation);
+        }
+    }
+
+    /**
+     * 获取未读数
+     *
+     * @param userId 用户ID
+     */
+    private long getUnreadCountByUserId(Long userId) {
+        return privateMessageDao.selectCount(
+                new LambdaQueryWrapper<BizPrivateMessage>()
+                        .eq(BizPrivateMessage::getReceiverId, userId)
+                        .eq(BizPrivateMessage::getStatus, 0)
+                        .eq(BizPrivateMessage::getReceiverDeleted, 0)
+        );
+    }
+
+    /**
+     * 获取会话未读数
+     *
+     * @param currentUserId 当前用户ID
+     * @param peerId        对话用户ID
+     */
+    private long getConversationUnreadCount(Long currentUserId, Long peerId) {
+        return privateMessageDao.selectCount(
+                new LambdaQueryWrapper<BizPrivateMessage>()
+                        .eq(BizPrivateMessage::getSenderId, peerId)
+                        .eq(BizPrivateMessage::getReceiverId, currentUserId)
+                        .eq(BizPrivateMessage::getStatus, 0)
+                        .eq(BizPrivateMessage::getReceiverDeleted, 0)
+        );
+    }
+
+    /**
+     * 未读数变化载荷
+     *
+     * @param totalUnreadCount
+     * @param conversationUnreadCount
+     * @param peerId
+     */
+    public record UnreadChangedPayload(Long totalUnreadCount, Long conversationUnreadCount, Long peerId) {
+
+    }
 }

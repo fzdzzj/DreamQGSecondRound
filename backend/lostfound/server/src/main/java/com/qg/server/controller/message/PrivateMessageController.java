@@ -72,18 +72,18 @@ public class PrivateMessageController {
     /**
      * 将与某人的会话全部标记为已读
      *
-     * @param id 会话ID
+     * @param peerId 对方用户ID
      * @return 成功结果
      */
-    @PutMapping("/{id}/read")
+    @PutMapping("/{peerId}/read")
     @Operation(summary = "将会话全部标记为已读")
-    public Result<Void> markConversationAsRead(@PathVariable Long id) {
+    public Result<Void> markConversationAsRead(@PathVariable Long peerId) {
         Long userId = BaseContext.getCurrentId();
-        log.info("将会话全部标记为已读，userId={}, id={}", userId, id);
+        log.info("将会话全部标记为已读，userId={}, peerId={}", userId, peerId);
 
-        privateMessageService.markConversationAsRead(id);
+        privateMessageService.markConversationAsRead(peerId);
 
-        log.info("将会话全部标记为已读成功，userId={}, id={}", userId, id);
+        log.info("将会话全部标记为已读成功，userId={}, peerId={}", userId, peerId);
         return Result.success();
     }
 
@@ -124,18 +124,18 @@ public class PrivateMessageController {
     /**
      * 删除会话
      *
-     * @param id 会话ID
+     * @param peerId 对方用户ID
      * @return 成功结果
      */
-    @DeleteMapping("/conversation/{id}")
+    @DeleteMapping("/conversation/{peerId}")
     @Operation(summary = "删除会话")
-    public Result<Void> deleteConversation(@PathVariable Long id) {
+    public Result<Void> deleteConversation(@PathVariable Long peerId) {
         Long userId = BaseContext.getCurrentId();
-        log.info("删除会话，userId={}, id={}", userId, id);
+        log.info("删除会话，userId={}, peerId={}", userId, peerId);
 
-        privateMessageService.deleteConversation(id);
+        privateMessageService.deleteConversation(peerId);
 
-        log.info("删除会话成功，userId={}, id={}", userId, id);
+        log.info("删除会话成功，userId={}, peerId={}", userId, peerId);
         return Result.success();
     }
 
@@ -159,16 +159,16 @@ public class PrivateMessageController {
     /**
      * 清空会话
      *
-     * @param id 会话ID
+     * @param peerId 对方用户ID
      * @return 成功结果
      */
-    @PutMapping("/conversation/{id}/clear")
+    @PutMapping("/conversation/{peerId}/clear")
     @Operation(summary = "清空会话")
-    public Result<Void> clearConversation(@PathVariable Long id) {
+    public Result<Void> clearConversation(@PathVariable Long peerId) {
         Long userId = BaseContext.getCurrentId();
-        log.info("清空会话，userId={}, id={}", userId, id);
-        privateMessageService.clearConversation(id);
-        log.info("清空会话成功，userId={}, id={}", userId, id);
+        log.info("清空会话，userId={}, peerId={}", userId, peerId);
+        privateMessageService.clearConversation(peerId);
+        log.info("清空会话成功，userId={}, peerId={}", userId, peerId);
         return Result.success();
     }
 }

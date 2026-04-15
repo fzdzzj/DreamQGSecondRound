@@ -30,6 +30,15 @@ public class PrivateMessageVO implements Serializable {
     @Schema(description = "消息内容")
     private String content;
 
+    @Schema(description = "消息类型,1:文本消息,2:图片消息", example = "1")
+    private String messageType;
+
+    @Schema(description = "图片地址")
+    private String imageUrl;
+
+
+    @Schema(description = "客户端消息ID，防重")
+    private String clientMsgId;
 
     @Schema(description = "消息状态,1:已读,0:未读", example = "1")
     private String status;

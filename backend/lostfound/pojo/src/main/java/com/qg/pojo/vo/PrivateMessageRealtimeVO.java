@@ -10,20 +10,22 @@ import java.time.LocalDateTime;
 @Schema(description = "私信实时VO")
 public class PrivateMessageRealtimeVO implements Serializable {
     private static final long serialVersionUID = 1L;
-    @Schema(description = "私信ID")
+    @Schema(description = "消息ID")
     private Long id;
     @Schema(description = "发送者ID")
     private Long senderId;
     @Schema(description = "接收者ID")
     private Long receiverId;
-    @Schema(description = "私信内容")
+    @Schema(description = "消息内容")
     private String content;
     @Schema(description = "消息类型 1.TEXT/2.IMAGE")
-    private String messageType;
+    private Integer messageType;
     @Schema(description = "如果是图片消息，保存图片地址")
     private String imageUrl;
-    @Schema(description = "消息状态 0:未读,1:已读")
+    @Schema(description = "消息状态,1:已读,0:未读", example = "1")
     private Integer status;
-    @Schema(description = "创建时间")
+    @Schema(description = "消息ID")
+    private String clientMsgId;
+    @Schema(description = "发送时间", example = "2021-01-01 00:00:00")
     private LocalDateTime createTime;
 }
