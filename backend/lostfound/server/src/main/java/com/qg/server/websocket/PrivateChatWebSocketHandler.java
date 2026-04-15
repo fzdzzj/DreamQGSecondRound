@@ -1,82 +1,78 @@
 package com.qg.server.websocket;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qg.pojo.vo.PrivateMessageRealtimeVO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.alibaba.fastjson2.JSON;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * 私聊聊天WebSocket处理
- * 每个用户都有一个WebSocket会话，用于实时通信
+ * 私聊 WebSocket 处理器
  */
-@Component
-@Slf4j
-@RequiredArgsConstructor
 public class PrivateChatWebSocketHandler extends TextWebSocketHandler {
-    /**
-     *  Jackson
-     */
-    private final ObjectMapper objectMapper;
-    /**
-     * 会话映射表
-     * 键：用户ID
-     * 值：WebSocket会话
-         */
-    private static final Map<Long, WebSocketSession> SESSION_MAP = new ConcurrentHashMap<>();
 
     /**
-     * 连接成功后，将会话映射到用户ID
-     * 1️ 从会话属性中获取用户ID
-     * 2️ 将会话映射到用户ID
+     * 存储用户 WebSocketSession
+     */
+    private static final Map<Long, WebSocketSession> SESSIONS = new ConcurrentHashMap<>();
+
+    /**
+     * 连接成功后处理
+     * 用于在 WebSocket 连接成功后进行一些操作
+     *
      * @param session
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         Long userId = (Long) session.getAttributes().get("userId");
-        if (userId != null) {
-            SESSION_MAP.put(userId, session);
-            log.info("WebSocket连接成功，userId={}", userId);
+        SESSIONS.put(userId, session);
+    }
+    /**
+     * 处理客户端消息
+     *
+     * @param session
+     * @param message
+     */
+    @Override
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+        // 处理客户端消息（心跳）
+        if ("ping".equals(message.getPayload())) {
+            send(session, "pong");
         }
     }
-
     /**
-     * 连接关闭后，从映射表中移除会话
-     * 1️ 从会话属性中获取用户ID
-     * 2️ 从映射表中移除会话
-     * @param session 关闭的WebSocket会话
-     * @param status 关闭状态
+     * 连接关闭处理
+     * 用于在 WebSocket 连接关闭后进行一些操作
+     *
+     * @param session
+     * @param status
      */
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         Long userId = (Long) session.getAttributes().get("userId");
-        if (userId != null) {
-            SESSION_MAP.remove(userId);
-            log.info("WebSocket连接关闭，userId={}", userId);
-        }
+        SESSIONS.remove(userId);
     }
-
     /**
      * 发送消息给指定用户
-     * 1️ 从映射表中获取会话
-     * 2️ 发送消息给会话
-     * @param userId 用户ID
-     * @param message 消息内容
+     *
+     * @param userId
+     * @param data
      */
-    public void sendToUser(Long userId, PrivateMessageRealtimeVO message) {
-        WebSocketSession session = SESSION_MAP.get(userId);
-        if (session == null || !session.isOpen()) {
-            return;
+    public static void sendToUser(Long userId, Object data) {
+        WebSocketSession session = SESSIONS.get(userId);
+        if (session != null && session.isOpen()) {
+            send(session, JSON.toJSONString(data));
         }
+    }
+    /**
+     * 发送消息
+     *
+     * @param session
+     * @param msg
+     */
+    private static void send(WebSocketSession session, String msg) {
         try {
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
-        } catch (Exception e) {
-            log.error("WebSocket推送失败，userId={}", userId, e);
-        }
+            session.sendMessage(new TextMessage(msg));
+        } catch (Exception ignored) {}
     }
 }
