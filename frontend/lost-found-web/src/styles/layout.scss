@@ -1,0 +1,44 @@
+@use './variables.scss' as *;
+
+.app-layout {
+  min-height: 100vh;
+  background: $bg-page;
+}
+
+.app-main {
+  padding: 16px;
+}
+
+.page-card {
+  background: $bg-card;
+  border-radius: 8px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.page-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 600;
+  color: $text-main;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
