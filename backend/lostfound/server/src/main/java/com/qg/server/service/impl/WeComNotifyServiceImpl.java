@@ -2,7 +2,7 @@ package com.qg.server.service.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.qg.pojo.entity.BizRiskEvent;
-import com.qg.server.risk.config.WeComRobotProperties;
+import com.qg.server.config.WeComRobotProperties;
 import com.qg.server.service.WeComNotifyService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

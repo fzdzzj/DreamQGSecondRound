@@ -1,4 +1,4 @@
-package com.qg.server.risk.config;
+package com.qg.server.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

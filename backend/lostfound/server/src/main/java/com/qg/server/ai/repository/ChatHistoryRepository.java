@@ -6,7 +6,9 @@ import org.springframework.ai.chat.messages.Message;
 
 import java.time.Instant;
 import java.util.List;
-
+/**
+ * 聊天历史记录接口
+ */
 public interface ChatHistoryRepository {
     /**
      * 保存消息到数据库
