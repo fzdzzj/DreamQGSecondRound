@@ -1,4 +1,4 @@
-package com.qg.server.ai.config;
+package com.qg.server.config;
 
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.properties.AIProperties;
@@ -9,15 +9,11 @@ import com.qg.server.ai.client.ImageDescriptionClient;
 import com.qg.server.ai.tools.ItemTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
-
-import java.time.Duration;
 
 /**
  * AI 配置类

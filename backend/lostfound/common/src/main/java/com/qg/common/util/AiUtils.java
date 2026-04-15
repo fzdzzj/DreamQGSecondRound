@@ -1,4 +1,4 @@
-package com.qg.server.ai.util;
+package com.qg.common.util;
 
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.constant.RedisConstant;

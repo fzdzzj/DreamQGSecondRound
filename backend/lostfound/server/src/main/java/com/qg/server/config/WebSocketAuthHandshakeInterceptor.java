@@ -1,6 +1,9 @@
 package com.qg.server.config;
 
+import com.qg.common.constant.UserStatusConstant;
 import com.qg.common.util.JwtUtil;
+import com.qg.pojo.entity.SysUser;
+import com.qg.server.mapper.UserDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -17,6 +20,7 @@ import java.util.Map;
 public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final UserDao dao;
 
     /**
      * 验证 WebSocket 连接请求
@@ -44,6 +48,10 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
             Long userId = jwtUtil.getUserIdFromToken(token);
 
             if (userId == null) {
+                return false;
+            }
+            SysUser user = dao.selectById(userId);
+            if(user == null|| UserStatusConstant.DISABLE.equals(user.getStatus())){
                 return false;
             }
 

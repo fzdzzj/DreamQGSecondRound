@@ -12,7 +12,7 @@ import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.common.properties.AIProperties;
 import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.pojo.vo.ImageAiResponseVO;
-import com.qg.server.ai.util.AiUtils;
+import com.qg.common.util.AiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

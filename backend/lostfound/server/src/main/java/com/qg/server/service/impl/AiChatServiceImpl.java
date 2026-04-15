@@ -4,7 +4,7 @@ import com.qg.common.constant.AiInputOutput;
 import com.qg.common.properties.AIProperties;
 import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.server.ai.repository.ChatHistoryRepository;
-import com.qg.server.ai.util.AiUtils;
+import com.qg.common.util.AiUtils;
 import com.qg.server.service.AiChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

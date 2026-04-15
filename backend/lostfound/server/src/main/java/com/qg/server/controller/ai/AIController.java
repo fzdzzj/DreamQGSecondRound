@@ -1,26 +1,17 @@
 package com.qg.server.controller.ai;
 
-import com.qg.common.constant.AiInputOutput;
 import com.qg.common.context.BaseContext;
-import com.qg.common.properties.AIProperties;
 import com.qg.common.result.Result;
 import com.qg.common.util.SensitiveWordFilterUtil;
-import com.qg.server.ai.repository.ChatHistoryRepository;
-import com.qg.server.ai.util.AiUtils;
 import com.qg.server.service.AiAsyncService;
 import com.qg.server.service.AiChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringEscapeUtils;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 
 /**
  * AI接口
