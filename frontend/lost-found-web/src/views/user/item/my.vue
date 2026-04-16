@@ -13,8 +13,9 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="420">
+      <el-table-column label="操作" width="480">
         <template #default="scope">
+          <el-button link type="primary" @click="view(scope.row.id)">查看</el-button>
           <el-button link type="primary" @click="edit(scope.row.id)">编辑</el-button>
 
           <el-button
@@ -69,6 +70,10 @@ const load = async () => {
 }
 
 onMounted(load)
+
+const view = (id: number) => {
+  router.push(`/item/detail/${id}`)
+}
 
 const edit = (id: number) => {
   router.push(`/item/edit/${id}`)

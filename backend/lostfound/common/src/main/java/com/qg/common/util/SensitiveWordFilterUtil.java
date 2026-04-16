@@ -16,7 +16,14 @@ public class SensitiveWordFilterUtil {
 
     public SensitiveWordFilterUtil() {
 
-        // 1. 保留关键词，只屏蔽后面的值
+        // 1. 精准脱敏（优先执行，保留部分可识别信息）
+        addPhoneMask();      // 手机号 -> 138****8000
+        addEmailMask();      // 邮箱 -> t***@qq.com
+        addIdCardMask();     // 身份证 -> 1101**********1234
+        addBankCardMask();   // 银行卡 -> 6222********1234
+        addQQMask();         // QQ -> 12***678
+
+        // 2. 保留关键词，只屏蔽后面的值
         addKeepKeywordMaskValue("电话");
         addKeepKeywordMaskValue("手机号");
         addKeepKeywordMaskValue("手机");
@@ -66,7 +73,7 @@ public class SensitiveWordFilterUtil {
         addKeepKeywordMaskValue("二维码");
         addKeepKeywordMaskValue("收款码");
 
-        // 2. 整段直接替换成 ***
+        // 3. 整段替换成 ***
         addFullMask("密码");
         addFullMask("登录密码");
         addFullMask("支付密码");
@@ -76,18 +83,10 @@ public class SensitiveWordFilterUtil {
         addFullMask("pwd");
         addFullMask("pass");
 
-        // 3. 直接匹配常见敏感值
-        addDirectMask("\\b1[3-9]\\d{9}\\b"); // 手机号
-        addDirectMask("\\b[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}\\b"); // 邮箱
-        addDirectMask("\\b[1-9]\\d{4,10}\\b"); // QQ号（粗略）
-        addDirectMask("\\b\\d{17}[\\dXx]\\b"); // 身份证
-        addDirectMask("\\b\\d{16,19}\\b"); // 银行卡
-        //(?:...) 只是把它们包成一组，不做额外操作
+        // 4. 直接匹配其他敏感值
         addDirectMask("\\b(?:https?://|www\\.)[^\\s]+\\b"); // URL
-
-        // 4. 带分隔的手机号/QQ等简单变体
-        addDirectMask("1[3-9]\\d[-_\\s]?\\d{4}[-_\\s]?\\d{4}"); // 138-0013-8000 / 138 0013 8000
-        addDirectMask("[1-9]\\d{4,10}"); // QQ 类数字，会有误伤风险
+        addDirectMask("1[3-9]\\d[-_\\s]?\\d{4}[-_\\s]?\\d{4}"); // 带分隔手机号兜底
+        addDirectMask("[1-9]\\d{4,10}"); // QQ 类数字兜底，可能有误伤风险
     }
 
     /**
@@ -135,7 +134,47 @@ public class SensitiveWordFilterUtil {
     }
 
     /**
-     * 直接匹配敏感值
+     * 手机号脱敏：13800138000 -> 138****8000
+     */
+    private void addPhoneMask() {
+        Pattern pattern = Pattern.compile("\\b(1[3-9]\\d{2})\\d{4}(\\d{4})\\b");
+        rules.add(new Rule(pattern, "$1****$2"));
+    }
+
+    /**
+     * 邮箱脱敏：test@qq.com -> t***@qq.com
+     */
+    private void addEmailMask() {
+        Pattern pattern = Pattern.compile("\\b([A-Za-z0-9])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})\\b");
+        rules.add(new Rule(pattern, "$1***$2"));
+    }
+
+    /**
+     * 身份证脱敏：110101199001011234 -> 1101**********1234
+     */
+    private void addIdCardMask() {
+        Pattern pattern = Pattern.compile("\\b(\\d{4})\\d{10}(\\d{4})\\b");
+        rules.add(new Rule(pattern, "$1**********$2"));
+    }
+
+    /**
+     * 银行卡脱敏：6222021234567890123 -> 6222***********0123
+     */
+    private void addBankCardMask() {
+        Pattern pattern = Pattern.compile("\\b(\\d{4})\\d{8,11}(\\d{4})\\b");
+        rules.add(new Rule(pattern, "$1***********$2"));
+    }
+
+    /**
+     * QQ脱敏：12345678 -> 12***678
+     */
+    private void addQQMask() {
+        Pattern pattern = Pattern.compile("\\b(\\d{2})\\d{2,5}(\\d{3})\\b");
+        rules.add(new Rule(pattern, "$1***$2"));
+    }
+
+    /**
+     * 直接匹配敏感值并整体替换
      */
     private void addDirectMask(String regex) {
         rules.add(new Rule(Pattern.compile(regex, Pattern.CASE_INSENSITIVE), "***"));
@@ -158,7 +197,7 @@ public class SensitiveWordFilterUtil {
     }
 
     /**
-     * 归一化，处理部分全角符号和大小写问题
+     * 归一化，处理部分全角符号
      */
     private String normalize(String text) {
         if (text == null) return null;
