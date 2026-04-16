@@ -170,6 +170,13 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             //4. 删除置顶申请
             pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
             updateById(pinRequest);
+            notificationService.createNotification(pinRequest.getApplicantId(), pinRequest.getItemId(), "您的置顶申请已被撤销");
+            BizItem  item = bizItemDao.selectById(pinRequest.getItemId());
+            if (item != null) {
+                item.setIsPinned(PinConstant.NOT_PINNED);
+                item.setPinExpireTime(null);
+                bizItemDao.updateById(item);
+            }
             log.info("管理员取消置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
