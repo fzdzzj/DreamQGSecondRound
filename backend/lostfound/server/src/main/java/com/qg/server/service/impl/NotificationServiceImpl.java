@@ -1,6 +1,7 @@
 package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.DefaultPageConstant;
@@ -127,9 +128,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
             throw new AbsentException(MessageConstant.NO_PERMISSION);
         }
 
-        // 3. 逻辑删除通知
-        notification.setDeleted(DeletedConstant.DELETED); // 设置已删除
-        updateById(notification);  // 使用 IService 提供的 updateById 方法
+        notificationDao.deleteById(notificationId);
 
         log.info("通知删除成功，notificationId={}", notificationId);
     }

@@ -40,39 +40,14 @@ export interface BizItemStatVO {
   contactMethod?: string
 }
 
-export interface BizItemDetailVO {
-  id: number
-  type: string
-  title: string
-  description: string
-  location: string
-  happenTime: string
-  status: string
-  statusDesc?: string
+export interface BizItemDetailVO extends BizItemStatVO {
   imageUrls: string[]
   aiStatus?: string
-  aiCategory?: string
   aiTags?: string[]
   aiDescription?: string
-  contactMethod?: string
 }
 
 export interface PinApplyDTO {
   itemId: number
   reason: string
-}
-
-
-export interface BizItemDetailVO extends BizItemStatVO {
-  description: string
-  imageUrls: string[]
-  aiCategory?: string
-  aiDescription?: string
-}
-
-export interface ItemPageQueryDTO {
-  pageNum: number
-  pageSize: number
-  keyword?: string
-  location?: string
 }

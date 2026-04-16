@@ -384,11 +384,10 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
      * @param dto    修改密码的DTO
      *               <p>
      *               1. 校验验证码（类型：RESET_PASSWORD）
-     *               2. 查询当前用户（确保只能改自己的邮箱）
-     *               3. 安全校验：必须是当前登录用户的邮箱，防止越权
-     *               4. 校验两次密码是否一致
-     *               5. 加密新密码
-     *               6. 更新密码
+     *               2. 查询当前邮箱用户是否存在
+     *               3. 校验两次密码是否一致
+     *               4. 加密新密码
+     *               5. 更新密码
      */
     @Override
     public void changePasswordByCode(ChangePasswordByCodeDTO dto) {
@@ -405,7 +404,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
             throw new BaseException(400, MessageConstant.CODE_ERROR);
         }
 
-        // 2. 查询当前用户（确保只能改自己的邮箱）
+        // 2. 查询当前邮箱用户是否存在
         SysUser user = userDao.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getEmail, dto.getEmail())
@@ -415,21 +414,16 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
             throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
-        // 3. 安全校验：必须是当前登录用户的邮箱，防止越权
-        if (!user.getEmail().equals(dto.getEmail())) {
-            log.warn("修改密码失败，邮箱与当前用户不匹配，email={}", dto.getEmail());
-            throw new BaseException(400, MessageConstant.EMAIL_MISMATCH);
-        }
-        // 4. 校验两次密码是否一致
+        // 3. 校验两次密码是否一致
         if (PasswordUtil.matches(dto.getNewPassword(), user.getPasswordHash())) {
             log.warn("修改密码失败，新密码与旧密码相同，email={}", dto.getEmail());
             throw new BaseException(400, MessageConstant.PASSWORD_SAME);
         }
         log.info("修改密码开始，email={}", dto.getEmail());
-        // 5. 加密新密码
+        // 4. 加密新密码
         String newPassword = PasswordUtil.encrypt(dto.getNewPassword());
 
-        // 6. 更新密码
+        // 5. 更新密码
         user.setPasswordHash(newPassword);
         userDao.updateById(user);
         log.info("修改密码成功，email={}", dto.getEmail());

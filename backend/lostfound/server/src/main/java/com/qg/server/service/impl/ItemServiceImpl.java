@@ -316,7 +316,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 query.getType() == null ? "all" : query.getType(),
                 query.getKeyword() == null ? "" : query.getKeyword().trim(),
                 query.getLocation() == null ? "" : query.getLocation().trim(),
-                query.getAiCategory() == null ? "" : query.getAiCategory().trim());
+                query.getAiCategory() == null ? "" : query.getAiCategory().trim(),
+                query.getStartTime() == null ? "" : query.getStartTime().toString(),
+                query.getEndTime() == null ? "" : query.getEndTime().toString());
         // 1.尝试从缓存获取
         PageResult<BizItemStatVO> cached = (PageResult<BizItemStatVO>) redisTemplate.opsForValue().get(cacheKey);
         if (cached != null) {

@@ -17,7 +17,7 @@ public class RedisConstant {
      * 分页缓存 key 前缀
      * 示例：ITEM_PAGE_KEY:1:10:LOST:校园卡:图书馆:1
      */
-    public static final String ITEM_PAGE_KEY = "ITEM_PAGE_KEY:%d:%d:%s:%s:%s:%s";
+    public static final String ITEM_PAGE_KEY = "ITEM_PAGE_KEY:%d:%d:%s:%s:%s:%s:%s:%s";
     /**
      * 用户 AI 限制缓存 key 前缀
      */
