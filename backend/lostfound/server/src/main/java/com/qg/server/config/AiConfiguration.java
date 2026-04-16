@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * AI 配置类
@@ -55,14 +56,22 @@ public class AiConfiguration {
      * 回复客户端
      */
     @Bean
-    public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools, TemporaryChatMemory temporaryChatMemory) {
+    public ChatClient answerChatClient(OpenAiChatModel chatModel,
+                                       ItemTools itemTools,
+                                       TemporaryChatMemory temporaryChatMemory) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(AiPromptConstant.ANSWER_SYSTEM_PROMPT)
-                .defaultAdvisors(new SimpleLoggerAdvisor(),new MessageChatMemoryAdvisor(temporaryChatMemory))
+                .defaultAdvisors(
+                        new SimpleLoggerAdvisor(),
+                        // 用 builder() 而不是 new！！！
+                        MessageChatMemoryAdvisor.builder(temporaryChatMemory)
+                                .conversationId("DEFAULT_SESSION")  // 会话ID
+                                .build()
+                )
                 .defaultTools(itemTools)
                 .defaultOptions(
                         ToolCallingChatOptions.builder()
-                                .internalToolExecutionEnabled(true) // 核心配置
+                                .internalToolExecutionEnabled(true)
                                 .build()
                 )
                 .build();

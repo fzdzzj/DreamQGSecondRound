@@ -254,7 +254,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         //2.构建查询条件
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
         if (applicantId != null) wrapper.eq(BizPinRequest::getApplicantId, applicantId);
-        if (StringUtils.isNotBlank(status.toString())) wrapper.eq(BizPinRequest::getStatus, status);
+        if (status!=null&&StringUtils.isNotBlank(status.toString())) wrapper.eq(BizPinRequest::getStatus, status);
         //3.查询置顶申请列表
         baseMapper.selectPage(page, wrapper);
         //4.转换为 VO

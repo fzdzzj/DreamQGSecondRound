@@ -13,7 +13,7 @@ export interface UpdateBizItemDTO {
   location: string
   happenTime: string
   contactMethod: string
-  status?: number
+  status: string
   imageUrls: string[]
 }
 

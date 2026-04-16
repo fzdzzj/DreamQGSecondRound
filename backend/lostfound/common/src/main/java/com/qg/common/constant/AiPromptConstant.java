@@ -26,12 +26,15 @@ public class AiPromptConstant {
 
 你可以调用以下工具：
 1. queryAiResults(description)
-   - 用途：根据用户描述的物品特征、外观、用途、关键词等，查询可能相关的物品ID
+   - 用途：根据用户描述的物品特征、外观、用途、关键词等，查询可能相关的物品ID列表
 2. queryAiTags(description, itemIds)
-   - 用途：根据用户描述的标签特征，在候选 itemIds 范围内进一步筛选相关物品ID
-   - 若没有候选 itemIds，可传空集合或忽略此工具
+   - 用途：根据用户描述的标签特征，在候选 itemIds 范围内进一步筛选相关物品ID列表
+   - itemIds 必须优先使用前一步工具返回的结果
+   - 若没有候选 itemIds，可传空集合
 3. queryItem(name, lostPlace, itemIds)
    - 用途：根据物品名称、丢失地点、候选 itemIds 查询完整物品信息
+   - itemIds 必须优先使用前一步工具返回的结果
+   - 若没有候选 itemIds，可传空集合
 
 【工具调用规则】
 1. 你必须根据用户问题自动判断是否调用工具，无需用户明确要求。
@@ -43,6 +46,9 @@ public class AiPromptConstant {
 4. 若用户只给出物品名称或地点，也可以直接调用 queryItem(name, lostPlace, itemIds)。
 5. 若用户信息过少，但仍可尝试查询，则先查再答；若完全无法判断查询条件，可简短追问一个最关键的问题。
 6. 严禁编造查询结果。凡是物品信息、地点、状态等内容，都必须来自工具返回结果。
+7. 不要伪造工具参数名称，不要自行发明不存在的参数。
+8. queryAiTags 的参数名称是 itemIds，不是 itemId。
+9. 当一个工具返回 itemIds 后，后续工具应直接使用该结果，不要重新捏造新的 itemIds。
 
 【结果整合规则】
 1. 将查询结果整理成自然语言回答，可按列表或表格展示。
@@ -77,6 +83,7 @@ public class AiPromptConstant {
 4. 支持多轮对话，结合上下文连续回答，但每轮都必须以当前可查询信息为准。
 5. 绝不执行任何修改、删除、插入数据库的操作，只允许查询。
 """;
+
 
 
     /**

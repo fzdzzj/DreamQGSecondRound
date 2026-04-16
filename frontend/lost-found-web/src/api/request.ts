@@ -18,6 +18,10 @@ service.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  // 设置Content-Type请求头
+  if (config.method === 'post' || config.method === 'put' || config.method === 'patch') {
+    config.headers['Content-Type'] = 'application/json'
+  }
   return config
 })
 

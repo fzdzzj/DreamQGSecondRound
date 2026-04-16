@@ -311,7 +311,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      */
     @Override
     public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
-        String cacheKey = String.format(RedisConstant.ITEM_PAGE_KEY, query.getPageNum(),
+        String cacheKey = String.format(RedisConstant.ITEM_PAGE_KEY_FORMAT, query.getPageNum(),
                 query.getPageSize(),
                 query.getType() == null ? "all" : query.getType(),
                 query.getKeyword() == null ? "" : query.getKeyword().trim(),
@@ -336,6 +336,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 .eq(BizItem::getStatus, BizItemStatusConstant.OPEN)
                 .orderByDesc(BizItem::getIsPinned)
                 .orderByDesc(BizItem::getPinExpireTime)
+                .orderByDesc(BizItem::getHappenTime)
                 .orderByDesc(BizItem::getCreateTime);
 
         // 2. 关键词查询
@@ -421,7 +422,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         wrapper.eq(BizItem::getUserId, userId)
                 .eq(query.getType() != null, BizItem::getType, query.getType())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
-                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime());
+                .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
+                .orderByDesc(BizItem::getIsPinned)
+                .orderByDesc(BizItem::getHappenTime)
+                .orderByDesc(BizItem::getCreateTime);
 
         // ================= 搜索条件 =================
         final String kw = (query.getKeyword() == null) ? "" : query.getKeyword().trim();

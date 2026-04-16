@@ -20,19 +20,7 @@ public class TemporaryChatMemory implements ChatMemory {
      * 创建时间
      */
     private final Map<String, Instant> creationTime = new ConcurrentHashMap<>();
-    /**
-     * 获取临时存储
-     */
-    @Override
-    public List<Message> get(String chatId, int maxMessages) {
-        // 获取临时存储,默认返回空列表
-        List<Message> list = memory.getOrDefault(chatId, List.of());
-        // 如果消息数量大于最大数量,则截取最后 maxMessages 条
-        if (list.size() > maxMessages) {
-            return list.subList(list.size() - maxMessages, list.size());
-        }
-        return new ArrayList<>(list);
-    }
+
 
     /**
      * 清除临时存储
@@ -64,6 +52,13 @@ public class TemporaryChatMemory implements ChatMemory {
         memory.computeIfAbsent(conversationId, k -> new ArrayList<>()).addAll(messages);
         // 更新创建时间
         creationTime.putIfAbsent(conversationId, Instant.now());
+    }
+    /**
+     * 获取临时存储
+     */
+    @Override
+    public List<Message> get(String conversationId) {
+         return memory.getOrDefault(conversationId, List.of());
     }
 
     /**

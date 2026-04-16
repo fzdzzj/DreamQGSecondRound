@@ -2,9 +2,9 @@ package com.qg.server.service.impl;
 
 import com.qg.common.constant.AiInputOutput;
 import com.qg.common.properties.AIProperties;
+import com.qg.common.util.AiUtils;
 import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.server.ai.repository.ChatHistoryRepository;
-import com.qg.common.util.AiUtils;
 import com.qg.server.service.AiChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,16 +13,13 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
-/**
- * AI 对话服务实现类
- * 基于 Spring AI 实现 SSE 流式对话、上下文记忆、敏感词过滤、对话日志存储
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,11 +30,21 @@ public class AiChatServiceImpl implements AiChatService {
      */
     private static final String CHAT_TYPE = "answer";
 
+    /**
+     * 每个 SSE 分片的最大字符数
+     */
+    private static final int SSE_CHUNK_SIZE = 100;  // 增大块的大小，减少前端渲染次数
+
+    /**
+     * SSE 分片发送间隔（可按体验调整）
+     */
+    private static final Duration SSE_CHUNK_DELAY = Duration.ofMillis(100);  // 增加延迟，减缓推送
+
     // AI 配置属性（限流、模型参数等）
     private final AIProperties aiProperties;
     // Redis 用于用户调用次数限流统计
     private final RedisTemplate<String, Object> redisTemplate;
-    // Spring AI 对话客户端（带上下文记忆）
+    // Spring AI 对话客户端（带上下文记忆、带工具）
     private final ChatClient answerChatClient;
     // 聊天历史记录仓库
     private final ChatHistoryRepository chatHistoryRepository;
@@ -45,7 +52,8 @@ public class AiChatServiceImpl implements AiChatService {
     private final SensitiveWordFilterUtil sensitiveWordFilter;
 
     /**
-     * AI 流式问答接口（SSE 推送）
+     * AI SSE 流式问答接口
+     *
      * @param prompt 用户输入内容
      * @param chatId 对话会话 ID（用于上下文记忆）
      * @param userId 用户 ID
@@ -53,56 +61,47 @@ public class AiChatServiceImpl implements AiChatService {
      */
     @Override
     public Flux<String> streamAnswer(String prompt, String chatId, Long userId) {
-        // 1. 校验用户每日调用次数是否超限
-        AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
-        // 2. 用户今日调用次数 +1
-        AiUtils.incrementUserAiCount(userId, redisTemplate);
+        return Flux.defer(() -> {
+            // 1. 校验用户每日调用次数是否超限
+            AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
 
-        // 3. 过滤用户输入（去换行、超长截断、去空格）
-        String filteredPrompt = filterUserInput(prompt);
+            // 2. 用户今日调用次数 +1
+            AiUtils.incrementUserAiCount(userId, redisTemplate);
 
-        // 4. 保存用户提问到聊天历史
-        chatHistoryRepository.saveMessage(CHAT_TYPE, userId, chatId, "user", filteredPrompt);
+            // 3. 过滤用户输入（去换行、超长截断、去空格）
+            String filteredPrompt = filterUserInput(prompt);
 
-        // 5. 原子引用存储 AI 完整回复（流式片段拼接）
-        AtomicReference<StringBuilder> assistantReplyRef = new AtomicReference<>(new StringBuilder());
+            // 4. 保存用户提问到聊天历史
+            chatHistoryRepository.saveMessage(CHAT_TYPE, userId, chatId, "user", filteredPrompt);
 
-        // 6. 调用 Spring AI 进行流式对话
-        Flux<String> messageFlux = answerChatClient.prompt()
-                .user(filteredPrompt)  // 设置用户问题
-                // 传入对话 ID，启用上下文记忆
-                .advisors(a -> a.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId))
-                .stream()             // 开启流式返回
-                .content()            // 只提取 AI 返回的文本内容
-                .map(this::filterAIOutput)  // 过滤 AI 回复（敏感词、长度、转义）
-                // 拼接每一段流式内容
-                .doOnNext(chunk -> assistantReplyRef.get().append(chunk))
-                .map(this::toMessageEvent); // 包装成 SSE message 事件
+            // 第一步：同步调用工具，获取完整的工具调用结果
+            String assistantReply = answerChatClient.prompt()
+                    .user(filteredPrompt)
+                    .advisors(a -> a.param(CONVERSATION_ID, chatId))
+                    .call()
+                    .content();
 
-        // 7. 流式结束后：保存完整 AI 回复，并返回 done 事件
-        Mono<String> saveAndDoneMono = Mono.fromCallable(() -> {
-            String assistantReply = assistantReplyRef.get().toString();
-            // 回复非空则保存到历史记录
-            if (!assistantReply.isBlank()) {
+            // 第二步：基于工具结果生成流式响应
+            assistantReply = filterAIOutput(assistantReply);
+
+            // 7. 保存 AI 回复到聊天历史
+            if (assistantReply != null && !assistantReply.isBlank()) {
                 chatHistoryRepository.saveMessage(CHAT_TYPE, userId, chatId, "assistant", assistantReply);
             }
-            // 返回 SSE 结束事件
-            return toDoneEvent();
-        });
 
-        // 8. 拼接：消息流 + 结束流 + 异常兜底
-        return messageFlux
-                .concatWith(saveAndDoneMono)  // 正常流结束后发送 done
-                .onErrorResume(IllegalStateException.class, e -> {
-                    log.warn("AI工具调用JSON解析不完整（流式正常忽略）, userId={}, chatId={}", userId, chatId);
-                    // 直接返回空，不中断流
-                    return Flux.empty();
-                })
-                .onErrorResume(e -> {
-                    // 异常时打印日志并返回错误事件
-                    log.error("AI流式回复失败, userId={}, chatId={}", userId, chatId, e);
-                    return Flux.just(toErrorEvent("AI处理失败，请稍后重试"));
-                });
+            // 8. 切片并转换为 SSE message 事件
+            List<String> chunks = splitToChunks(assistantReply, SSE_CHUNK_SIZE);
+
+            Flux<String> messageFlux = Flux.fromIterable(chunks)
+                    .delayElements(SSE_CHUNK_DELAY)
+                    .map(this::toMessageEvent);
+
+            // 9. 最后补 done 事件
+            return messageFlux.concatWith(Flux.just(toDoneEvent()));
+        }).onErrorResume(e -> {
+            log.error("AI流式回复失败, userId={}, chatId={}", userId, chatId, e);
+            return Flux.just(toErrorEvent("AI处理失败，请稍后重试"));
+        });
     }
 
     /**
@@ -114,6 +113,7 @@ public class AiChatServiceImpl implements AiChatService {
         }
         // 替换换行/回车为空格，去除首尾空格
         text = text.replaceAll("[\\r\\n]+", " ").trim();
+
         // 超过最大长度则截断
         if (text.length() > AiInputOutput.MAX_USER_PROMPT) {
             text = text.substring(0, AiInputOutput.MAX_USER_PROMPT);
@@ -128,14 +128,36 @@ public class AiChatServiceImpl implements AiChatService {
         if (text == null) {
             return "";
         }
+
         // 超长截断
         if (text.length() > AiInputOutput.MAX_AI_OUTPUT) {
             text = text.substring(0, AiInputOutput.MAX_AI_OUTPUT);
         }
+
         // 敏感词过滤
         text = sensitiveWordFilter.filter(text);
+
         // HTML 转义，防止前端 XSS
         return StringEscapeUtils.escapeHtml4(text);
+    }
+
+    /**
+     * 将完整文本按固定大小切片，供 SSE 分段输出
+     */
+    private List<String> splitToChunks(String text, int chunkSize) {
+        List<String> chunks = new ArrayList<>();
+
+        if (text == null || text.isBlank()) {
+            return chunks;
+        }
+
+        int length = text.length();
+        for (int start = 0; start < length; start += chunkSize) {
+            int end = Math.min(start + chunkSize, length);
+            chunks.add(text.substring(start, end));
+        }
+
+        return chunks;
     }
 
     /**

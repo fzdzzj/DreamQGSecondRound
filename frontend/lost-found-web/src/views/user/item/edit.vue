@@ -16,7 +16,7 @@
       </el-form-item>
 
       <el-form-item label="时间">
-        <el-date-picker v-model="form.happenTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
+        <el-date-picker v-model="form.happenTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
       </el-form-item>
 
       <el-form-item label="联系方式">
@@ -64,7 +64,7 @@ import { onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getItemDetailApi, updateItemApi } from '@/api/item'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
-import { showSuccess } from '@/utils/message'
+import { showSuccess, showError, showWarning } from '@/utils/message'
 import { itemStatusText } from '@/utils/item'
 import { Delete } from '@element-plus/icons-vue'
 
@@ -77,14 +77,18 @@ const form = reactive<any>({
   title: '',
   description: '',
   location: '',
-  happenTime: '',
+  happenTime: null,
   contactMethod: '',
-  status: 1,
+  status: '1',
   imageUrls: []
 })
 
 onMounted(async () => {
   const detail = await getItemDetailApi(itemId)
+  // 确保status字段是字符串类型
+  if (detail.status !== undefined) {
+    detail.status = String(detail.status)
+  }
   Object.assign(form, detail)
 })
 
@@ -97,8 +101,56 @@ const handleDeleteImage = (index: number) => {
 }
 
 const save = async () => {
-  await updateItemApi(itemId, form)
-  showSuccess('保存成功')
-  router.push('/item/my')
+  // 表单验证
+  if (!form.title) {
+    return showWarning('请输入标题')
+  }
+  if (!form.description) {
+    return showWarning('请输入描述')
+  }
+  if (!form.location) {
+    return showWarning('请输入地点')
+  }
+  if (!form.happenTime) {
+    return showWarning('请选择时间')
+  }
+  if (!form.contactMethod) {
+    return showWarning('请输入联系方式')
+  }
+  if (!form.status) {
+    return showWarning('请选择状态')
+  }
+
+  try {
+    // 确保数据类型正确，只发送后端需要的字段
+    const submitData = {
+      title: form.title,
+      description: form.description,
+      location: form.location,
+      happenTime: form.happenTime,
+      contactMethod: form.contactMethod,
+      status: form.status,
+      imageUrls: form.imageUrls || []
+    }
+    
+    console.log('提交数据类型:', {
+      title: typeof submitData.title,
+      description: typeof submitData.description,
+      location: typeof submitData.location,
+      happenTime: typeof submitData.happenTime,
+      contactMethod: typeof submitData.contactMethod,
+      status: typeof submitData.status,
+      imageUrls: Array.isArray(submitData.imageUrls)
+    })
+    console.log('提交数据:', submitData)
+    
+    await updateItemApi(itemId, submitData)
+    showSuccess('保存成功')
+    router.push('/item/my')
+  } catch (error: any) {
+    console.error('保存失败:', error)
+    console.error('错误响应:', error.response)
+    showError('保存失败，请检查输入格式')
+  }
 }
 </script>
