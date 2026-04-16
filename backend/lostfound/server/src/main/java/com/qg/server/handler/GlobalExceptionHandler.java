@@ -6,6 +6,7 @@ import com.qg.common.exception.JwtException;
 import com.qg.common.result.Result;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.unit.DataSize;
@@ -31,6 +32,17 @@ public class GlobalExceptionHandler {
 
     private static final String DEFAULT_ERROR = "系统繁忙，请稍后重试";
 
+    /**
+     * 类型转换异常
+     *
+     * @param e 异常对象
+     * @return 错误结果
+     */
+    @ExceptionHandler(TypeMismatchException.class)
+    public Result<?> handleTypeMismatch(TypeMismatchException e) {
+        log.warn("类型转换异常：{}", e.getMessage());
+        return Result.error(400, "参数类型错误，请检查输入格式");
+    }
     /**
      * 参数校验失败
      *

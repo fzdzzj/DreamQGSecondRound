@@ -2,11 +2,30 @@
   <div class="page-card">
     <div class="toolbar">
       <SearchForm @search="load" @reset="reset">
-        <el-form-item>
+        <el-form-item label="关键词">
           <el-input v-model="query.keyword" placeholder="关键词" clearable />
         </el-form-item>
-        <el-form-item>
+        <el-form-item label="地点">
           <el-input v-model="query.location" placeholder="地点" clearable />
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="query.type" placeholder="选择类型" clearable>
+            <el-option :value="1" label="丢失" />
+            <el-option :value="2" label="拾取" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="时间范围">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item label="AI分类">
+          <el-input v-model="query.aiCategory" placeholder="AI分类" clearable />
         </el-form-item>
       </SearchForm>
 
@@ -61,20 +80,30 @@ const loading = ref(false)
 
 const query = reactive({
   keyword: '',
-  location: ''
+  location: '',
+  type: undefined,
+  aiCategory: ''
 })
+
+const dateRange = ref<string[]>([])
 
 const { pageNum, pageSize, total, setPagination } = usePagination()
 
 const load = async () => {
   loading.value = true
   try {
-    const res = await getItemPageApi({
+    const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
       keyword: query.keyword,
-      location: query.location
-    })
+      location: query.location,
+      type: query.type,
+      aiCategory: query.aiCategory,
+      startTime: dateRange.value[0] ? `${dateRange.value[0]}T00:00:00` : undefined,
+      endTime: dateRange.value[1] ? `${dateRange.value[1]}T23:59:59` : undefined
+    }
+    
+    const res = await getItemPageApi(params)
     list.value = res.list
     setPagination(res)
   } finally {
@@ -85,6 +114,9 @@ const load = async () => {
 const reset = () => {
   query.keyword = ''
   query.location = ''
+  query.type = undefined
+  query.aiCategory = ''
+  dateRange.value = []
   pageNum.value = 1
   load()
 }
