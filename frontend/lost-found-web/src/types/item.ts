@@ -33,26 +33,28 @@ export interface BizItemStatVO {
   title: string
   location: string
   happenTime: string
-  status: number
+  status: string
   statusDesc?: string
   description: string
   aiCategory?: string
+  contactMethod?: string
 }
 
 export interface BizItemDetailVO {
   id: number
-  type: number
+  type: string
   title: string
   description: string
   location: string
   happenTime: string
-  status: number
+  status: string
   statusDesc?: string
   imageUrls: string[]
-  aiStatus?: number
+  aiStatus?: string
   aiCategory?: string
   aiTags?: string[]
   aiDescription?: string
+  contactMethod?: string
 }
 
 export interface PinApplyDTO {
@@ -74,4 +76,3 @@ export interface ItemPageQueryDTO {
   keyword?: string
   location?: string
 }
-

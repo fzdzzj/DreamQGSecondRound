@@ -3,10 +3,12 @@ import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clear
 import { showError } from '@/utils/message'
 import type { Result } from '@/types/common'
 
+// 🔥 关键修复：baseURL 改成 /api，走 Vite 代理
 const service = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_BASE_API,
   timeout: 15000
 })
+
 
 let refreshing = false
 let requestQueue: Array<(token: string) => void> = []
@@ -19,8 +21,6 @@ service.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// 修复点：明确响应拦截器返回的是解包后的数据 T，而不是 AxiosResponse
-// 这里使用 any 作为临时泛型占位，实际使用时 service.get<T> 会推断出正确类型
 service.interceptors.response.use(
   (response: AxiosResponse<Result<unknown>>) => {
     const res = response.data
@@ -28,7 +28,6 @@ service.interceptors.response.use(
       showError(res.message || '请求失败')
       return Promise.reject(res)
     }
-    // 返回业务数据，而非整个 response 对象
     return res.data as unknown as AxiosResponse['data']
   },
   async (error: AxiosError<Result<unknown>>) => {
@@ -48,8 +47,9 @@ service.interceptors.response.use(
             return Promise.reject(error)
           }
 
-          const refreshResponse = await axios.post<Result<{ accessToken: string; refreshToken?: string }>>(
-            `http://localhost:8080/auth/refresh`,
+          // 🔥 第二个关键修复：刷新 token 也走代理，不写死 8080
+          const refreshResponse = await service.post<Result<{ accessToken: string; refreshToken?: string }>>(
+            '/auth/refresh',
             null,
             {
               headers: {

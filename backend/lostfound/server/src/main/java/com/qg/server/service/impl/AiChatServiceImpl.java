@@ -93,6 +93,11 @@ public class AiChatServiceImpl implements AiChatService {
         // 8. 拼接：消息流 + 结束流 + 异常兜底
         return messageFlux
                 .concatWith(saveAndDoneMono)  // 正常流结束后发送 done
+                .onErrorResume(IllegalStateException.class, e -> {
+                    log.warn("AI工具调用JSON解析不完整（流式正常忽略）, userId={}, chatId={}", userId, chatId);
+                    // 直接返回空，不中断流
+                    return Flux.empty();
+                })
                 .onErrorResume(e -> {
                     // 异常时打印日志并返回错误事件
                     log.error("AI流式回复失败, userId={}, chatId={}", userId, chatId, e);

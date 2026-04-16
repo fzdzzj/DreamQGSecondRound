@@ -1,7 +1,9 @@
+export type LoginType = '1' | '2'
+
 export interface LoginDTO {
   identifier: string
   password?: string
-  loginType: 'PASSWORD' | 'EMAIL_CODE'
+  loginType: LoginType
   code?: string
 }
 

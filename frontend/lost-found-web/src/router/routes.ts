@@ -16,6 +16,15 @@ export const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/register/index.vue'),
+    meta: {
+      title: '注册',
+      requiresAuth: false
+    }
+  },
+  {
     path: '/403',
     name: 'Forbidden',
     component: () => import('@/views/error/403.vue'),

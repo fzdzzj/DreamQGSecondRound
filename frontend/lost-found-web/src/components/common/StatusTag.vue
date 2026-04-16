@@ -3,8 +3,8 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  type: String,
-  text: String
-})
+defineProps<{
+  type?: '' | 'success' | 'warning' | 'info' | 'danger'
+  text: string
+}>()
 </script>

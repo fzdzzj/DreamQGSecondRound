@@ -15,7 +15,7 @@ export function getAiChatHistoryApi(chatId: string, type = AI_CHAT_TYPE) {
 }
 
 export function getAiChatStreamUrl(prompt: string, chatId: string) {
-  return `http://localhost:8080/ai/chat?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`
+  return `${import.meta.env.VITE_BASE_API}/ai/chat?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`
 }
 
 export function regenerateItemAiApi(itemId: number) {

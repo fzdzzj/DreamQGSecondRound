@@ -11,14 +11,18 @@ export async function createSseStream(
   const res = await fetch(url, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('ACCESS_TOKEN')}`
+      Authorization: `Bearer ${localStorage.getItem('ACCESS_TOKEN') || ''}`
     },
     signal: controller.signal
   })
 
-  const reader = res.body!.getReader()
-  const decoder = new TextDecoder()
+  if (!res.ok || !res.body) {
+    handlers.onError('SSE连接失败')
+    return controller
+  }
 
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder('utf-8')
   let buffer = ''
 
   while (true) {
@@ -27,20 +31,45 @@ export async function createSseStream(
 
     buffer += decoder.decode(value, { stream: true })
 
-    let lines = buffer.split('\n')
-    buffer = lines.pop() || ''
+    // 一个完整 SSE 事件以 \n\n 结尾
+    const blocks = buffer.split('\n\n')
+    buffer = blocks.pop() || ''
 
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue
+    for (const block of blocks) {
+      // 跳过空块
+      if (!block.trim()) continue
 
-      const data = line.replace('data:', '').trim()
+      const lines = block.split('\n')
+      let eventName = 'message'
+      let data = ''
 
-      if (data === '[DONE]') {
-        handlers.onDone()
-        return
+      for (const line of lines) {
+        // 跳过空行
+        if (!line.trim()) continue
+
+        // 处理错误的SSE格式：移除所有"data:"前缀
+        let processedLine = line.trim()
+        while (processedLine.startsWith('data:')) {
+          processedLine = processedLine.replace('data:', '').trim()
+        }
+
+        if (processedLine.startsWith('event:')) {
+          eventName = processedLine.replace('event:', '').trim()
+        } else {
+          // 剩下的部分都是数据
+          data += processedLine
+        }
       }
 
-      handlers.onChunk(data)
+      if (eventName === 'message' && data) {
+        handlers.onChunk(data)
+      } else if (eventName === 'done') {
+        handlers.onDone()
+        return controller
+      } else if (eventName === 'error') {
+        handlers.onError(data || '流式响应异常')
+        return controller
+      }
     }
   }
 

@@ -22,7 +22,7 @@ export class WsClient {
   connect(): void {
     this.closedManually = false
     const token = encodeURIComponent(getAccessToken())
-    const url = `ws://localhost:8080/ws/private-chat?token=${token}`
+    const url = `${import.meta.env.VITE_WS_BASE}/ws/private-chat?token=${token}`
 
     this.socket = new WebSocket(url)
 

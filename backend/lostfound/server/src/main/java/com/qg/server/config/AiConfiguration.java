@@ -62,7 +62,7 @@ public class AiConfiguration {
                 .defaultTools(itemTools)
                 .defaultOptions(
                         ToolCallingChatOptions.builder()
-                                .internalToolExecutionEnabled(false) // 核心配置
+                                .internalToolExecutionEnabled(true) // 核心配置
                                 .build()
                 )
                 .build();

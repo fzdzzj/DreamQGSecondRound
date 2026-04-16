@@ -20,7 +20,14 @@
       <el-table-column prop="title" label="标题" />
       <el-table-column prop="location" label="地点" />
       <el-table-column prop="happenTime" label="时间" />
-      <el-table-column prop="statusDesc" label="状态" />
+      <el-table-column label="状态">
+        <template #default="scope">
+          <StatusTag
+            :type="itemStatusTagType(scope.row.status)"
+            :text="itemStatusText(scope.row.status, scope.row.statusDesc)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="120">
         <template #default="scope">
           <el-button link type="primary" @click="toDetail(scope.row.id)">查看</el-button>
@@ -45,6 +52,8 @@ import { usePagination } from '@/hooks/usePagination'
 import CommonTable from '@/components/common/CommonTable.vue'
 import CommonPagination from '@/components/common/CommonPagination.vue'
 import SearchForm from '@/components/common/SearchForm.vue'
+import StatusTag from '@/components/common/StatusTag.vue'
+import { itemStatusTagType, itemStatusText } from '@/utils/item'
 
 const router = useRouter()
 const list = ref<any[]>([])

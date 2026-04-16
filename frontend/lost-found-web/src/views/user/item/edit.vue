@@ -24,17 +24,35 @@
       </el-form-item>
 
       <el-form-item label="状态">
-        <el-input-number v-model="form.status" :min="1" :max="5" />
+        <el-select v-model="form.status">
+          <el-option label="开放中" value="1" />
+          <el-option label="已匹配" value="2" />
+          <el-option label="已关闭" value="3" />
+          <el-option label="已举报" value="4" />
+          <el-option label="已删除" value="5" />
+        </el-select>
       </el-form-item>
 
       <el-form-item label="图片">
         <ImageUpload @success="handleUploadSuccess" />
         <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
-          <el-image v-for="url in form.imageUrls" :key="url" :src="url" style="width: 80px; height: 80px" />
+          <div v-for="(url, index) in form.imageUrls" :key="url" style="position: relative">
+            <el-image :src="url" style="width: 80px; height: 80px" />
+            <el-button 
+              type="danger" 
+              size="small" 
+              circle 
+              style="position: absolute; top: -8px; right: -8px" 
+              @click="handleDeleteImage(index)"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </div>
       </el-form-item>
 
       <el-form-item>
+        <el-button @click="router.back()">返回</el-button>
         <el-button type="primary" @click="save">保存</el-button>
       </el-form-item>
     </el-form>
@@ -47,6 +65,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { getItemDetailApi, updateItemApi } from '@/api/item'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { showSuccess } from '@/utils/message'
+import { itemStatusText } from '@/utils/item'
+import { Delete } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,6 +90,10 @@ onMounted(async () => {
 
 const handleUploadSuccess = (url: string) => {
   form.imageUrls.push(url)
+}
+
+const handleDeleteImage = (index: number) => {
+  form.imageUrls.splice(index, 1)
 }
 
 const save = async () => {

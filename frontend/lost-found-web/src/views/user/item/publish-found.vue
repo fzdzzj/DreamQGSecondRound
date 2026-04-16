@@ -1,6 +1,9 @@
 <template>
   <div class="page-card">
-    <h2>发布拾取物品</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
+      <h2>发布拾取物品</h2>
+      <el-button @click="router.back()">返回</el-button>
+    </div>
 
     <el-form :model="form" label-width="100px">
       <el-form-item label="标题">

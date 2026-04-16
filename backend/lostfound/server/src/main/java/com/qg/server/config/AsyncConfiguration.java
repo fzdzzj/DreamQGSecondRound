@@ -34,6 +34,7 @@ public class AsyncConfiguration {
         executor.setWaitForTasksToCompleteOnShutdown(true);
         //初始化线程池
         executor.initialize();
+
         return executor;
     }
 }
