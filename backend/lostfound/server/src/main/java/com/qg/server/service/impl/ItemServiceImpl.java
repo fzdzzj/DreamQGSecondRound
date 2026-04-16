@@ -490,7 +490,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         }
 
         // 3. 执行软删除
-        delete(id);
+        bizItemDao.deleteById(item);
         // 4. 清除缓存
         evictItemCaches(id);
 

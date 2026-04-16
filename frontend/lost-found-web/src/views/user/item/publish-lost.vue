@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { publishLostItemApi } from '@/api/item'
 import ImageUpload from '@/components/upload/ImageUpload.vue'

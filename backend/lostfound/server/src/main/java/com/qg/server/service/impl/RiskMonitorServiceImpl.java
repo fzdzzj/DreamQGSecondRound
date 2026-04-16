@@ -177,11 +177,11 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
                 RiskConstant.RISK_TYPE_HIGH_VALUE_ITEM,
                 RiskConstant.RISK_LEVEL_HIGH,
                 "疑似贵重物品丢失",
-                "检测到贵重物品丢失，建议管理员关注冒领风险",
+                "检测到贵重物品"+item.getTitle()+"，描述为："+item.getDescription()+"丢失，建议管理员关注冒领风险",
                 item.getId(),
                 item.getUserId(),
                 item.getLocation(),
-                "{\"rule\":\"SENSITIVE_ITEM\"}"
+                "{\"rule\":\"HIGH_VALUE_ITEM\"}"
         );
     }
 
@@ -220,7 +220,7 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
                 RiskConstant.RISK_TYPE_PERIODIC_CLUSTER,
                 RiskConstant.RISK_LEVEL_MEDIUM,
                 "疑似地点聚集性丢失",
-                "近30分钟内同地点多次出现失物信息，建议管理员排查是否存在聚集性失窃",
+                "近30分钟内同地点多次出现失物信息"+item.getTitle()+"，描述为："+item.getDescription()+"，建议管理员排查是否存在聚集性失窃",
                 item.getId(),
                 item.getUserId(),
                 item.getLocation(),
@@ -275,7 +275,7 @@ public class RiskMonitorServiceImpl implements RiskMonitorService {
                 RiskConstant.RISK_TYPE_SENSITIVE_ITEM,
                 RiskConstant.RISK_LEVEL_HIGH,
                 "疑似敏感证件类物品丢失",
-                "检测到证件类敏感物品丢失，建议管理员关注冒领风险",
+                "检测到证件类敏感物品"+item.getTitle()+"，描述为："+item.getDescription()+"丢失，建议管理员关注冒领风险",
                 item.getId(),
                 item.getUserId(),
                 item.getLocation(),

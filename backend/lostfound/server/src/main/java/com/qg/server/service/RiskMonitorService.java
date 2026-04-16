@@ -17,7 +17,7 @@ public interface RiskMonitorService {
     void scanPeriodicClusterRisk();
 
     void onItemFound(BizItem item);
-    public void createRiskEvent(String riskType,
+    void createRiskEvent(String riskType,
                                 String riskLevel,
                                 String title,
                                 String content,

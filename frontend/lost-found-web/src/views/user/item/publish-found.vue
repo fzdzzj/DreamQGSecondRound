@@ -19,7 +19,7 @@
       </el-form-item>
 
       <el-form-item label="时间">
-        <el-date-picker v-model="form.happenTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
+        <el-date-picker v-model="form.happenTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
       </el-form-item>
 
       <el-form-item label="联系方式">
@@ -45,7 +45,7 @@ import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { publishFoundItemApi } from '@/api/item'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
-import { showSuccess } from '@/utils/message'
+import { showError, showSuccess, showWarning } from '@/utils/message'
 
 const router = useRouter()
 
@@ -63,8 +63,25 @@ const handleUploadSuccess = (url: string) => {
 }
 
 const submit = async () => {
-  await publishFoundItemApi(form)
-  showSuccess('发布成功')
-  router.push('/item/my')
+  try {
+    // 确保happenTime不为空
+    if (!form.happenTime) {
+      showError('请选择时间')
+      return
+    }
+    
+    // 转换时间格式（如果需要）
+    const submitData = {
+      ...form,
+      // 可以根据后端需要调整时间格式
+      happenTime: form.happenTime
+    }
+    
+    await publishFoundItemApi(submitData)
+    showSuccess('发布成功')
+    router.push('/item/my')
+  } catch (error) {
+    console.error('提交失败:', error)
+  }
 }
 </script>
