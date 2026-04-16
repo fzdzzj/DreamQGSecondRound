@@ -162,8 +162,9 @@ public class TokenFilter extends OncePerRequestFilter {
             return false;
         }
 
-        log.warn("当前请求：{} {}", method, uri);
-        log.warn("权限列表：{}", permissions);
+        log.info("当前请求：{} {}", method, uri);
+        log.info("权限列表：{}", permissions);
+
 
         return permissions.stream().anyMatch(permission -> {
             if (permission == null || permission.isBlank()) {

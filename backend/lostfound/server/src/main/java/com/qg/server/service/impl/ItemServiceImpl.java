@@ -9,6 +9,7 @@ import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.BizItemStatusEnum;
 import com.qg.common.exception.AbsentException;
+import com.qg.common.exception.BaseException;
 import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.result.PageResult;
@@ -409,6 +410,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     public PageResult<BizItemStatVO> myPageList(ItemPageQueryDTO query) {
 
         Long userId = BaseContext.getCurrentId();
+        log.error("分页查询物品开始,userId: {}", userId);
         //1.创建分页查询条件
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
@@ -467,25 +469,34 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 4.清除缓存
      */
     @Override
-    public void deleteItem(Long id) {
-        Long userId = BaseContext.getCurrentId();
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        log.info("删除物品开始,itemId: {}", id);
+        Long currentUserId = BaseContext.getCurrentId();
+        String currentRole = BaseContext.getCurrentRole();
+
         // 1. 检查物品是否存在
-        log.info("删除物品,itemId: {}", id);
-        BizItem item = getById(id);
+        BizItem item = bizItemDao.selectById(id);
         if (item == null) {
-            log.warn("物品不存在,itemId: {}", id);
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
         }
-        // 2. 检查物品是否属于当前用户或者管理员
-        if (!item.getUserId().equals(userId) || !BaseContext.getCurrentRole().equals(RoleConstant.ADMIN)) {
-            log.info("物品不属于当前用户，无法删除,itemId: {}", item.getUserId());
-            throw new DeletionNotAllowedException(MessageConstant.DELETE_NOT_ALLOWED);
+
+        // 2. 权限校验：只能删除自己的 或 管理员删除
+        boolean isOwner = item.getUserId().equals(currentUserId);
+        boolean isAdmin = RoleConstant.ADMIN.equals(currentRole);
+
+        if (!isOwner && !isAdmin) {
+            throw new UpdateNotAllowedException(MessageConstant.UPDATE_NOT_ALLOWED);
         }
-        // 3. 删除物品
-        removeById(id);
+
+        // 3. 执行软删除
+        delete(id);
         // 4. 清除缓存
         evictItemCaches(id);
+
+        log.info("删除物品成功,itemId: {}", id);
     }
+
 
     /**
      * 关闭物品

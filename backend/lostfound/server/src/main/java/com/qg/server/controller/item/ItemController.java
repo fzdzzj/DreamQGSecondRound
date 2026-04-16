@@ -109,7 +109,7 @@ public class ItemController {
     public Result<Void> deleteItem(@PathVariable Long id) {
         Long userId = BaseContext.getCurrentId();
         log.info("删除物品，物品ID={}, 用户ID={}", id, userId);
-        itemService.deleteItem(id);
+        itemService.delete(id);
         log.info("删除物品成功，物品ID={}, 用户ID={}", id, userId);
         return Result.success();
     }

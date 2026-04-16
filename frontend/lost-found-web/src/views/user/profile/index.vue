@@ -18,7 +18,18 @@
       <el-form-item label="头像">
         <ImageUpload @success="handleAvatarSuccess" />
         <div style="margin-top: 12px" v-if="form.avatar">
-          <el-image :src="form.avatar" style="width: 100px; height: 100px" />
+          <div style="position: relative; display: inline-block">
+            <el-image :src="form.avatar" style="width: 100px; height: 100px" />
+            <el-button 
+              type="danger" 
+              size="small" 
+              circle 
+              style="position: absolute; top: -8px; right: -8px" 
+              @click="handleDeleteAvatar"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </div>
       </el-form-item>
 
@@ -34,6 +45,7 @@ import { onMounted, reactive } from 'vue'
 import { getPersonalInfoApi, updatePersonalInfoApi } from '@/api/user'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { showSuccess } from '@/utils/message'
+import { Delete } from '@element-plus/icons-vue'
 
 const form = reactive<any>({
   nickname: '',
@@ -49,6 +61,10 @@ onMounted(async () => {
 
 const handleAvatarSuccess = (url: string) => {
   form.avatar = url
+}
+
+const handleDeleteAvatar = () => {
+  form.avatar = ''
 }
 
 const save = async () => {

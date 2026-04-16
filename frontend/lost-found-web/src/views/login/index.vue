@@ -90,10 +90,14 @@ const login = async () => {
     userStore.setLogin(res)
     await userStore.fetchProfile()
     router.push('/home')
+  } catch (error) {
+    // 错误已经在响应拦截器中处理，这里不需要额外处理
+    console.error('登录失败:', error)
   } finally {
     loading.value = false
   }
 }
+
 
 const sendCode = async () => {
   if (!form.identifier) {

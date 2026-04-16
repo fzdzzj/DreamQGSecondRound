@@ -43,7 +43,7 @@ public interface ItemService extends IService<BizItem> { // 继承 IService
      * 删除物品
      * @param id 物品ID
      */
-    void deleteItem(Long id);
+    void delete(Long id);
 
     /**
      * 分页查询物品列表
@@ -64,10 +64,27 @@ public interface ItemService extends IService<BizItem> { // 继承 IService
      * @param id 物品ID
      */
     void closeItem(Long id);
-
+    /**
+     * 清理过期的置顶物品
+     */
     void clearExpiredPinnedItems();
-
+    /**
+     * 保存物品和图片
+     * @param item 物品
+     * @param imageUrls 图片URL列表
+     */
     void saveItemAndImages(BizItem item, List<String> imageUrls);
+    /**
+     * 保存物品图片
+     * @param itemId 物品ID
+     * @param imageUrls 图片URL列表
+     */
     void saveItemImages(Long itemId, List<String> imageUrls);
+    /**
+     * 更新物品和图片
+     * @param id 物品ID
+     * @param item 物品
+     * @param imageUrls 图片URL列表
+     */
     void updateItemDb(Long id, BizItem item, List<String> imageUrls);
 }
