@@ -6,9 +6,13 @@ import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.server.ai.client.AdminStatisticsAiClient;
 import com.qg.server.ai.client.DescriptionClient;
 import com.qg.server.ai.client.ImageDescriptionClient;
+import com.qg.server.ai.memory.TemporaryChatMemory;
 import com.qg.server.ai.tools.ItemTools;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -51,11 +55,16 @@ public class AiConfiguration {
      * 回复客户端
      */
     @Bean
-    public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools) {
+    public ChatClient answerChatClient(OpenAiChatModel chatModel, ItemTools itemTools, TemporaryChatMemory temporaryChatMemory) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(AiPromptConstant.ANSWER_SYSTEM_PROMPT)
-                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .defaultAdvisors(new SimpleLoggerAdvisor(),new MessageChatMemoryAdvisor(temporaryChatMemory))
                 .defaultTools(itemTools)
+                .defaultOptions(
+                        ToolCallingChatOptions.builder()
+                                .internalToolExecutionEnabled(false) // 核心配置
+                                .build()
+                )
                 .build();
     }
     /**

@@ -79,11 +79,12 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      *            1. 构造物品实体（无事务）
      *            2. 核心事务只做DB操作
      *            3. 非DB操作全部移出事务（安全、不锁连接）
-     *            4. 发布 AI 生成事件（异步）
-     *            5. 风险检测
-     *            6. 清理缓存
+     *            4. 清理缓存
+     *            5. 发布 AI 生成事件（异步）
+     *            6. 风险检测
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void publishLostItem(LostBizItemDTO dto) {
         Long userId = BaseContext.getCurrentId();
         log.info("发布丢失物品,userId: {}", userId);
@@ -96,7 +97,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         getSelf().saveItemAndImages(item, dto.getImageUrls());
 
         log.info("发布物品成功,itemId: {}", item.getId());
-        // 4. 发布 AI 生成事件（异步）
+        // 4. 清理缓存
+        evictItemCaches(item.getId());
+        // 5. 发布 AI 生成事件（异步）
         applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
                 this,
                 item.getId(),
@@ -107,18 +110,16 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 buildImageItems(dto.getImageUrls())
         ));
 
-        // 5. 风险检测
+        // 6. 风险检测
         log.info("发布物品风险检测,itemId: {}", item.getId());
         riskMonitorService.onItemPublished(item);
-
-        // 6. 清理缓存
-        evictItemCaches(item.getId());
     }
 
     /**
      * 发布拾取物品（逻辑同丢失物品,仅少一个风险检测）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void publishFoundItem(LostBizItemDTO dto) {
         Long userId = BaseContext.getCurrentId();
         // 1. 构造物品实体（无事务）
@@ -129,7 +130,9 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 2. 核心事务只做DB操作
         getSelf().saveItemAndImages(item, dto.getImageUrls());
         log.info("发布物品成功,itemId: {}", item.getId());
-        // 3. 发布 AI 生成事件（异步）
+        // 3. 清理缓存
+        evictItemCaches(item.getId());
+        // 4. 发布 AI 生成事件（异步）
         applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
                 this,
                 item.getId(),
@@ -139,8 +142,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
-        // 4. 清理缓存
-        evictItemCaches(item.getId());
     }
 
     /**
@@ -152,6 +153,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      * 5. 清理缓存
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateItem(Long id, UpdateBizItemDTO dto) {
         Long userId = BaseContext.getCurrentId();
 
@@ -233,6 +235,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 2. 缓存不存在，从 DB 中获取
         BizItemDetailVO vo = new BizItemDetailVO();
         BeanUtils.copyProperties(item, vo);
+        vo.setContactMethod(item.getContactMethod());
         // 3. 敏感词过滤
         if (ownerId.equals(BaseContext.getCurrentId())) {
             log.info("从数据库中获取物品详情,itemId: {}", id);

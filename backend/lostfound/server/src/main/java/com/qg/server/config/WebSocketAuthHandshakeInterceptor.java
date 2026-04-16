@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
@@ -37,14 +39,25 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    org.springframework.web.socket.WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) {
+        String token = null;
+        // 从请求头中获取 JWT 令牌
         String auth = request.getHeaders().getFirst("Authorization");
+        if (auth != null && auth.startsWith("Bearer ")) {
+            token = auth.substring(7);
+        }
 
-        if (auth == null || !auth.startsWith("Bearer ")) {
+        if (token == null || token.isBlank()) {
+            MultiValueMap<String, String> queryParams =
+                    UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
+            token = queryParams.getFirst("token");
+        }
+
+        if (token == null || token.isBlank()) {
             return false;
         }
 
         try {
-            String token = auth.substring(7);
+            // 解析 JWT 令牌，获取用户 ID
             Long userId = jwtUtil.getUserIdFromToken(token);
 
             if (userId == null) {
@@ -54,7 +67,7 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
             if(user == null|| UserStatusConstant.DISABLE.equals(user.getStatus())){
                 return false;
             }
-
+            // 将用户 ID 放入 attributes 中
             attributes.put("userId", userId);
             return true;
 

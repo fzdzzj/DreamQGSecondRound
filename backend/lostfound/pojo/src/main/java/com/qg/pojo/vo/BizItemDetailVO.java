@@ -37,4 +37,6 @@ public class BizItemDetailVO implements Serializable {
     private List<String> aiTags;
     @Schema(description = "物品AI描述")
     private String aiDescription;
+    @Schema(description = "联系方式")
+    private String contactMethod;
 }

@@ -54,25 +54,24 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
     @Override
     public void createClaimRequest(BizClaimRequestDTO request) {
         //1. 检测物品是否存在
-        BizItem item = itemDao.selectById(new LambdaQueryWrapper<BizItem>()
-                .eq(BizItem::getId, request.getItemId())
-        );
+        BizItem item = itemDao.selectById(request.getItemId());
         if (item == null) {
             log.warn("物品 {} 不存在", request.getItemId());
             throw new BaseException(MessageConstant.ITEM_NOT_FOUND);
         }
-        //2.创建认领申请
+
+        // 2. 创建认领申请
         BizClaimRequest bizClaimRequest = new BizClaimRequest();
         BeanUtils.copyProperties(request, bizClaimRequest);
         bizClaimRequest.setApplicantId(BaseContext.getCurrentId());
         bizClaimRequest.setStatus(BizClaimRequestStatusConstant.PENDING);
-        //3. 获取物品拥有者ID
-        Long ownerId = itemDao.selectOne(new LambdaQueryWrapper<BizItem>()
-                .eq(BizItem::getId, request.getItemId())
-        ).getUserId();
+
+        // 3. 直接从已查询的 item 中获取用户ID（不需要再查一次数据库！）
+        Long ownerId = item.getUserId();
         log.info("物品拥有者ID: {}", ownerId);
         bizClaimRequest.setOwnerId(ownerId);
-        //4. 保存认领申请
+
+        // 4. 保存认领申请
         save(bizClaimRequest);
         log.info("创建认领申请成功: {}", bizClaimRequest);
     }
@@ -87,11 +86,7 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
     @Override
     public List<BizClaimRequestVO> getPendingRequests() {
         //1.获取当前用户的认领申请
-        List<BizClaimRequest> requests = list(new LambdaQueryWrapper<BizClaimRequest>()
-                .eq(BizClaimRequest::getStatus, BizClaimRequestStatusConstant.PENDING)
-                .eq(BizClaimRequest::getOwnerId, BaseContext.getCurrentId())
-                .or().eq(BizClaimRequest::getApplicantId, BaseContext.getCurrentId())
-        );
+        List<BizClaimRequest> requests = list(new LambdaQueryWrapper<BizClaimRequest>().eq(BizClaimRequest::getStatus, BizClaimRequestStatusConstant.PENDING).eq(BizClaimRequest::getOwnerId, BaseContext.getCurrentId()).or().eq(BizClaimRequest::getApplicantId, BaseContext.getCurrentId()));
         log.info("待处理的认领申请: 大小{}", requests.size());
         return requests.stream().map(request -> {
             BizClaimRequestVO vo = new BizClaimRequestVO();
