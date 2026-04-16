@@ -31,7 +31,7 @@ public class UserActionLog implements Serializable {
     /**
      * 操作类型
      * 对应字段：action_type，非空
-     * 1：CLAIM / 2：EDIT_POST / 3.POST
+     * 1：CLAIM / 2：EDIT_POST / 3.POST / 4.ADMIN_CLAIM
      */
     private String actionType;
 

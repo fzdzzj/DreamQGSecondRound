@@ -147,7 +147,7 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
         updateById(updateUser);
         log.info("更新用户状态成功，userId={}, oldStatus={}, newStatus={}",
                 userId, user.getStatus(), UserStatusConstant.DISABLE);
-        banUser(userId, null);
+        banUser(userId,"4");
         // 4. 关闭该用户所有物品
         List<BizItem> items = bizItemDao.selectList(new LambdaQueryWrapper<BizItem>()
                 .eq(BizItem::getUserId, userId));
