@@ -54,6 +54,7 @@
           <el-descriptions-item label="AI状态">
             {{ aiStatusText(detail.aiStatus) }}
           </el-descriptions-item>
+          
 
           <el-descriptions-item label="AI标签">
             <template v-if="detail.aiTags?.length">
@@ -72,10 +73,24 @@
       {{ detail.description || '-' }}
     </div>
 
-    <el-divider>AI描述</el-divider>
-    <div style="white-space: pre-wrap; line-height: 1.8">
-      {{ detail.aiDescription || '-' }}
-    </div>
+<el-divider>
+  AI描述
+  <el-button
+    v-if="canRegenerate"
+    type="primary"
+    size="small"
+    style="margin-left: 12px"
+    @click="regenerateAi"
+    :loading="aiLoading"
+  >
+    重新生成
+  </el-button>
+</el-divider>
+
+<div style="white-space: pre-wrap; line-height: 1.8">
+  {{ detail.aiDescription || '暂无AI描述' }}
+</div>
+
 
     <div style="margin-top: 20px">
       <el-button @click="openClaimDialog">认领</el-button>
@@ -169,10 +184,41 @@ import { showSuccess } from '@/utils/message'
 import { aiStatusText, itemStatusTagType, itemStatusText, itemTypeText } from '@/utils/item'
 import StatusTag from '@/components/common/StatusTag.vue'
 import CommentTree from '@/components/comment/CommentTree.vue'
-
+import { regenerateItemAiApi } from '@/api/ai'
+import { useUserStore } from '@/stores/user'
+import { computed } from 'vue'
 const route = useRoute()
 const router = useRouter()
 const itemId = Number(route.params.id)
+
+const userStore = useUserStore()
+
+const aiLoading = ref(false)
+
+const canRegenerate = computed(() => {
+  const isOwner = detail.value.userId === userStore.userInfo?.id
+  const isAdmin = userStore.userInfo?.role === '2'
+
+  const aiStatus = detail.value.aiStatus
+
+  return (
+    (isOwner || isAdmin) &&
+    (aiStatus === 2 || aiStatus === 3)
+  )
+})
+const regenerateAi = async () => {
+  aiLoading.value = true
+  try {
+    await regenerateItemAiApi(itemId)
+    showSuccess('已提交重新生成任务')
+
+    // 关键：重新拉详情（因为是异步生成）
+    await loadDetail()
+  } finally {
+    aiLoading.value = false
+  }
+}
+
 
 const detail = ref<any>({
   imageUrls: [],

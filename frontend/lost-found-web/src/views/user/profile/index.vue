@@ -37,6 +37,10 @@
         <el-button type="primary" @click="save">保存</el-button>
       </el-form-item>
     </el-form>
+    <el-button type="warning" @click="$router.push('/profile/change-password')">
+  修改密码
+</el-button>
+
   </div>
 </template>
 

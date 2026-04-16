@@ -7,6 +7,10 @@ const routes = [
     path: '/login',
     component: () => import('@/views/login/index.vue')
   },
+  {
+    path: '/register',
+    component: () => import('@/views/register/index.vue')
+  },
 
   // 用户端
   {
@@ -23,7 +27,8 @@ const routes = [
       { path: 'ai', component: () => import('@/views/user/ai/index.vue') },
       { path: 'message', component: () => import('@/views/user/message/index.vue') },
       { path: 'notification', component: () => import('@/views/user/notification/index.vue') },
-      { path: 'profile', component: () => import('@/views/user/profile/index.vue') }
+      { path: 'profile', component: () => import('@/views/user/profile/index.vue') },
+      { path: 'profile/change-password', component: () => import('@/views/user/profile/change-password.vue') }
     ]
   },
 

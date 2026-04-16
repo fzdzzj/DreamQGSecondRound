@@ -43,6 +43,12 @@ export const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: 'profile/change-password',
+    component: () => import('@/views/user/profile/change-password.vue'),
+    meta: { title: '修改密码', requiresAuth: true }
+  },
+
+  {
     path: '/',
     component: () => import('@/layouts/UserLayout.vue'),
     meta: {

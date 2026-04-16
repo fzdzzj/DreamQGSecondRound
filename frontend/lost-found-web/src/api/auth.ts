@@ -16,3 +16,14 @@ export function logoutApi() {
     }
   })
 }
+export interface ChangePasswordDTO {
+  email: string
+  code: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export function changePasswordApi(data: ChangePasswordDTO) {
+  return request.post('/auth/change-password', data)
+}
+
