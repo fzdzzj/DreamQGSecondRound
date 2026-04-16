@@ -118,7 +118,7 @@ public class CommentController {
      */
     @GetMapping("/item/{itemId}/unread")
     @Operation(summary = "获取物品下未读留言数量")
-    public Result<UnreadCountVO> getUnreadCount(@PathVariable Long itemId) {
+    public Result<UnreadCountVO> getUnreadCount(@PathVariable("itemId") Long itemId) {
         log.info("查询物品下未读留言数量，itemId={}", itemId);
         Long count = commentService.getUnreadCount(itemId);
         log.info("查询物品下未读留言数量成功，itemId={}, count={}", itemId, count);

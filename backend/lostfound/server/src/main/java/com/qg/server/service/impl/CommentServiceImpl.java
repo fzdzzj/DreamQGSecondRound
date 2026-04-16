@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 留言服务实现类
@@ -333,6 +334,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         Long userId = BaseContext.getCurrentId();
         // 1. 判断物品是否存在
         BizItem item = bizItemDao.selectById(itemId);
+        log.info("物品信息={}", item);
         if (item == null) {
             log.warn("物品不存在，itemId={}", itemId);
             throw new AbsentException(MessageConstant.ITEM_NOT_FOUND);
@@ -341,7 +343,7 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
         // 2. 查询物品下未读留言数量
         if (!item.getUserId().equals(userId)) {
             log.warn("非物品拥有者，无法获取物品下未读留言数量，itemId={}, userId={}", itemId, userId);
-            throw new AbsentException(MessageConstant.UPDATE_NOT_ALLOWED);
+            throw new AbsentException("非物品拥有者，无法获取物品下未读留言数量");
         }
         // 3. 返回未读留言数量
         Long count = count(
@@ -372,12 +374,13 @@ public class CommentServiceImpl extends ServiceImpl<BizCommentDao, BizComment> i
             log.warn("用户没有发布物品，无法查询用户未读留言数量，userId={}", userId);
             return 0L;
         }
-        log.info("用户发布物品数量={}", items.size());
+        List<Long> itemIds = items.stream().map(BizItem::getId).collect(Collectors.toList());
+        log.info("用户发布物品数量={}", itemIds.size());
         // 2. 找出用户未读的留言
         List<BizComment> comments = bizCommentDao.selectList(
                 new LambdaQueryWrapper<BizComment>()
                         .eq(BizComment::getIsRead, ReadStatusConstant.UNREAD)
-                        .in(BizComment::getItemId, items)
+                        .in(BizComment::getItemId, itemIds)
         );
         // 3. 返回未读留言数量
         Long count = (long) comments.size();

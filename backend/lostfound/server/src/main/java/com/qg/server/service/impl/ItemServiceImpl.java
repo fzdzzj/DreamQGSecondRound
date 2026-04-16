@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -311,14 +312,22 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      */
     @Override
     public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
-        String cacheKey = String.format(RedisConstant.ITEM_PAGE_KEY_FORMAT, query.getPageNum(),
+// 时间格式化工具
+// 时间格式化（固定格式，保证时间不同 Key 一定不同）
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        String cacheKey = String.format(RedisConstant.ITEM_PAGE_KEY_FORMAT,
+                query.getPageNum(),
                 query.getPageSize(),
                 query.getType() == null ? "all" : query.getType(),
                 query.getKeyword() == null ? "" : query.getKeyword().trim(),
                 query.getLocation() == null ? "" : query.getLocation().trim(),
                 query.getAiCategory() == null ? "" : query.getAiCategory().trim(),
-                query.getStartTime() == null ? "" : query.getStartTime().toString(),
-                query.getEndTime() == null ? "" : query.getEndTime().toString());
+                // 👇 重点修复：不要用 toString()！
+                query.getStartTime() == null ? "" : query.getStartTime().format(formatter),
+                query.getEndTime() == null ? "" : query.getEndTime().format(formatter)
+        );
+        log.info("从缓存中获取物品分页结果,key: {}", cacheKey);
         // 1.尝试从缓存获取
         PageResult<BizItemStatVO> cached = (PageResult<BizItemStatVO>) redisTemplate.opsForValue().get(cacheKey);
         if (cached != null) {

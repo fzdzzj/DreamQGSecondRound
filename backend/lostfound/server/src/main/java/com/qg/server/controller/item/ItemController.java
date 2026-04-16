@@ -120,9 +120,9 @@ public class ItemController {
      * @param query 分页查询参数
      * @return 分页查询结果
      */
-    @GetMapping
+    @PostMapping
     @Operation(summary = "分页查询列表")
-    public Result<PageResult<BizItemStatVO>> page(@Validated  ItemPageQueryDTO query) {
+    public Result<PageResult<BizItemStatVO>> page(@Validated @RequestBody ItemPageQueryDTO query) {
         log.info("分页查询列表，请求参数={}", query);
         PageResult<BizItemStatVO> pageResult = itemService.pageList(query);
         log.info("分页查询列表成功，大小={}, 总记录数={}", pageResult.getPageSize(), pageResult.getTotal());
