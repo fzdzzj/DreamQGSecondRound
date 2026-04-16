@@ -101,11 +101,9 @@ public class CommonController {
     public Result<Void> changePasswordByCode(@Validated @RequestBody ChangePasswordByCodeDTO dto,
                                              HttpServletRequest request,
                                              @RequestHeader(value = "Refresh-Token", required = false) String refreshToken) {
-        Long userId = BaseContext.getCurrentId();
-        log.info("验证码修改密码，用户ID={}", userId);
 
         // 核心：验证码修改密码（内部校验邮箱、验证码、类型）
-        userService.changePasswordByCode(userId, dto);
+        userService.changePasswordByCode( dto);
 
         // 修改密码后强制重新登录
         String authHeader = request.getHeader("Authorization");
@@ -113,7 +111,7 @@ public class CommonController {
         tokenRefreshService.addTokenToBlacklist(accessToken);
         tokenRefreshService.addTokenToBlacklist(refreshToken);
 
-        log.info("验证码修改密码成功，token已拉黑，用户ID={}", userId);
+        log.info("验证码修改密码成功，token已拉黑，邮箱={}", dto.getEmail());
         return Result.success();
     }
 

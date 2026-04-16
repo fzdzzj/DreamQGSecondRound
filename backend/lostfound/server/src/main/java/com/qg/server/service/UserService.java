@@ -54,9 +54,8 @@ public interface UserService extends IService<SysUser> {
     /**
      * 通过验证码修改密码
      *
-     * @param userId 用户ID
      * @param dto    验证码和密码的DTO
      */
-    void changePasswordByCode(Long userId, ChangePasswordByCodeDTO dto);
+    void changePasswordByCode(ChangePasswordByCodeDTO dto);
 
 }

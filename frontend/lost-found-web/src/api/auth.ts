@@ -24,6 +24,6 @@ export interface ChangePasswordDTO {
 }
 
 export function changePasswordApi(data: ChangePasswordDTO) {
-  return request.post('/auth/change-password', data)
+  return request.post('/common/change-password', data)
 }
 

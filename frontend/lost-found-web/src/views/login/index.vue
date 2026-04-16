@@ -39,6 +39,7 @@
         <div class="flex-between">
           <span></span>
           <el-button link type="primary" @click="goRegister">去注册</el-button>
+          <el-button link type="primary" @click="$router.push('/profile/change-password')">忘记密码</el-button>
         </div>
       </el-form>
     </el-card>
