@@ -103,7 +103,7 @@ const sendCode = async () => {
 
   await sendEmailCodeApi({
     email: form.identifier,
-    type: 'LOGIN'
+    type: '2' // 改为数字字符串
   })
 
   showSuccess('验证码已发送')
