@@ -154,7 +154,7 @@ public class TokenFilter extends OncePerRequestFilter {
     }
 
     private boolean hasPermission(String uri, String method, String role, Set<String> permissions) {
-        if (RoleConstant.ADMIN.equals(role) || RoleConstant.SYSTEM.equals(role)) {
+        if (RoleConstant.SYSTEM.equals(role)) {
             return true;
         }
 

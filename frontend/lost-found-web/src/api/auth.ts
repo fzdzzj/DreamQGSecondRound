@@ -1,6 +1,6 @@
 import request from './request'
 import type { LoginDTO, LoginResponseVO, RegisterDTO } from '@/types/auth'
-
+import { getRefreshToken } from '@/utils/token'
 export function loginApi(data: LoginDTO) {
   return request.post<unknown, LoginResponseVO>('/auth/login', data)
 }
@@ -10,5 +10,9 @@ export function registerApi(data: RegisterDTO) {
 }
 
 export function logoutApi() {
-  return request.post('/auth/logout', null)
+  return request.post('/auth/logout', null, {
+    headers: {
+      'Refresh-Token': getRefreshToken()
+    }
+  })
 }
