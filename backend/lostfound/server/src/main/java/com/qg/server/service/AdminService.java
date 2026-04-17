@@ -2,12 +2,17 @@ package com.qg.server.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.qg.common.result.PageResult;
+import com.qg.pojo.dto.AdminAiStatisticsQueryDTO;
 import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
 import com.qg.pojo.entity.SysUser;
+import com.qg.pojo.vo.AdminAiStatisticsVO;
 import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
+
+import java.util.List;
+
 /**
  * 管理员服务
  */
@@ -57,4 +62,9 @@ public interface AdminService extends IService<SysUser> {
      * @return 统计结果
      */
     AdminStatisticsVO statistics(AdminStatisticsQueryDTO queryDTO);
+    /**
+     * AI统计报告
+     *
+     */
+    PageResult<AdminAiStatisticsVO> aiStatistics(AdminAiStatisticsQueryDTO dto);
 }

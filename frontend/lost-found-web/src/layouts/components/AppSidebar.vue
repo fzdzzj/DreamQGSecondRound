@@ -22,6 +22,7 @@
         <el-menu-item index="/admin/pin">置顶审核</el-menu-item>
         <el-menu-item index="/admin/risk">风险事件</el-menu-item>
         <el-menu-item index="/admin/item">物品管理</el-menu-item>
+        <el-menu-item index="/admin/ai-statistics">AI统计</el-menu-item>
         <el-menu-item index="/admin/log">操作日志</el-menu-item>
       </template>
 

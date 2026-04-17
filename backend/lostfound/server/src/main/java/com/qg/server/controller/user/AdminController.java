@@ -2,8 +2,10 @@ package com.qg.server.controller.user;
 
 import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
+import com.qg.pojo.dto.AdminAiStatisticsQueryDTO;
 import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
+import com.qg.pojo.vo.AdminAiStatisticsVO;
 import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
@@ -14,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 管理员接口
@@ -117,5 +121,13 @@ public class AdminController {
         log.info("管理员请求平台统计成功,size={}", vo.getFoundCount());
         return Result.success(vo);
     }
-
+    @PostMapping("/aiStatistics")
+    @Operation(summary = "AI统计报告")
+    public Result<PageResult<AdminAiStatisticsVO>> aiStatistics(@RequestBody(required = false) AdminAiStatisticsQueryDTO dto) {
+        log.info("管理员请求AI统计");
+        PageResult<AdminAiStatisticsVO> pageResult = adminService.aiStatistics(dto);
+        log.info("管理员请求AI统计成功,total={}, pageNum={}, pageSize={}",
+                pageResult.getTotal(), pageResult.getPageNum(), pageResult.getPageSize());
+        return Result.success(pageResult);
+    }
 }

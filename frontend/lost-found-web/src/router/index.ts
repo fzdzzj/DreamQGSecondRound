@@ -39,6 +39,10 @@ const routes = [
     component: AdminLayout,
     children: [
       {
+        path: 'ai-statistics',
+        component: () => import('@/views/admin/ai-statistics/index.vue')
+      },
+      {
         path: 'dashboard',
         component: () => import('@/views/admin/dashboard/index.vue')
       },

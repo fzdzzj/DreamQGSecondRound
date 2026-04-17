@@ -142,6 +142,7 @@ export const routes: RouteRecordRaw[] = [
       }
     ]
   },
+
   {
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),
@@ -155,6 +156,14 @@ export const routes: RouteRecordRaw[] = [
       return isAdminRole(role) ? true : '/403'
     },
     children: [
+      {
+        path: 'ai-statistics',
+        component: () => import('@/views/admin/ai-statistics/index.vue'),
+        meta: {
+          title: 'AI统计',
+          icon: 'DataAnalysis'
+        }
+      },
       {
         path: 'log',
         name: 'AdminLog',

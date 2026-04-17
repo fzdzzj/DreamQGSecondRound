@@ -43,7 +43,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusDays(1).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
-        generateReport(today, start, end, "DAILY");
+        generateReport(today, start, end, "1");
     }
 
     // 每周报表
@@ -52,7 +52,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusWeeks(1).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
-        generateReport(today, start, end, "WEEKLY");
+        generateReport(today, start, end, "2");
     }
 
     @Override
@@ -60,7 +60,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusMonths(1).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
-        generateReport(today, start, end, "MONTHLY");
+        generateReport(today, start, end, "3");
     }
 
     /**
@@ -107,9 +107,9 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         report.setModelName(aiProperties.getModel());
         log.info("保存报表，statDate={}, start={}, end={}", statDate, start, end);
         if (summary.equals(MessageConstant.AI_GENERATE_FAILED)) {
-            report.setStatus("1");
-        } else {
             report.setStatus("0");
+        } else {
+            report.setStatus("1");
         }
         log.info("保存报表完成，statDate={}, start={}, end={}", statDate, start, end);
         bizAiStatisticsReportDao.insert(report);

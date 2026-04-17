@@ -8,14 +8,18 @@ import com.qg.common.enums.UserRoleEnum;
 import com.qg.common.enums.UserStatusEnum;
 import com.qg.common.exception.AbsentException;
 import com.qg.common.result.PageResult;
+import com.qg.pojo.dto.AdminAiStatisticsQueryDTO;
 import com.qg.pojo.dto.AdminStatisticsQueryDTO;
 import com.qg.pojo.dto.UserPageQueryDTO;
+import com.qg.pojo.entity.BizAiStatisticsReport;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.SysUser;
 import com.qg.pojo.entity.UserActionLog;
+import com.qg.pojo.vo.AdminAiStatisticsVO;
 import com.qg.pojo.vo.AdminStatisticsVO;
 import com.qg.pojo.vo.SysUserDetailVO;
 import com.qg.pojo.vo.SysUserStatVO;
+import com.qg.server.mapper.BizAiStatisticsReportDao;
 import com.qg.server.mapper.BizItemDao;
 import com.qg.server.mapper.UserDao;
 import com.qg.server.service.AdminService;
@@ -31,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 管理员服务实现类
@@ -44,6 +49,7 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
 
     private final BizItemDao bizItemDao;
     private final UserDao userDao;
+    private final BizAiStatisticsReportDao bizAiStatisticsReportDao;
     private final UserService userService;
     private final OperationLogService operationLogService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -302,6 +308,33 @@ public class AdminServiceImpl extends ServiceImpl<UserDao, SysUser> implements A
                 vo.getPublishCount(), vo.getFoundCount(), vo.getActiveUserCount());
 
         return vo;
+    }
+    /**
+     * AI统计
+     *
+     * @param dto 查询条件
+     * @return 统计结果
+     * 1. 构建查询条件
+     * 2. 查询数据
+     * 3. 转换结果
+     * 4. 返回结果
+     */
+    @Override
+    public PageResult<AdminAiStatisticsVO> aiStatistics(AdminAiStatisticsQueryDTO dto) {
+        log.info("管理员请求AI统计，statDate={}, statType={}", dto.getStatDate(), dto.getStatType());
+        // 1. 构建查询条件 2. 查询数据
+        Page<BizAiStatisticsReport> pageResult = bizAiStatisticsReportDao.selectPage(new Page<>(dto.getPageNum(), dto.getPageSize()),
+                new LambdaQueryWrapper<BizAiStatisticsReport>()
+                        .eq(dto.getStatDate() != null,BizAiStatisticsReport::getStatDate, dto.getStatDate())
+                        .eq(dto.getStatType() != null,BizAiStatisticsReport::getStatType, dto.getStatType()));
+        // 3. 转换结果
+        PageResult<AdminAiStatisticsVO> pageResultVO = new PageResult<>(pageResult.getRecords().stream().map(item -> {
+            AdminAiStatisticsVO vo = new AdminAiStatisticsVO();
+            BeanUtils.copyProperties(item, vo);
+            return vo;
+        }).collect(Collectors.toList()), pageResult.getTotal(), dto.getPageNum(), dto.getPageSize());
+        // 4. 返回结果
+        return pageResultVO;
     }
 
     /**
