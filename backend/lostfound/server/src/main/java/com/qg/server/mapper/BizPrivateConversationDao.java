@@ -17,4 +17,12 @@ public interface BizPrivateConversationDao extends BaseMapper<BizPrivateConversa
      * @return 私聊记录对象
      */
     BizPrivateConversation selectByUserIdAndPeerId(@Param("userId") Long userId, @Param("peerId") Long peerId);
+    /**
+     * 删除私聊记录
+     * @param currentUserId 当前用户ID
+     * @param peerId 对话用户ID
+     */
+    void deleteConversation(@Param("currentUserId") Long currentUserId,
+                            @Param("peerId") Long peerId);
+
 }

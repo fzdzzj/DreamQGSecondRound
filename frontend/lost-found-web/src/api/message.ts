@@ -12,7 +12,7 @@ export function getPrivateMessageHistoryApi(peerId: number, lastMessageId?: numb
 }
 
 export function markConversationReadApi(peerId: number) {
-  return request.put(`/message/conversation/${peerId}/read`)
+  return request.put(`/message/${peerId}/read`)
 }
 
 export function getConversationListApi() {

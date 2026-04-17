@@ -270,6 +270,7 @@ public class PrivateMessageServiceImpl extends ServiceImpl<BizPrivateMessageDao,
         // 3. 删除会话
         privateMessageDao.markConversationDeletedForSender(currentUserId, peerId);
         privateMessageDao.markConversationDeletedForReceiver(currentUserId, peerId);
+        privateConversationDao.deleteConversation(currentUserId, peerId);
         // 4. 给发送方推送未读数变化
         long totalUnread = getUnreadCountByUserId(currentUserId);
         privateChatWebSocketHandler.sendToUser(

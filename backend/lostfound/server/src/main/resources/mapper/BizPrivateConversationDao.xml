@@ -10,5 +10,9 @@
         WHERE user_id = #{userId}
           AND peer_id = #{peerId}
     </select>
-
+    <delete id="deleteConversation">
+        DELETE FROM biz_private_conversation
+        WHERE user_id = #{currentUserId}
+          AND peer_id = #{peerId}
+    </delete>
 </mapper>
