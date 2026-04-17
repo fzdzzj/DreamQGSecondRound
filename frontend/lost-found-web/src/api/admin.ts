@@ -4,7 +4,7 @@ import type { PageResult } from '@/types/common'
 import type { SysUserDetailVO, SysUserStatVO } from '@/types/user'
 
 export function getAdminUserPageApi(params: Record<string, unknown>) {
-  return request.get<unknown, PageResult<SysUserStatVO>>('/admin/user', { params })
+  return request.post<unknown, PageResult<SysUserStatVO>>('/admin/user', params)
 }
 
 export function getAdminUserDetailApi(id: number) {
@@ -20,9 +20,9 @@ export function enableAdminUserApi(id: number) {
 }
 
 export function adminDeleteItemApi(id: number) {
-  return request.delete(`/admin/item/${id}`)
+  return request.delete(`/item/${id}`)
 }
 
 export function getAdminStatisticsApi(params?: { startTime?: string; endTime?: string }) {
-  return request.get<unknown, AdminStatisticsVO>('/admin/statistics', { params })
+  return request.post<unknown, AdminStatisticsVO>('/admin/statistics', params || {})
 }

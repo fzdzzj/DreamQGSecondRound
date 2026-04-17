@@ -42,6 +42,10 @@ const routes = [
         component: () => import('@/views/admin/dashboard/index.vue')
       },
       {
+        path: 'item/list',
+        component: () => import('@/views/user/item/list.vue')
+      },
+      {
         path: 'user',
         component: () => import('@/views/admin/user/index.vue')
       },

@@ -22,6 +22,14 @@ service.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (config.method === 'post' || config.method === 'put' || config.method === 'patch') {
     config.headers['Content-Type'] = 'application/json'
   }
+  // 添加调试信息
+  console.log('请求配置:', {
+    url: config.url,
+    method: config.method,
+    headers: config.headers,
+    params: config.params,
+    data: config.data
+  })
   return config
 })
 
