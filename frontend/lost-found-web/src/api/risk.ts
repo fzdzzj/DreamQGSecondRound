@@ -2,8 +2,8 @@ import request from './request'
 import type { BizRiskEvent, RiskHandleDTO } from '@/types/risk'
 import type { PageResult } from '@/types/common'
 
-export function getRiskPageApi(params: Record<string, unknown>) {
-  return request.get<unknown, PageResult<BizRiskEvent>>('/admin/risk', { params })
+export function getRiskPageApi(params: RiskQueryParams) {
+  return request.get('/admin/risk', { params })
 }
 
 export function getRiskDetailApi(id: number) {
@@ -13,3 +13,12 @@ export function getRiskDetailApi(id: number) {
 export function handleRiskApi(id: number, data: RiskHandleDTO) {
   return request.put(`/admin/risk/${id}/handle`, data)
 }
+// src/api/risk.ts
+export interface RiskQueryParams {
+  pageNum?: number
+  pageSize?: number
+  handleStatus?: string
+  riskType?: string
+}
+
+

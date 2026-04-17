@@ -81,8 +81,8 @@ const loading = ref(false)
 const query = reactive({
   keyword: '',
   location: '',
-  type: undefined,
-  aiCategory: ''
+  type: '',
+  aiCategory: '',
 })
 
 const dateRange = ref<string[]>([])
@@ -97,7 +97,7 @@ const load = async () => {
       pageSize: pageSize.value,
       keyword: query.keyword,
       location: query.location,
-      type: query.type?.toString(),
+      type:  query.type || undefined,
       aiCategory: query.aiCategory,
       startTime: dateRange.value[0] ? `${dateRange.value[0]} 00:00:00` : undefined,
       endTime: dateRange.value[1] ? `${dateRange.value[1]} 23:59:59` : undefined
@@ -115,7 +115,7 @@ const load = async () => {
 const reset = () => {
   query.keyword = ''
   query.location = ''
-  query.type = undefined
+  query.type = ''
   query.aiCategory = ''
   dateRange.value = []
   pageNum.value = 1

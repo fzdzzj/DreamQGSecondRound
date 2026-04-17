@@ -29,6 +29,7 @@ const routes = [
       { path: 'notification', component: () => import('@/views/user/notification/index.vue') },
       { path: 'profile', component: () => import('@/views/user/profile/index.vue') },
       { path: 'profile/change-password', component: () => import('@/views/user/profile/change-password.vue') }
+      , { path: 'claim/pending', component: () => import('@/views/user/claim/pending.vue') }
     ]
   },
 

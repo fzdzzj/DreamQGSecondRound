@@ -11,6 +11,7 @@
         <el-menu-item index="/message">私信</el-menu-item>
         <el-menu-item index="/notification">通知</el-menu-item>
         <el-menu-item index="/profile">个人中心</el-menu-item>
+        <el-menu-item index="/claim/pending">待处理物品管理</el-menu-item>
       </template>
 
       <!-- 管理端 -->

@@ -5,10 +5,12 @@ export function createClaimApi(data: BizClaimRequestDTO) {
   return request.post('/biz/claim', data)
 }
 
-export function getPendingClaimApi() {
-  return request.get<unknown, BizClaimRequestVO[]>('/biz/claim/pending')
+// 查询当前用户所有待审批申请
+export function getPendingClaimRequestsApi() {
+  return request.get('/biz/claim/pending')
 }
 
-export function auditClaimApi(id: number, data: ApproveRequestDTO) {
-  return request.put(`/biz/claim/${id}/audit`, data)
+// 审批单条认领申请
+export function approveClaimRequestApi(id: number, data: ApproveRequestDTO) {
+  return request.post(`/claim/${id}/audit`, data)
 }

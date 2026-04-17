@@ -179,7 +179,10 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         if (item.getType().equals(BizItemTypeConstant.LOST) && (item.getStatus().equals(BizItemStatusConstant.CLOSED) || item.getStatus().equals(BizItemStatusConstant.DELETED) || item.getStatus().equals(BizItemStatusConstant.MATCHED))) {
             riskMonitorService.onItemFound(item);
         }
-        // 4. 发布 AI 生成事件（异步）
+        // 4. 清理缓存
+        evictItemCaches(id);
+
+        // 5. 发布 AI 生成事件（异步）
         applicationEventPublisher.publishEvent(new ItemAiGenerateEvent(
                 this,
                 id,
@@ -189,8 +192,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 userId,
                 buildImageItems(dto.getImageUrls())
         ));
-        // 5. 清理缓存
-        evictItemCaches(id);
+
     }
 
     // ===================== 查看详情 =====================

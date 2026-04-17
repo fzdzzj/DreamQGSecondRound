@@ -6,9 +6,9 @@ export function usePagination() {
   const pageSize = ref(DEFAULT_PAGE_SIZE)
   const total = ref(0)
 
-  const setPagination = (value: { pageNum: number; pageSize: number; total: number }) => {
-    pageNum.value = value.pageNum
-    pageSize.value = value.pageSize
+  const setPagination = (value: { pageNum?: number; pageSize?: number; total: number }) => {
+    if (value.pageNum) pageNum.value = value.pageNum
+    if (value.pageSize) pageSize.value = value.pageSize
     total.value = value.total
   }
 
