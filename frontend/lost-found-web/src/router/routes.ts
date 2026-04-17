@@ -156,6 +156,12 @@ export const routes: RouteRecordRaw[] = [
     },
     children: [
       {
+        path: 'log',
+        name: 'AdminLog',
+        component: () => import('@/views/admin/log/index.vue'),
+        meta: { title: '操作日志', requiresAuth: true, adminOnly: true }
+      },
+      {
         path: 'dashboard',
         name: 'AdminDashboard',
         component: () => import('@/views/admin/dashboard/index.vue'),

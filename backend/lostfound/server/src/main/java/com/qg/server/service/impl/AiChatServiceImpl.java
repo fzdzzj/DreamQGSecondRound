@@ -30,16 +30,6 @@ public class AiChatServiceImpl implements AiChatService {
      */
     private static final String CHAT_TYPE = "answer";
 
-    /**
-     * 每个 SSE 分片的最大字符数
-     */
-    private static final int SSE_CHUNK_SIZE = 100;  // 增大块的大小，减少前端渲染次数
-
-    /**
-     * SSE 分片发送间隔（可按体验调整）
-     */
-    private static final Duration SSE_CHUNK_DELAY = Duration.ofMillis(100);  // 增加延迟，减缓推送
-
     // AI 配置属性（限流、模型参数等）
     private final AIProperties aiProperties;
     // Redis 用于用户调用次数限流统计
@@ -51,58 +41,68 @@ public class AiChatServiceImpl implements AiChatService {
     // 敏感词过滤工具
     private final SensitiveWordFilterUtil sensitiveWordFilter;
 
+    // Modify to adjust chunk size and delay
+    private static final int SSE_CHUNK_SIZE = 50;// 增加块的大小，减少前端渲染次数
+    private static final Duration SSE_CHUNK_DELAY = Duration.ofMillis(50); // 增加延迟，减缓推送
     /**
-     * AI SSE 流式问答接口
+     * 流式回答
      *
-     * @param prompt 用户输入内容
-     * @param chatId 对话会话 ID（用于上下文记忆）
-     * @param userId 用户 ID
-     * @return Flux<String> SSE 格式的流式消息
+     * @param prompt 问题
+     * @param chatId 会话ID
+     * @param userId 用户ID
+     * @return 回答流
      */
     @Override
     public Flux<String> streamAnswer(String prompt, String chatId, Long userId) {
         return Flux.defer(() -> {
-            // 1. 校验用户每日调用次数是否超限
+            // 1. 校验用户调用次数是否超限（保持不变）
             AiUtils.checkUserLimit(userId, redisTemplate, aiProperties.getDailyLimit());
-
-            // 2. 用户今日调用次数 +1
             AiUtils.incrementUserAiCount(userId, redisTemplate);
 
-            // 3. 过滤用户输入（去换行、超长截断、去空格）
+            // 2. 过滤用户输入
             String filteredPrompt = filterUserInput(prompt);
 
-            // 4. 保存用户提问到聊天历史
+            // 3. 保存用户提问到聊天历史
             chatHistoryRepository.saveMessage(CHAT_TYPE, userId, chatId, "user", filteredPrompt);
 
-            // 第一步：同步调用工具，获取完整的工具调用结果
-            String assistantReply = answerChatClient.prompt()
-                    .user(filteredPrompt)
-                    .advisors(a -> a.param(CONVERSATION_ID, chatId))
-                    .call()
-                    .content();
+            // 4. 异步启动一个线程来处理 AI 回复
+            return Flux.<String>create(sink -> {
+                // 使用异步调用 AI 获取回复
+                String assistantReply = answerChatClient.prompt()
+                        .user(filteredPrompt)
+                        .advisors(a -> a.param(CONVERSATION_ID, chatId))
+                        .call()
+                        .content();
 
-            // 第二步：基于工具结果生成流式响应
-            assistantReply = filterAIOutput(assistantReply);
+                // 5. 过滤 AI 输出
+                assistantReply = filterAIOutput(assistantReply);
 
-            // 7. 保存 AI 回复到聊天历史
-            if (assistantReply != null && !assistantReply.isBlank()) {
-                chatHistoryRepository.saveMessage(CHAT_TYPE, userId, chatId, "assistant", assistantReply);
-            }
+                // 6. 保存 AI 回复到历史记录
+                if (assistantReply != null && !assistantReply.isBlank()) {
+                    chatHistoryRepository.saveMessage(CHAT_TYPE, userId, chatId, "assistant", assistantReply);
+                }
 
-            // 8. 切片并转换为 SSE message 事件
-            List<String> chunks = splitToChunks(assistantReply, SSE_CHUNK_SIZE);
+                // 7. 拆分 AI 回复
+                List<String> chunks = splitToChunks(assistantReply, SSE_CHUNK_SIZE);
 
-            Flux<String> messageFlux = Flux.fromIterable(chunks)
-                    .delayElements(SSE_CHUNK_DELAY)
-                    .map(this::toMessageEvent);
+                // 8. 每个块分段发送到前端
+                chunks.forEach(chunk -> {
+                    // 通过 sink 将每个块发送到 SSE
+                    sink.next(toMessageEvent(chunk));
+                });
 
-            // 9. 最后补 done 事件
-            return messageFlux.concatWith(Flux.just(toDoneEvent()));
-        }).onErrorResume(e -> {
-            log.error("AI流式回复失败, userId={}, chatId={}", userId, chatId, e);
-            return Flux.just(toErrorEvent("AI处理失败，请稍后重试"));
+                // 9. 完成后发送 "done" 事件
+                sink.next(toDoneEvent());
+
+                // 10. 完成流，关闭 sink
+                sink.complete();
+            }).onErrorResume(e -> {
+                log.error("AI流式回复失败, userId={}, chatId={}", userId, chatId, e);
+                return Flux.just(toErrorEvent("AI处理失败，请稍后重试"));
+            });
         });
     }
+
 
     /**
      * 用户输入过滤：清洗格式、超长截断

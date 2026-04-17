@@ -117,4 +117,5 @@ public class AdminController {
         log.info("管理员请求平台统计成功,size={}", vo.getFoundCount());
         return Result.success(vo);
     }
+
 }

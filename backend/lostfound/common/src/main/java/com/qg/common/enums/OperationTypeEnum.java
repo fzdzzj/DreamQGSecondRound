@@ -6,7 +6,8 @@ package com.qg.common.enums;
 public enum OperationTypeEnum {
     CLAIM("1", "认领"),
     EDIT_POST("2", "编辑帖子"),
-    POST("3", "发布帖子");
+    POST("3", "发布帖子"),
+    ADMIN("4", "管理员操作");
     private final String code;
     private final String desc;
 

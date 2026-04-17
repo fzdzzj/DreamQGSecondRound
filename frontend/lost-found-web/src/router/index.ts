@@ -77,6 +77,10 @@ const routes = [
       {
         path: 'item',
         component: () => import('@/views/admin/item/index.vue')
+      },
+      {
+        path: 'log',
+        component: () => import('@/views/admin/log/index.vue')
       }
     ]
   }
