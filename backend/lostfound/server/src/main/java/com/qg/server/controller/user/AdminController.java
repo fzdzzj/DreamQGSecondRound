@@ -33,7 +33,7 @@ public class AdminController {
      * @param queryDTO 查询参数
      * @return 分页结果
      */
-    @GetMapping("/user")
+    @PostMapping("/user")
     @Operation(summary = "用户分页列表")
     public Result<PageResult<SysUserStatVO>> userList(@Validated UserPageQueryDTO queryDTO) {
         log.info("管理员获取用户列表，pageNum={}, pageSize={}", queryDTO.getPageNum(), queryDTO.getPageSize());
@@ -109,7 +109,7 @@ public class AdminController {
      * @param dto 查询条件
      * @return 统计结果
      */
-    @GetMapping("/statistics")
+    @PostMapping("/statistics")
     @Operation(summary = "平台统计")
     public Result<AdminStatisticsVO> statistics(@RequestBody(required = false) AdminStatisticsQueryDTO dto) {
         log.info("管理员请求平台统计，startTime={}, endTime={}", dto.getStartTime(), dto.getEndTime());
@@ -117,6 +117,4 @@ public class AdminController {
         log.info("管理员请求平台统计成功,size={}", vo.getFoundCount());
         return Result.success(vo);
     }
-
-
 }
