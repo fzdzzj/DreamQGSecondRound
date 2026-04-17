@@ -33,54 +33,62 @@
     </select>
 
     <select id="selectConversationList" resultType="com.qg.pojo.vo.ConversationVO">
-        SELECT t.peer_id                        AS peerId,
-               u.nickname                       AS peerNickname,
-               u.avatar                         AS peerAvatar,
-               t.last_message                   AS lastMessage,
-               t.last_message_type              AS lastMessageType,
-               t.last_image_url                 AS lastImageUrl,
-               t.last_message_time              AS lastMessageTime,
-               COALESCE(unread.unread_count, 0) AS unreadCount
-        FROM (SELECT CASE
-                         WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
-                         ELSE m.sender_id
-                         END        AS peer_id,
-                     m.content      AS last_message,
-                     m.message_type AS last_message_type,
-                     m.image_url    AS last_image_url,
-                     m.create_time  AS last_message_time,
-                     ROW_NUMBER() OVER (
-                         PARTITION BY CASE
-                                          WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
-                                          ELSE m.sender_id
-                             END
-                         ORDER BY m.id DESC
-                         )          AS rn
-              FROM biz_private_message m
-                       LEFT JOIN biz_private_conversation c
-                                 ON c.user_id = #{currentUserId}
-                                     AND c.peer_id = CASE
-                                                         WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
-                                                         ELSE m.sender_id
-                                         END
-              WHERE (
-                  (m.sender_id = #{currentUserId} AND m.sender_deleted = 0)
-                      OR
-                  (m.receiver_id = #{currentUserId} AND m.receiver_deleted = 0)
-                  )
-                AND (
-                  c.clear_before_time IS NULL
-                      OR m.create_time &gt;= c.clear_before_time
-                  )) t
-                 INNER JOIN sys_user u ON u.id = t.peer_id
-                 LEFT JOIN (SELECT sender_id AS peer_id,
-                                   COUNT(*)  AS unread_count
-                            FROM biz_private_message
-                            WHERE receiver_id = #{currentUserId}
-                              AND status = 0
-                              AND receiver_deleted = 0
-                            GROUP BY sender_id) unread ON unread.peer_id = t.peer_id
-        WHERE t.rn = 1
+        SELECT
+            c.peer_id                          AS peerId,
+            u.nickname                         AS peerNickname,
+            u.avatar                           AS peerAvatar,
+            t.last_message                     AS lastMessage,
+            t.last_message_type                AS lastMessageType,
+            t.last_image_url                   AS lastImageUrl,
+            t.last_message_time                AS lastMessageTime,
+            COALESCE(unread.unread_count, 0)   AS unreadCount
+        FROM biz_private_conversation c
+                 -- 关联对方用户信息
+                 INNER JOIN sys_user u
+                            ON u.id = c.peer_id
+
+            -- 关联最后一条消息（只取清空时间之后的）
+                 LEFT JOIN (
+            SELECT
+                CASE
+                    WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
+                    ELSE m.sender_id
+                    END        AS peer_id,
+                m.content      AS last_message,
+                m.message_type AS last_message_type,
+                m.image_url    AS last_image_url,
+                m.create_time  AS last_message_time,
+                ROW_NUMBER() OVER (
+                    PARTITION BY
+                        CASE
+                            WHEN m.sender_id = #{currentUserId} THEN m.receiver_id
+                            ELSE m.sender_id
+                            END
+                    ORDER BY m.id DESC
+                    ) AS rn
+            FROM biz_private_message m
+            WHERE
+                (
+                    (m.sender_id = #{currentUserId} AND m.sender_deleted = 0)
+                        OR
+                    (m.receiver_id = #{currentUserId} AND m.receiver_deleted = 0)
+                    )
+        ) t ON t.peer_id = c.peer_id
+            AND t.rn = 1
+            -- 关键：消息必须 >= 清空时间
+            AND (c.clear_before_time IS NULL OR t.last_message_time >= c.clear_before_time)
+
+            -- 关联未读消息数
+                 LEFT JOIN (
+            SELECT sender_id AS peer_id, COUNT(*) AS unread_count
+            FROM biz_private_message
+            WHERE receiver_id = #{currentUserId}
+              AND status = 0
+              AND receiver_deleted = 0
+            GROUP BY sender_id
+        ) unread ON unread.peer_id = c.peer_id
+
+        WHERE c.user_id = #{currentUserId}
         ORDER BY t.last_message_time DESC
     </select>
 
