@@ -97,12 +97,13 @@ const load = async () => {
       pageSize: pageSize.value,
       keyword: query.keyword,
       location: query.location,
-      type: query.type,
+      type: query.type?.toString(),
       aiCategory: query.aiCategory,
-      startTime: dateRange.value[0] ? `${dateRange.value[0]}T00:00:00` : undefined,
-      endTime: dateRange.value[1] ? `${dateRange.value[1]}T23:59:59` : undefined
+      startTime: dateRange.value[0] ? `${dateRange.value[0]} 00:00:00` : undefined,
+      endTime: dateRange.value[1] ? `${dateRange.value[1]} 23:59:59` : undefined
     }
     
+    console.log('发送的参数:', params)
     const res = await getItemPageApi(params)
     list.value = res.list
     setPagination(res)

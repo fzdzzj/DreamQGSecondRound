@@ -20,7 +20,7 @@ export interface UpdateBizItemDTO {
 export interface ItemPageQueryDTO {
   pageNum: number
   pageSize: number
-  type?: number
+  type?: string
   location?: string
   startTime?: string
   endTime?: string

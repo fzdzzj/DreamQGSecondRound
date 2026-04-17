@@ -7,15 +7,15 @@ export function applyPinApi(data: PinApplyDTO) {
 }
 
 export function getPinPageApi(params: Record<string, unknown>) {
-  return request.get<unknown, PageResult<PinRequestStatVO>>('/pin', { params })
+  return request.get<unknown, PageResult<PinRequestStatVO>>('/pin/page', { params })
 }
 
 export function getPinDetailApi(id: number) {
   return request.get<unknown, PinRequestDetailVO>(`/pin/${id}`)
 }
 
-export function auditPinApi(id: number, data: PinAuditDTO) {
-  return request.put(`/pin/${id}/audit`, data)
+export function auditPinApi(data: PinAuditDTO) {
+  return request.put(`/pin/audit`, data)
 }
 
 export function cancelPinApi(id: number) {

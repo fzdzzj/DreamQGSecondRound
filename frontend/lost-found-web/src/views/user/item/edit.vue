@@ -52,6 +52,17 @@
       </el-form-item>
 
       <el-form-item>
+
+             <el-button
+          type="primary"
+          link
+          :loading="generating"
+          @click="handleRegenerateDescription"
+          class="regenerate-btn"
+        >
+          <el-icon><MagicStick /></el-icon>
+          AI重新生成
+        </el-button>
         <el-button @click="router.back()">返回</el-button>
         <el-button type="primary" @click="save">保存</el-button>
       </el-form-item>
@@ -60,14 +71,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getItemDetailApi, updateItemApi } from '@/api/item'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { showSuccess, showError, showWarning } from '@/utils/message'
 import { itemStatusText } from '@/utils/item'
 import { Delete } from '@element-plus/icons-vue'
-
+import { regenerateItemAiApi } from '@/api/ai'
+import { ElMessage } from 'element-plus'
+import { Ref } from 'vue'
 const route = useRoute()
 const router = useRouter()
 const itemId = Number(route.params.id)
@@ -99,7 +112,29 @@ const handleUploadSuccess = (url: string) => {
 const handleDeleteImage = (index: number) => {
   form.imageUrls.splice(index, 1)
 }
+const generating = ref(false)
+const handleRegenerateDescription = async () => {
+  if (!form.id) {
+    ElMessage.warning('请先保存物品以生成ID')
+    return
+  }
 
+  generating.value = true
+  try {
+    // 调用API获取新生成的描述
+    const newDescription = await regenerateItemAiApi(form.id)
+    
+    // 更新表单中的描述字段
+    form.description = newDescription
+    
+    ElMessage.success('AI描述生成成功')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('AI描述生成失败，请稍后重试')
+  } finally {
+    generating.value = false
+  }
+}
 const save = async () => {
   // 表单验证
   if (!form.title) {

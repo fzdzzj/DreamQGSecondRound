@@ -69,7 +69,7 @@ public class PinController {
      * @param itemId 物品ID
      * @return 分页查询结果
      */
-    @PostMapping("/page")
+    @GetMapping("/page")
     @Operation(summary = "分页查询置顶申请列表")
     public Result<PageResult<PinRequestStatVO>> page(@RequestParam(defaultValue = "1") Integer pageNum,
                                                      @RequestParam(defaultValue = "10") Integer pageSize,

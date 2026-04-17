@@ -54,7 +54,7 @@ import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { showSuccess, showWarning } from '@/utils/message'
 import { LoginType } from '@/types/auth'
-
+import { isAdminRole} from '@/utils/auth'
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
@@ -90,7 +90,11 @@ const login = async () => {
     const res = await loginApi(payload)
     userStore.setLogin(res)
     await userStore.fetchProfile()
+      if (isAdminRole(userStore.userInfo?.role || '')) {
+    router.push('/admin/dashboard')
+  } else {
     router.push('/home')
+  }
   } catch (error) {
     // 错误已经在响应拦截器中处理，这里不需要额外处理
     console.error('登录失败:', error)

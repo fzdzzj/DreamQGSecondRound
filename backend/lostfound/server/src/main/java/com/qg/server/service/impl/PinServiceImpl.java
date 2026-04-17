@@ -350,6 +350,18 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
                 .collect(Collectors.toList());
         return list;
     }
+    /**
+     * 清除过时的置顶申请
+     */
+    @Override
+    public void clearPinRequests() {
+        log.info("清除过时的置顶申请开始");
+        bizPinRequestDao.delete(new LambdaQueryWrapper<BizPinRequest>()
+                .lt(BizPinRequest::getCreateTime, LocalDateTime.now().minusDays(1)));
+        log.info("清除过时的置顶申请完成");
+    }
+
+
 
     /**
      * 转换为 VO

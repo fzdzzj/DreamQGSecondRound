@@ -24,7 +24,16 @@ import CommonTable from '@/components/common/CommonTable.vue'
 const list = ref<BizItemStatVO[]>([])
 
 const load = async () => {
-  const res = await getItemPageApi({ pageNum: 1, pageSize: 10 })
+  const params = {
+    pageNum: 1,
+    pageSize: 10,
+    type: undefined,
+    startTime: undefined,
+    endTime: undefined
+  }
+  
+  console.log('发送的参数:', params)
+  const res = await getItemPageApi(params)
   list.value = res.list
 }
 

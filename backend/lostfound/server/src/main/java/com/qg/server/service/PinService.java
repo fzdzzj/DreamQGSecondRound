@@ -53,4 +53,8 @@ public interface PinService extends IService<BizPinRequest> {  // 继承 IServic
      * @return 置顶申请列表
      */
     List<PinRequestStatVO> myList();
+   /**
+     * 清除过久的置顶申请
+     */
+    void clearPinRequests();
 }

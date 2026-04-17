@@ -26,3 +26,7 @@ export function adminDeleteItemApi(id: number) {
 export function getAdminStatisticsApi(params?: { startTime?: string; endTime?: string }) {
   return request.post<unknown, AdminStatisticsVO>('/admin/statistics', params || {})
 }
+
+export function getReportPageApi(params: Record<string, unknown>) {
+  return request.get<unknown, PageResult<ReportListVO>>('/report', { params })
+}
