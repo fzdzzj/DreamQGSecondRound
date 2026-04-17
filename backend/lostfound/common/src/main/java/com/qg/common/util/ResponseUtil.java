@@ -2,8 +2,8 @@ package com.qg.common.util;
 
 import com.alibaba.fastjson2.JSON;
 import com.qg.common.result.Result;
-
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class ResponseUtil {

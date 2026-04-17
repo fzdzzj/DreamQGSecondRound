@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.AiPromptConstant;
 import com.qg.common.constant.BizItemAiResultStatusConstant;
 import com.qg.common.properties.AIProperties;
+import com.qg.common.util.AiUtils;
 import com.qg.common.util.SensitiveWordFilterUtil;
 import com.qg.pojo.vo.ImageAiResponseVO;
-import com.qg.common.util.AiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -16,12 +16,6 @@ import java.util.Collections;
 
 /**
  * 物品描述AI
- * 1. 生成物品描述 VO
- * 2. 检查用户是否超过每日限制
- * 3. 增加用户AI次数
- * 4. 调用AI生成描述
- * 5. 过滤敏感词
- * 6. 限制描述长度
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -49,7 +43,7 @@ public class DescriptionClient {
         AiUtils.incrementUserAiCount(userId, redisTemplate);
         //3. 调用AI生成描述
         String prompt = buildPrompt(title, description, location);
-        ImageAiResponseVO response = new ImageAiResponseVO();
+        ImageAiResponseVO response;
         try {
             String aiResponse = chatClient.prompt().user(prompt).call().content();
             response = objectMapper.readValue(aiResponse, ImageAiResponseVO.class);

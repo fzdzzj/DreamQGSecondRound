@@ -8,6 +8,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
+
 @Schema(description = "更新物品DTO")
 @Data
 public class UpdateBizItemDTO implements Serializable {

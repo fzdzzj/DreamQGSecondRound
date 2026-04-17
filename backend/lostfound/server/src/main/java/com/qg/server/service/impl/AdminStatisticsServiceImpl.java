@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qg.common.constant.BizItemStatusConstant;
 import com.qg.common.constant.BizItemTypeConstant;
 import com.qg.common.constant.MessageConstant;
+import com.qg.common.constant.aiStatisticsConstant;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizAiStatisticsReport;
 import com.qg.pojo.entity.BizItem;
@@ -43,7 +44,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusDays(1).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
-        generateReport(today, start, end, "1");
+        generateReport(today, start, end, aiStatisticsConstant.DAILY);
     }
 
     // 每周报表
@@ -52,7 +53,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusWeeks(1).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
-        generateReport(today, start, end, "2");
+        generateReport(today, start, end, aiStatisticsConstant.WEEKLY);
     }
 
     @Override
@@ -60,7 +61,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusMonths(1).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
-        generateReport(today, start, end, "3");
+        generateReport(today, start, end, aiStatisticsConstant.MONTHLY);
     }
 
     /**

@@ -11,6 +11,7 @@ import java.io.Serializable;
 @Schema(description = "邮箱验证码DTO")
 @Data
 public class EmailSendCodeDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "邮箱")
     @Pattern(regexp = RegexConstant.EMAIL, message = "邮箱格式错误")
     @NotBlank(message = "邮箱不能为空")

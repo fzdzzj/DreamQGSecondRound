@@ -25,6 +25,7 @@ public class MessageVO implements Serializable {
         }
         this.content = message.getText();
     }
+
     public MessageVO(String role, String content) {
         this.role = role;
         this.content = content;

@@ -24,6 +24,7 @@ import com.qg.server.mapper.BizItemImageDao;
 import com.qg.server.service.AiAsyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +52,10 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     private final AIProperties aiProperties;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final ApplicationContext applicationContext;
+    private AiAsyncServiceImpl getSelf() {
+        return applicationContext.getBean(AiAsyncServiceImpl.class);
+    }
 
     /**
      * 文本生成物品描述异步任务
@@ -65,7 +70,7 @@ public class AiAsyncServiceImpl implements AiAsyncService {
                 : BizItemAiResultStatusConstant.FAILURE;
 
         // 2. 多个DB操作，交给事务方法保证原子性
-        saveAiResultAndTags(itemId, userId, generatedDesc, title, location, description, status);
+        getSelf().saveAiResultAndTags(itemId, userId, generatedDesc, title, location, description, status);
     }
 
     /**
@@ -96,11 +101,11 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     public void generateItemImageDescription(String title, String description, String location,
                                              Long userId, Long itemId, List<ImageDescriptionClient.ImageItem> imageItems) {
         // 1. 调用AI模型（无事务）
-        List<ImageAiResponseVO> results = imageDescriptionClient.generateDescriptionVo(title, description, location, userId, imageItems);
+        List<ImageAiResponseVO> results = imageDescriptionClient.generateItemImageDescription(title, description, location, userId, imageItems);
         if (results.isEmpty()) return;
 
         // 2. 批量保存DB，交给事务方法
-        batchSaveAiResults(itemId, userId, title, location, description, results);
+        getSelf().batchSaveAiResults(itemId, userId, title, location, description, results);
     }
 
     /**
@@ -115,7 +120,12 @@ public class AiAsyncServiceImpl implements AiAsyncService {
 
         Long lastResultId = null;
         boolean allSuccess = true;
-
+        String isTimeout = (String) redisTemplate.opsForValue().get("AI_TIMEOUT:" + itemId);
+        // 检查是否超时
+        if ("true".equals(isTimeout)) {
+            log.warn("[AI] 已超时，跳过入库 itemId:{}", itemId);
+            return;
+        }
         for (ImageAiResponseVO vo : results) {
             BizItemAiResult result = new BizItemAiResult();
             result.setItemId(itemId);
@@ -196,8 +206,12 @@ public class AiAsyncServiceImpl implements AiAsyncService {
     /**
      * 单独更新状态，极简事务方法
      */
-    @Transactional(rollbackFor = Exception.class)
     public void updateItemStatusToPending(Long itemId) {
+        String isTimeout = (String) redisTemplate.opsForValue().get("AI_TIMEOUT:" + itemId);
+        if ("true".equals(isTimeout)) {
+            log.warn("[AI] 已超时，跳过入库 itemId:{}", itemId);
+            return;
+        }
         BizItem updateItem = new BizItem();
         updateItem.setId(itemId);
         updateItem.setAiStatus(BizItemAiResultStatusConstant.PENDING);
@@ -227,7 +241,11 @@ public class AiAsyncServiceImpl implements AiAsyncService {
         result.setAiCategory(aiCategory != null ? aiCategory : "未知");
         result.setCreateUser(lastResult == null ? userId : lastResult.getCreateUser());
         result.setUpdateUser(userId);
-
+        String isTimeout = (String) redisTemplate.opsForValue().get("AI_TIMEOUT:" + itemId);
+        if ("true".equals(isTimeout)) {
+            log.warn("[AI] 已超时，跳过入库 itemId:{}", itemId);
+            return null;
+        }
         aiResultDao.insert(result);
 
         Map<String, String> resultInfo = new HashMap<>();
@@ -247,6 +265,11 @@ public class AiAsyncServiceImpl implements AiAsyncService {
             t.setItemId(itemId);
             t.setAiResultVersion(aiResultVersion);
             t.setAiTags(jsonTags);
+            String isTimeout = (String) redisTemplate.opsForValue().get("AI_TIMEOUT:" + itemId);
+            if ("true".equals(isTimeout)) {
+                log.warn("[AI] 已超时，跳过入库 itemId:{}", itemId);
+                return;
+            }
             aiTagDao.insert(t);
         } catch (Exception e) {
             log.error("序列化 AI tags 失败", e);
@@ -259,6 +282,11 @@ public class AiAsyncServiceImpl implements AiAsyncService {
      */
     @Override
     public void updateItemCurrentAiResultId(Long itemId, Long aiResultId, String aiStatus) {
+        String isTimeout = (String) redisTemplate.opsForValue().get("AI_TIMEOUT:" + itemId);
+        if ("true".equals(isTimeout)) {
+            log.warn("[AI] 已超时，跳过入库 itemId:{}", itemId);
+            return;
+        }
         BizItem item = itemDao.selectById(itemId);
         if (item != null) {
             item.setCurrentAiResultId(aiResultId);

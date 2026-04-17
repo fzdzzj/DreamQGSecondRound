@@ -6,6 +6,7 @@ package com.qg.common.constant;
 public class ReadStatusConstant {
     private ReadStatusConstant() {
     }
+
     /**
      * 未读
      */

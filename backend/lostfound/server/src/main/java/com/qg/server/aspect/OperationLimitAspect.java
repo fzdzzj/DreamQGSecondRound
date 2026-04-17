@@ -15,8 +15,10 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -37,6 +39,11 @@ public class OperationLimitAspect {
     private final UserService userService;
     private final OperationLogService operationLogService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ApplicationContext applicationContext;
+
+    private OperationLimitAspect getSelf() {
+        return applicationContext.getBean(OperationLimitAspect.class);
+    }
 
     /**
      * 拦截所有带有 @AntiBot 注解的方法
@@ -96,7 +103,7 @@ public class OperationLimitAspect {
         // 超过限流则封禁
         if (currentCount > limitCount) {
             log.warn("用户 {} 操作{}频率超限，次数：{}", userId, actionType, currentCount);
-            banUser(userId, actionType);
+            getSelf().banUser(userId, actionType);
             throw new BaseException(403, errorMsg);
         }
     }
@@ -114,6 +121,7 @@ public class OperationLimitAspect {
     /**
      * 封禁用户
      */
+    @Transactional(rollbackFor = Exception.class)
     public void banUser(Long userId, String actionType) {
         // Redis 封禁 7天
         redisTemplate.opsForValue().set(RedisConstant.USER_BANNED_KEY + userId, true, Duration.ofDays(7));

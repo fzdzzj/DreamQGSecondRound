@@ -3,6 +3,7 @@ package com.qg.pojo.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -10,7 +11,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("biz_risk_event")
-public class BizRiskEvent {
+public class BizRiskEvent implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * 主键ID

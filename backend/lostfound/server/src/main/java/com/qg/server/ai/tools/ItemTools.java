@@ -2,7 +2,6 @@ package com.qg.server.ai.tools;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemAiTag;
@@ -76,7 +75,7 @@ public class ItemTools {
      *
      * @param description 物品概括描述
      * @return 对应物品 ID 列表
-     *
+     * <p>
      * 1.创建查询条件
      * 2.执行查询
      * 3.返回结果
@@ -117,7 +116,7 @@ public class ItemTools {
      * @param description 物品概括描述，可选
      * @param itemIds     物品ID列表，可选
      * @return 对应物品 ID 列表
-     *
+     * <p>
      * 1.创建查询条件
      * 2.执行查询
      * 3.返回结果

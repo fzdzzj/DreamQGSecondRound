@@ -84,6 +84,8 @@ public class SensitiveWordFilterUtil {
         addFullMask("pass");
 
         // 4. 直接匹配其他敏感值
+        // 非捕获分组 (?:...)
+        //只分组匹配、不单独提取内容，性能更好
         addDirectMask("\\b(?:https?://|www\\.)[^\\s]+\\b"); // URL
         addDirectMask("1[3-9]\\d[-_\\s]?\\d{4}[-_\\s]?\\d{4}"); // 带分隔手机号兜底
         addDirectMask("[1-9]\\d{4,10}"); // QQ 类数字兜底，可能有误伤风险
@@ -123,14 +125,6 @@ public class SensitiveWordFilterUtil {
                 Pattern.quote(word)
         );
         rules.add(new Rule(Pattern.compile(regex), "***"));
-    }
-
-    /**
-     * 完整短语直接替换
-     */
-    private void addFullTextMask(String phrase) {
-        if (phrase == null || phrase.isBlank()) return;
-        rules.add(new Rule(Pattern.compile("(?i)" + Pattern.quote(phrase)), "***"));
     }
 
     /**
@@ -177,6 +171,7 @@ public class SensitiveWordFilterUtil {
      * 直接匹配敏感值并整体替换
      */
     private void addDirectMask(String regex) {
+        //CASE_INSENSITIVE = 开启正则的【忽略大小写匹配】
         rules.add(new Rule(Pattern.compile(regex, Pattern.CASE_INSENSITIVE), "***"));
     }
 
@@ -210,13 +205,6 @@ public class SensitiveWordFilterUtil {
                 .trim();
     }
 
-    private static class Rule {
-        private final Pattern pattern;
-        private final String replacement;
-
-        public Rule(Pattern pattern, String replacement) {
-            this.pattern = pattern;
-            this.replacement = replacement;
-        }
+    private record Rule(Pattern pattern, String replacement) {
     }
 }

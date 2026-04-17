@@ -5,11 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "用户信息")
-public class UserLoginVO {
+public class UserLoginVO  implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "用户ID", example = "5")
     private Long id;
 

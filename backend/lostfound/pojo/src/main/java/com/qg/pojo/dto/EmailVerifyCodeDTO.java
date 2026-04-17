@@ -5,9 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Schema(description = "邮箱验证码验证请求参数")
 @Data
-public class EmailVerifyCodeDTO {
+public class EmailVerifyCodeDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "邮箱")
     @Pattern(regexp = RegexConstant.EMAIL, message = "邮箱格式错误")
     private String email;

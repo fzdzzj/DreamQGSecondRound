@@ -5,8 +5,11 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 临时存储
  */
@@ -30,6 +33,7 @@ public class TemporaryChatMemory implements ChatMemory {
         memory.remove(conversationId);
         creationTime.remove(conversationId);
     }
+
     /**
      * 添加消息到临时存储
      */
@@ -41,6 +45,7 @@ public class TemporaryChatMemory implements ChatMemory {
         // 更新创建时间
         creationTime.putIfAbsent(chatId, Instant.now());
     }
+
     /**
      * 批量添加消息到临时存储
      */
@@ -53,12 +58,13 @@ public class TemporaryChatMemory implements ChatMemory {
         // 更新创建时间
         creationTime.putIfAbsent(conversationId, Instant.now());
     }
+
     /**
      * 获取临时存储
      */
     @Override
     public List<Message> get(String conversationId) {
-         return memory.getOrDefault(conversationId, List.of());
+        return memory.getOrDefault(conversationId, List.of());
     }
 
     /**

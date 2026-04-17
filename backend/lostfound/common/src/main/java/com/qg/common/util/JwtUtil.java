@@ -67,7 +67,7 @@ public class JwtUtil {
      * @return refreshToken
      */
     public String generateRefreshToken(Long userId, String username, String role) {
-        return generateToken(userId, username, role, null, jwtProperties.getRefreshExpire(), "refresh");
+        return generateToken(userId, username, role, null, jwtProperties.getRefreshExpire(), TokenConstant.REFRESH);
     }
 
     /**

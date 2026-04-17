@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 public class UserActionLogVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Schema(description = "主键 ID")
     private Long id;
     @Schema(description = "用户 ID")
