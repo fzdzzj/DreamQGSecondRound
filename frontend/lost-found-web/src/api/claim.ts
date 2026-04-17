@@ -6,8 +6,8 @@ export function createClaimApi(data: BizClaimRequestDTO) {
 }
 
 // 查询当前用户所有待审批申请
-export function getPendingClaimRequestsApi() {
-  return request.get('/biz/claim/pending')
+export function getPendingClaimRequestsApi(status: string) {
+  return request.get(`/biz/claim?status=${status}`)
 }
 
 // 审批单条认领申请

@@ -50,8 +50,11 @@ public class BizClaimRequestController {
      */
     @GetMapping
     @Operation(summary = "查询物品的待审批申请")
-    public Result<List<BizClaimRequestVO>> getClaimRequests(@RequestParam String status) {
+    public Result<List<BizClaimRequestVO>> getClaimRequests(@RequestParam(required = false) String status) {
         log.info("用户 {} 查询物品的待审批申请", BaseContext.getCurrentId());
+        if(status == null){
+            status="";
+        }
         List<BizClaimRequestVO> vos = claimRequestService.getClaimRequests(status);
         log.info("用户 {} 获取物品的待审批申请成功，数量为 {}", BaseContext.getCurrentId(), vos.size());
         return Result.success(vos);

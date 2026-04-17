@@ -127,14 +127,20 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
         updateById(request);
         log.info("审批认领申请: {}", request);
     }
-
+    /**
+     * 获取所有待审批申请
+     *
+     * @return 审批申请列表
+     */
     @Override
     public List<BizClaimRequestVO> getClaimRequests(String status) {
         //1. 获取当前登录用户ID
         Long currentUserId = BaseContext.getCurrentId();
         //2. 构建查询条件：状态=待处理 且 (负责人是当前用户 或 申请人是当前用户)
         LambdaQueryWrapper<BizClaimRequest> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(BizClaimRequest::getStatus, status)
+        queryWrapper.eq(!status.isEmpty(),BizClaimRequest::getStatus, status)
+                .orderByAsc(BizClaimRequest::getStatus)
+                .orderByDesc(BizClaimRequest::getCreateTime)
                 .and(wrapper -> wrapper.eq(BizClaimRequest::getOwnerId, currentUserId)
                         .or()
                         .eq(BizClaimRequest::getApplicantId, currentUserId));
