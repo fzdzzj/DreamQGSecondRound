@@ -48,11 +48,11 @@ public class BizClaimRequestController {
     /**
      * 查询物品的待审批申请（拾取者）
      */
-    @GetMapping("/pending")
+    @GetMapping
     @Operation(summary = "查询物品的待审批申请")
-    public Result<List<BizClaimRequestVO>> getPending() {
+    public Result<List<BizClaimRequestVO>> getClaimRequests(@RequestParam String status) {
         log.info("用户 {} 查询物品的待审批申请", BaseContext.getCurrentId());
-        List<BizClaimRequestVO> vos = claimRequestService.getPendingRequests();
+        List<BizClaimRequestVO> vos = claimRequestService.getClaimRequests(status);
         log.info("用户 {} 获取物品的待审批申请成功，数量为 {}", BaseContext.getCurrentId(), vos.size());
         return Result.success(vos);
     }

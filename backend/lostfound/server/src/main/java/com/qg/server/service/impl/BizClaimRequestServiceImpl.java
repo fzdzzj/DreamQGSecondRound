@@ -1,5 +1,6 @@
 package com.qg.server.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.BizClaimRequestStatusConstant;
@@ -77,25 +78,6 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
     }
 
     /**
-     * 获取待处理的认领申请
-     *
-     * @return List<BizClaimRequestVO>
-     * 1. 获取当前用户ID
-     * 2. 获取当前用户所有认领申请
-     **/
-    @Override
-    public List<BizClaimRequestVO> getPendingRequests() {
-        //1.获取当前用户的认领申请
-        List<BizClaimRequest> requests = list(new LambdaQueryWrapper<BizClaimRequest>().eq(BizClaimRequest::getStatus, BizClaimRequestStatusConstant.PENDING).eq(BizClaimRequest::getOwnerId, BaseContext.getCurrentId()).or().eq(BizClaimRequest::getApplicantId, BaseContext.getCurrentId()));
-        log.info("待处理的认领申请: 大小{}", requests.size());
-        return requests.stream().map(request -> {
-            BizClaimRequestVO vo = new BizClaimRequestVO();
-            BeanUtils.copyProperties(request, vo);
-            return vo;
-        }).toList();
-    }
-
-    /**
      * 审批认领申请
      *
      * @param dto 审批信息
@@ -144,5 +126,23 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
         //4. 保存认领申请
         updateById(request);
         log.info("审批认领申请: {}", request);
+    }
+
+    @Override
+    public List<BizClaimRequestVO> getClaimRequests(String status) {
+        //1. 获取当前登录用户ID
+        Long currentUserId = BaseContext.getCurrentId();
+        //2. 构建查询条件：状态=待处理 且 (负责人是当前用户 或 申请人是当前用户)
+        LambdaQueryWrapper<BizClaimRequest> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(BizClaimRequest::getStatus, status)
+                .and(wrapper -> wrapper.eq(BizClaimRequest::getOwnerId, currentUserId)
+                        .or()
+                        .eq(BizClaimRequest::getApplicantId, currentUserId));
+        List<BizClaimRequest> requests = list(queryWrapper);
+        return requests.stream().map(request -> {
+            BizClaimRequestVO vo = new BizClaimRequestVO();
+            BeanUtils.copyProperties(request, vo);
+            return vo;
+        }).toList();
     }
 }

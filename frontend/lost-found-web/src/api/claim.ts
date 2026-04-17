@@ -12,5 +12,5 @@ export function getPendingClaimRequestsApi() {
 
 // 审批单条认领申请
 export function approveClaimRequestApi(id: number, data: ApproveRequestDTO) {
-  return request.post(`/claim/${id}/audit`, data)
+  return request.post(`/biz/claim/${id}/audit`, data)
 }

@@ -21,16 +21,14 @@ public interface BizClaimRequestService extends IService<BizClaimRequest> {
     void createClaimRequest(BizClaimRequestDTO request);
 
     /**
-     * 获取某物品的所有待审批申请
-     *
-     * @return 待审批申请列表
-     */
-    List<BizClaimRequestVO> getPendingRequests();
-
-    /**
      * 拾取者审批（同意/拒绝/要求补充证据）
      *
      * @param dto 审批请求DTO
      */
     void approveRequest(Long id, ApproveRequestDTO dto);
+    /**
+     * 获取物品的审批申请（拾取者与失主可见）
+     *
+     */
+    List<BizClaimRequestVO> getClaimRequests(String status);
 }
