@@ -121,7 +121,8 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
      *                     2. 校验置顶申请状态是否为已批准
      *                     3. 撤销物品置顶
      *                     4. 删除置顶申请
-     *                     5. 发送通知
+     *                     5. 撤销物品置顶
+     *                     6. 发送通知
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -172,6 +173,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             updateById(pinRequest);
             notificationService.createNotification(pinRequest.getApplicantId(), pinRequest.getItemId(), "您的置顶申请已被撤销");
             BizItem  item = bizItemDao.selectById(pinRequest.getItemId());
+            // 5. 撤销物品置顶
             if (item != null) {
                 item.setIsPinned(PinConstant.NOT_PINNED);
                 item.setPinExpireTime(null);

@@ -47,6 +47,10 @@
             {{ detail.contactMethod || '-' }}
           </el-descriptions-item>
 
+          <el-descriptions-item label="联系人ID">
+            {{ detail.contactUserId || '-' }}
+          </el-descriptions-item>
+
           <el-descriptions-item label="AI分类">
             {{ detail.aiCategory || '-' }}
           </el-descriptions-item>

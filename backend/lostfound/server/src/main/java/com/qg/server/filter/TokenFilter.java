@@ -52,7 +52,8 @@ public class TokenFilter extends OncePerRequestFilter {
             "/v3/api-docs/**", "/error",
             "/api/file/upload", "/item/page",
             "/email/sendCode", "/email/verifyCode",
-            "/common/password/by-code"
+            "/common/password/by-code",
+            "/ws/private-chat/**"
     );
 
     /**

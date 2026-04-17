@@ -22,8 +22,8 @@ export function deleteItemApi(id: number) {
   return request.delete(`/item/${id}`)
 }
 
-export function getItemPageApi(params: ItemPageQueryDTO) {
-  return request.get<unknown, PageResult<BizItemStatVO>>('/item', { params })
+export function getItemPageApi(data: ItemPageQueryDTO) {
+  return request.post<unknown, PageResult<BizItemStatVO>>('/item', data)
 }
 
 export function getMyItemPageApi(params: ItemPageQueryDTO) {

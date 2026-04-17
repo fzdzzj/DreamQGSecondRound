@@ -5,6 +5,7 @@ import com.qg.common.util.JwtUtil;
 import com.qg.pojo.entity.SysUser;
 import com.qg.server.mapper.UserDao;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import java.util.Map;
  * WebSocket 鉴权拦截器
  */
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
 
@@ -41,6 +43,7 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
                                    Map<String, Object> attributes) {
         String token = null;
         // 从请求头中获取 JWT 令牌
+        log.info("从请求头中获取 JWT 令牌");
         String auth = request.getHeaders().getFirst("Authorization");
         if (auth != null && auth.startsWith("Bearer ")) {
             token = auth.substring(7);
@@ -53,20 +56,25 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
         }
 
         if (token == null || token.isBlank()) {
+            log.warn("WebSocket 连接请求中未包含 JWT 令牌");
             return false;
         }
 
         try {
+            log.info("解析 JWT 令牌，token={}", token);
             // 解析 JWT 令牌，获取用户 ID
             Long userId = jwtUtil.getUserIdFromToken(token);
 
             if (userId == null) {
+                log.warn("WebSocket 令牌无效");
                 return false;
             }
             SysUser user = dao.selectById(userId);
             if(user == null|| UserStatusConstant.DISABLE.equals(user.getStatus())){
+                log.warn("WebSocket 用户不存在或已被禁用");
                 return false;
             }
+            log.info("WebSocket 令牌有效，用户ID={}", userId);
             // 将用户 ID 放入 attributes 中
             attributes.put("userId", userId);
             return true;

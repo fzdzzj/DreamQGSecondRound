@@ -226,6 +226,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
             throw new AbsentException("物品不存在");
         }
         Long ownerId = item.getUserId();
+
         if (cached != null) {
             log.info("从缓存中获取物品详情,itemId: {}", id);
             if (ownerId.equals(BaseContext.getCurrentId())) {
@@ -237,6 +238,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         // 2. 缓存不存在，从 DB 中获取
         BizItemDetailVO vo = new BizItemDetailVO();
         BeanUtils.copyProperties(item, vo);
+        vo.setContactUserId(item.getUserId());
         vo.setContactMethod(item.getContactMethod());
         // 3. 敏感词过滤
         if (ownerId.equals(BaseContext.getCurrentId())) {

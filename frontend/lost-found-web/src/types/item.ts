@@ -45,6 +45,7 @@ export interface BizItemDetailVO extends BizItemStatVO {
   aiStatus?: string
   aiTags?: string[]
   aiDescription?: string
+  contactUserId?: number
 }
 
 export interface PinApplyDTO {

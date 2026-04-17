@@ -39,4 +39,6 @@ public class BizItemDetailVO implements Serializable {
     private String aiDescription;
     @Schema(description = "联系方式")
     private String contactMethod;
+    @Schema(description = "联系人")
+    private Long contactUserId;
 }

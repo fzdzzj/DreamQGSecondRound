@@ -36,6 +36,7 @@ public class PrivateChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) {
         Long userId = (Long) session.getAttributes().get("userId");
         if (userId != null) {
+            log.info("添加WebSocket会话，userId={}", userId);
             webSocketSessionService.addSession(userId, session);
             log.info("WebSocket连接成功，userId={}", userId);
         }
@@ -55,10 +56,11 @@ public class PrivateChatWebSocketHandler extends TextWebSocketHandler {
             String type = json.getString("type");
 
             if (WsMessageType.PING.equals(type)) {
+                log.info("收到WebSocket PING消息");
                 send(session, WsMessageEnvelope.of(WsMessageType.PONG, "pong"));
                 return;
             }
-
+            log.info("处理WebSocket消息，type={}", type);
             send(session, WsMessageEnvelope.of(WsMessageType.ERROR, "不支持的消息类型"));
         } catch (Exception e) {
             log.warn("处理WebSocket消息失败: {}", message.getPayload(), e);
@@ -92,6 +94,7 @@ public class PrivateChatWebSocketHandler extends TextWebSocketHandler {
     private void send(WebSocketSession session, WsMessageEnvelope envelope) {
         try {
             if (session.isOpen()) {
+                log.info("发送WebSocket消息，userId={}, type={}", session.getAttributes().get("userId"), envelope.getType());
                 session.sendMessage(new TextMessage(JSON.toJSONString(envelope)));
             }
         } catch (Exception e) {
@@ -109,6 +112,7 @@ public class PrivateChatWebSocketHandler extends TextWebSocketHandler {
     public void sendToUser(Long userId, Object data, String type) {
         WebSocketSession session = webSocketSessionService.getSession(userId);
         if (session != null && session.isOpen()) {
+            log.info("发送WebSocket消息给userId={}, type={}", userId, type);
             send(session, WsMessageEnvelope.of(type, data));
         }
     }
