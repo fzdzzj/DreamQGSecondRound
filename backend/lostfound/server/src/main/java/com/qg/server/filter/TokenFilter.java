@@ -50,10 +50,9 @@ public class TokenFilter extends OncePerRequestFilter {
             "/auth/login", "/auth/register", "/auth/refresh",
             "/swagger-ui.html", "/swagger-ui/**",
             "/v3/api-docs/**", "/error",
-            "/api/file/upload", "/item/page",
+            "/item/page",
             "/email/sendCode", "/email/verifyCode",
-            "/common/password/by-code",
-            "/ws/private-chat/**"
+            "/common/password/by-code"
     );
 
     /**
