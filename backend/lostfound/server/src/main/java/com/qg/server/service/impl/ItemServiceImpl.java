@@ -391,6 +391,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                                     SELECT 1 FROM biz_item_ai_result air
                                     WHERE air.item_id = biz_item.id
                                       AND air.result_version = (SELECT MAX(result_version) FROM biz_item_ai_result WHERE item_id = air.item_id)
+                                      AND air.ai_category IS NOT NULL AND air.ai_category != ''
                                       AND (
                                           MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE)
                                           OR air.ai_category LIKE {1} ESCAPE '\\\\'

@@ -18,9 +18,12 @@ service.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
-  // 设置Content-Type请求头
+  // 设置Content-Type请求头，但不覆盖multipart/form-data
   if (config.method === 'post' || config.method === 'put' || config.method === 'patch') {
-    config.headers['Content-Type'] = 'application/json'
+    // 如果不是FormData实例，则设置为application/json
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json'
+    }
   }
   // 添加调试信息
   console.log('请求配置:', {
