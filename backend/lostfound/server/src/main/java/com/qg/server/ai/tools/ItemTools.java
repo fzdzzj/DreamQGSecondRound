@@ -2,6 +2,7 @@ package com.qg.server.ai.tools;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.qg.common.constant.BizItemStatusConstant;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizItemAiResult;
 import com.qg.pojo.entity.BizItemAiTag;
@@ -61,6 +62,8 @@ public class ItemTools {
         if (hasItemIds) {
             wrapper.in(BizItem::getId, itemIds);
         }
+        wrapper.eq(BizItem::getType, "2");
+        wrapper.eq(BizItem::getStatus, BizItemStatusConstant.OPEN);
         // 2.执行查询
         List<BizItem> items = bizItemDao.selectList(wrapper);
         log.info("查询物品信息成功，name={}, lostPlace={}, itemIds={}, count={}",
