@@ -3,11 +3,16 @@
     <h2>操作日志</h2>
 
     <el-form :inline="true" style="margin-bottom:16px">
-      <el-form-item label="操作人">
-        <el-input v-model="query.userName" placeholder="操作人" clearable />
+      <el-form-item label="用户ID">
+        <el-input v-model="query.userId" placeholder="用户ID" clearable />
       </el-form-item>
-      <el-form-item label="对象类型">
-        <el-input v-model="query.targetType" placeholder="对象类型" clearable />
+      <el-form-item label="操作类型">
+        <el-select v-model="query.operationType" placeholder="全部" clearable>
+          <el-option label="认领" value="1" />
+          <el-option label="编辑" value="2" />
+          <el-option label="发布" value="3" />
+          <el-option label="管理员" value="4" />
+        </el-select>
       </el-form-item>
       <el-form-item label="时间范围">
         <el-date-picker
@@ -27,11 +32,8 @@
 
     <CommonTable :data="list" :loading="loading">
 <el-table-column prop="id" label="ID" width="80" />
-<el-table-column prop="userId" label="操作人" width="120" /> <!-- 修改为 userId -->
+<el-table-column prop="userId" label="用户" width="120" /> <!-- 修改为 userId -->
 <el-table-column prop="actionTypeDesc" label="操作内容" /> <!-- 修改为 actionTypeDesc -->
-<el-table-column prop="actionType" label="对象类型" width="120" /> <!-- 修改为 actionType -->
-<el-table-column prop="id" label="对象ID" width="100" /> <!-- 如果没有 targetId，可暂时用 id 占位 -->
-<el-table-column prop="actionTypeDesc" label="备注" /> <!-- 使用 actionTypeDesc 作为备注 -->
 <el-table-column prop="createTime" label="时间" min-width="180" />
     </CommonTable>
 
@@ -55,8 +57,8 @@ const list = ref<any[]>([])
 const loading = ref(false)
 
 const query = reactive({
-  userName: '',
-  targetType: ''
+  userId: '',
+  operationType: ''
 })
 const dateRange = ref<string[]>([])
 
@@ -69,8 +71,8 @@ const load = async () => {
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-      userName: query.userName,
-      targetType: query.targetType,
+      userId: query.userId || undefined,
+      operationType: query.operationType || undefined,
       startTime: startTime || undefined,
       endTime: endTime || undefined
     }
@@ -86,8 +88,8 @@ const load = async () => {
 }
 
 const reset = () => {
-  query.userName = ''
-  query.targetType = ''
+  query.userId = ''
+  query.operationType = ''
   dateRange.value = []
   pageNum.value = 1
   load()
