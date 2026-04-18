@@ -38,12 +38,39 @@
       <el-table-column prop="createTime" label="举报时间" />
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button size="small" type="primary" @click="handleReport(scope.row)">
-            {{ scope.row.status === 1 ? '处理' : '已处理' }}
+          <el-button size="small" type="primary" @click="handleReport(scope.row)" v-if="Number(scope.row.status) === 1">
+            处理
           </el-button>
+          <span v-else>已处理</span>
         </template>
       </el-table-column>
     </CommonTable>
+
+    <el-dialog v-model="auditDialogVisible" title="处理举报" width="500px">
+      <el-form :model="auditForm" label-width="80px">
+        <el-form-item label="举报ID">
+          <span>{{ auditForm.reportId }}</span>
+        </el-form-item>
+        <el-form-item label="处理结果">
+          <el-radio-group v-model="auditForm.action">
+            <el-radio :label="1">通过（删除违规内容）</el-radio>
+            <el-radio :label="2">不通过（维持原状）</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="处理备注">
+          <el-input
+            v-model="auditForm.remark"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入处理备注"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="auditDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitAudit" :loading="submitting">确定</el-button>
+      </template>
+    </el-dialog>
 
     <CommonPagination
       :total="total"
@@ -55,12 +82,15 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { getReportPageApi } from '@/api/admin'
+import { auditReportApi } from '@/api/report'
 import CommonTable from '@/components/common/CommonTable.vue'
 import CommonPagination from '@/components/common/CommonPagination.vue'
 import SearchForm from '@/components/common/SearchForm.vue'
 import { ReportListVO } from '@/types/report'
+import { showSuccess, showError } from '@/utils/message'
 import { usePagination } from '@/hooks/usePagination'
 
 const list = ref<ReportListVO[]>([])
@@ -83,12 +113,11 @@ const load = async () => {
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-      status: query.status,
-      reporterId: query.reporterId,
-      itemId: query.itemId,
-// 将时间格式从 "YYYY-MM-DD HH:mm:ss" 改为 "YYYY-MM-DDTHH:mm:ss"
-startTime: startTime ? startTime.replace(' ', 'T') : undefined,
-endTime: endTime ? endTime.replace(' ', 'T') : undefined
+      status: query.status?.toString(),
+      reporterId: query.reporterId?.toString(),
+      itemId: query.itemId?.toString(),
+      startTime: startTime ? startTime.replace(' ', 'T') : undefined,
+      endTime: endTime ? endTime.replace(' ', 'T') : undefined
     }
     
     console.log('发送的参数:', params)
@@ -114,9 +143,44 @@ const changePage = (p: number) => {
   load()
 }
 
+const auditDialogVisible = ref(false)
+const submitting = ref(false)
+
+const auditForm = reactive({
+  reportId: 0,
+  action: 1, // 默认为通过
+  remark: ''
+})
+
 const handleReport = (row: ReportListVO) => {
-  // 处理举报的逻辑
-  console.log('处理举报:', row)
+  auditForm.reportId = row.id
+  auditForm.remark = ''
+  auditDialogVisible.value = true
+}
+
+const submitAudit = async () => {
+  if (!auditForm.remark.trim()) {
+    showError('请输入处理备注')
+    return
+  }
+
+  submitting.value = true
+  try {
+    const auditData = {
+      status: '2', // 设置为已处理
+      remark: auditForm.remark + ` (处理结果: ${auditForm.action === 1 ? '通过' : '不通过'})`
+    }
+    
+    await auditReportApi(auditForm.reportId, auditData)
+    showSuccess('处理成功')
+    auditDialogVisible.value = false
+    await load() // 重新加载数据
+  } catch (error) {
+    console.error('处理举报失败:', error)
+    showError('处理失败')
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(load)
