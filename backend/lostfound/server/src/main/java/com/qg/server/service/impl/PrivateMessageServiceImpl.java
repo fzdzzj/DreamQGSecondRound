@@ -102,8 +102,7 @@ public class PrivateMessageServiceImpl extends ServiceImpl<BizPrivateMessageDao,
         BizPrivateMessage entity = getSelf().createAndInsertMessage(senderId, dto);
         PrivateMessageRealtimeVO realtimeVO = new PrivateMessageRealtimeVO();
         BeanUtils.copyProperties(entity, realtimeVO);
-
-        // 6. 给接收方推送新消息
+        log.error("发送私聊消息给userId={}, type={}", dto.getReceiverId(), WsMessageType.PRIVATE_MESSAGE);
         privateChatWebSocketHandler.sendToUser(
                 dto.getReceiverId(),
                 WsPrivateMessagePayload.from(realtimeVO),

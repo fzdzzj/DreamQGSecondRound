@@ -14,8 +14,9 @@ public interface WebSocketSessionService {
     /**
      * 移除WebSocketSession
      * @param userId 用户ID
+     * @param session WebSocketSession
      */
-    void removeSession(Long userId);
+    void removeSession(Long userId, WebSocketSession session);
     /**
      * 获取WebSocketSession
      * @param userId 用户ID
