@@ -12,11 +12,11 @@
       <el-form-item label="时间范围">
         <el-date-picker
           v-model="dateRange"
-          type="daterange"
+          type="datetimerange"
           range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="YYYY-MM-DD"
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+          value-format="YYYY-MM-DD HH:mm:ss"
         />
       </el-form-item>
       <el-form-item>
@@ -65,38 +65,21 @@ const { pageNum, pageSize, total, setPagination } = usePagination()
 const load = async () => {
   loading.value = true
   try {
+    const [startTime, endTime] = dateRange.value || []
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
       userName: query.userName,
       targetType: query.targetType,
-      startTime: dateRange.value[0] ? `${dateRange.value[0]} 00:00:00` : undefined,
-      endTime: dateRange.value[1] ? `${dateRange.value[1]} 23:59:59` : undefined
+      startTime: startTime || undefined,
+      endTime: endTime || undefined
     }
     
+    console.log('发送的参数:', params)
     const res = await getOperationLogPageApi(params)
     
-    // 调试建议：先打印 res 查看实际结构
-    // console.log('API Res:', res)
-
-    // 方案 A：如果拦截器已解包（res 直接是 { list, total... }）
-    if (res && res.list) {
-      list.value = res.list
-      setPagination(res) // setPagination 通常需要 { total, pageNum, pageSize }
-    } 
-    // 方案 B：如果拦截器未解包（res 是 { code, data: { list... }, ... }）
-    else if (res && res.data && res.data.list) {
-      list.value = res.data.list
-      setPagination(res.data)
-    } 
-    else {
-      console.warn('Unexpected response structure:', res)
-      list.value = []
-    }
-    
-  } catch (error) {
-    console.error('Load logs failed:', error)
-    list.value = []
+    list.value = res.list
+    setPagination(res)
   } finally {
     loading.value = false
   }

@@ -11,10 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,7 +64,7 @@ public class LogController {
      */
     @PostMapping("/page")
     @Operation(summary = "分页获取操作日志")
-    public Result<PageResult<UserActionLogVO>> page(PageLogDTO dto) {
+    public Result<PageResult<UserActionLogVO>> page(@RequestBody PageLogDTO dto) {
         log.info("分页获取操作日志开始，参数：{}", dto);
         PageResult<UserActionLogVO> logList = logService.pageQuery(dto);
         log.info("分页获取操作日志成功，总条数：{}", logList.getTotal());

@@ -115,7 +115,7 @@ public class BizClaimRequestServiceImpl extends ServiceImpl<BizClaimRequestDao, 
         if (BizClaimRequestStatusConstant.APPROVED.equals(dto.getStatus())) {
             request.setPickupCode(UUID.randomUUID().toString().substring(0, 8));
             log.info("生成取货码: {}", request.getPickupCode());
-            notificationService.createNotification(request.getApplicantId(), id, MessageConstant.CLAIM_REQUEST_AUDIT_PASS + request.getPickupCode() + dto.getRemark());
+            notificationService.createNotification(request.getApplicantId(), id, MessageConstant.CLAIM_REQUEST_AUDIT_PASS + request.getPickupCode()+"\n" + dto.getRemark());
         } else if (BizClaimRequestStatusConstant.REJECTED.equals(dto.getStatus())) {
             log.info("审批拒绝，通知申请人: {}", dto.getRemark());
             notificationService.createNotification(request.getApplicantId(), id, MessageConstant.CLAIM_REQUEST_AUDIT_REJECT + dto.getRemark());
