@@ -38,10 +38,13 @@
       <el-table-column prop="createTime" label="举报时间" />
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button size="small" type="primary" @click="handleReport(scope.row)" v-if="Number(scope.row.status) === 1">
+          <el-button size="small" type="primary" @click="viewItem(scope.row.itemId)">
+            查看物品
+          </el-button>
+          <el-button size="small" type="primary" @click="handleReport(scope.row)" v-if="Number(scope.row.status) === 1" style="margin-left: 8px">
             处理
           </el-button>
-          <span v-else>已处理</span>
+          <span v-else style="margin-left: 8px">已处理</span>
         </template>
       </el-table-column>
     </CommonTable>
@@ -92,7 +95,9 @@ import SearchForm from '@/components/common/SearchForm.vue'
 import { ReportListVO } from '@/types/report'
 import { showSuccess, showError } from '@/utils/message'
 import { usePagination } from '@/hooks/usePagination'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const list = ref<ReportListVO[]>([])
 const loading = ref(false)
 
@@ -151,6 +156,10 @@ const auditForm = reactive({
   action: 1, // 默认为通过
   remark: ''
 })
+
+const viewItem = (itemId: number) => {
+  router.push(`/item/detail/${itemId}`)
+}
 
 const handleReport = (row: ReportListVO) => {
   auditForm.reportId = row.id

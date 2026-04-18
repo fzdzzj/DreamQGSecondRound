@@ -30,11 +30,14 @@
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="提交时间" min-width="180" />
-      <el-table-column label="操作" width="240">
+      <el-table-column label="操作" width="360">
         <template #default="scope">
-          <el-button type="primary" @click="openAuditDialog(scope.row, 2)" v-if="Number(scope.row.status) === 1">通过</el-button>
-          <el-button type="danger" @click="openAuditDialog(scope.row, 3)" v-if="Number(scope.row.status) === 1">驳回</el-button>
-          <span v-else> - </span>
+          <el-button type="primary" @click="viewItem(scope.row.itemId)">
+            查看物品
+          </el-button>
+          <el-button type="primary" @click="openAuditDialog(scope.row, 2)" v-if="Number(scope.row.status) === 1" style="margin-left: 8px">通过</el-button>
+          <el-button type="danger" @click="openAuditDialog(scope.row, 3)" v-if="Number(scope.row.status) === 1" style="margin-left: 8px">驳回</el-button>
+          <span v-else style="margin-left: 8px"> - </span>
         </template>
       </el-table-column>
     </CommonTable>
@@ -82,7 +85,9 @@ import CommonTable from '@/components/common/CommonTable.vue'
 import CommonPagination from '@/components/common/CommonPagination.vue'
 import { usePagination } from '@/hooks/usePagination'
 import SearchForm from '@/components/common/SearchForm.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const list = ref<any[]>([])
 const auditVisible = ref(false)
 const submitting = ref(false)
@@ -138,6 +143,10 @@ const getStatusText = (status: number | string) => {
 }
 
 onMounted(load)
+
+const viewItem = (itemId: number) => {
+  router.push(`/item/detail/${itemId}`)
+}
 
 const openAuditDialog = (row: any, status: number) => {
   auditForm.id = row.id
