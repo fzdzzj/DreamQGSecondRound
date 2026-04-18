@@ -229,7 +229,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
 
         if (cached != null) {
             log.info("从缓存中获取物品详情,itemId: {}", id);
-            if (ownerId.equals(BaseContext.getCurrentId())) {
+            if (!ownerId.equals(BaseContext.getCurrentId())) {
                 cached.setDescription(sensitiveWordFilterUtil.filter(cached.getDescription()));
                 cached.setAiDescription(sensitiveWordFilterUtil.filter(cached.getAiDescription()));
             }
