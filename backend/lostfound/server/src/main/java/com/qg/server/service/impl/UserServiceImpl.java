@@ -222,7 +222,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
                 .eq(SysUser::getEmail, email));
         log.info("查询到的用户数量：{}", count);
         if (count > 0) {
-            log.warn("用户注册失败：用户名或手机号或邮箱已存在，用户名或手机号或邮箱：{}", username, phone, email);
+            log.warn("用户注册失败：用户名或手机号或邮箱已存在");
             throw new RegisterFailedException(MessageConstant.USERNAME_OR_PHONE_OR_EMAIL_EXISTS);
         }
 
@@ -381,13 +381,13 @@ public class UserServiceImpl extends ServiceImpl<UserDao, SysUser> implements Us
     /**
      * 通过验证码修改密码
      *
-     * @param dto    修改密码的DTO
-     *               <p>
-     *               1. 校验验证码（类型：RESET_PASSWORD）
-     *               2. 查询当前邮箱用户是否存在
-     *               3. 校验两次密码是否一致
-     *               4. 加密新密码
-     *               5. 更新密码
+     * @param dto 修改密码的DTO
+     *            <p>
+     *            1. 校验验证码（类型：RESET_PASSWORD）
+     *            2. 查询当前邮箱用户是否存在
+     *            3. 校验两次密码是否一致
+     *            4. 加密新密码
+     *            5. 更新密码
      */
     @Override
     public void changePasswordByCode(ChangePasswordByCodeDTO dto) {

@@ -104,7 +104,7 @@ public class EmailVerificationCodeServiceImpl implements EmailVerificationCodeSe
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailProperties.getUsername());
         message.setTo(email);
-        message.setSubject("【你的项目名】邮箱验证码");
+        message.setSubject("【校园AI失物招领平台】邮箱验证码");
         message.setText("您好，您的验证码为：" + code + "，"
                 + CodeTimeConstant.CODE_EXPIRE_TIME
                 + "秒内有效。若非本人操作，请忽略此邮件。");

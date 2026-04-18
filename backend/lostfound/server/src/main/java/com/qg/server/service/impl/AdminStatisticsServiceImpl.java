@@ -2,10 +2,7 @@ package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qg.common.constant.BizItemStatusConstant;
-import com.qg.common.constant.BizItemTypeConstant;
-import com.qg.common.constant.MessageConstant;
-import com.qg.common.constant.aiStatisticsConstant;
+import com.qg.common.constant.*;
 import com.qg.common.properties.AIProperties;
 import com.qg.pojo.entity.BizAiStatisticsReport;
 import com.qg.pojo.entity.BizItem;
@@ -82,12 +79,12 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
                 new LambdaQueryWrapper<BizItem>()
                         .ge(BizItem::getCreateTime, start)
                         .le(BizItem::getCreateTime, end)
-                        .eq(BizItem::getDeleted, 0)
+                        .eq(BizItem::getDeleted, DeletedConstant.NOT_DELETED)
         );
         log.info("开始生成报表，statDate={}, start={}, end={}", statDate, start, end);
         // 2. 组装统计数据
         Map<String, Object> sourceData = new LinkedHashMap<>();
-        sourceData.put("data", statDate.toString());
+        sourceData.put("date", statDate.toString());
         sourceData.put("totalCount", items.size());
         sourceData.put("topLocations", topLocations(items));
         sourceData.put("topTypes", topTypes(items));

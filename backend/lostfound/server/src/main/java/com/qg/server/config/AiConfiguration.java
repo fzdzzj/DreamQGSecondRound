@@ -71,7 +71,7 @@ public class AiConfiguration {
                 .defaultTools(itemTools)
                 .defaultOptions(
                         ToolCallingChatOptions.builder()
-                                .internalToolExecutionEnabled(true)
+                                .internalToolExecutionEnabled(true)// 允许内部工具执行
                                 .build()
                 )
                 .build();

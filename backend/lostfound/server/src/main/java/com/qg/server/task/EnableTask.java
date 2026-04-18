@@ -1,6 +1,7 @@
 package com.qg.server.task;
 
 import com.qg.common.constant.RedisConstant;
+import com.qg.common.constant.UserStatusConstant;
 import com.qg.pojo.entity.SysUser;
 import com.qg.server.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class EnableTask {
                 // 6. 解封用户
                 SysUser user = new SysUser();
                 user.setId(Long.parseLong(userId));
-                user.setStatus(1);
+                user.setStatus(UserStatusConstant.ENABLE);
                 userService.updateById(user);
                 log.info("用户：{} 已自动解封", userId);
             }

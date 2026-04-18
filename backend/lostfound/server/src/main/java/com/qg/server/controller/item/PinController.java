@@ -4,7 +4,6 @@ import com.qg.common.result.PageResult;
 import com.qg.common.result.Result;
 import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
-import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.vo.PinRequestDetailVO;
 import com.qg.pojo.vo.PinRequestStatVO;
 import com.qg.server.service.PinService;
@@ -62,11 +61,11 @@ public class PinController {
     /**
      * 查询置顶申请列表
      *
-     * @param pageNum 页码
-     * @param pageSize 每页数量
-     * @param status 状态
+     * @param pageNum     页码
+     * @param pageSize    每页数量
+     * @param status      状态
      * @param applicantId 申请人ID
-     * @param itemId 物品ID
+     * @param itemId      物品ID
      * @return 分页查询结果
      */
     @GetMapping("/page")

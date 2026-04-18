@@ -20,9 +20,9 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(privateChatWebSocketHandler(), "/ws/private-chat")
-                .addInterceptors(new WebSocketAuthHandshakeInterceptor(jwtUtil, userDao))
-                .setAllowedOriginPatterns("*");
+        registry.addHandler(privateChatWebSocketHandler(), "/ws/private-chat")// 注册私聊 WebSocket 处理器
+                .addInterceptors(new WebSocketAuthHandshakeInterceptor(jwtUtil, userDao))// 添加鉴权拦截器
+                .setAllowedOriginPatterns("*");// 允许所有源访问
     }
 
     public PrivateChatWebSocketHandler privateChatWebSocketHandler() {

@@ -27,7 +27,21 @@ spring:
   data:
     redis:
       url: ${SPRING_REDIS_URL:redis://localhost:6379/10}
-
+  mail:
+    host: smtp.qq.com
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    default-encoding: UTF-8
+    port: 465
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
 # 服务端口（可被环境配置覆盖）
 server:
   port: ${SERVER_PORT:8080}
@@ -76,4 +90,4 @@ springdoc:
 risk:
   wecom:
     enabled: true
-    webhook: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxx
+    webhook: ${WECOM_WEBHOOK_URL:https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxx}

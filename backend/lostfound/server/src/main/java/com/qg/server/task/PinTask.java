@@ -28,6 +28,7 @@ public class PinTask {
         itemService.clearExpiredPinnedItems();
         log.info("清除过期的置顶物品完成");
     }
+
     @Scheduled(cron = "0 0 0 * * ?")
     public void clearExpiredPinnedItemsDaily() {
         log.info("开始清除过时的置顶物品");

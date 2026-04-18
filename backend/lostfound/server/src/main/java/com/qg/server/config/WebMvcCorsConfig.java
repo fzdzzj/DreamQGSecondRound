@@ -13,7 +13,7 @@ public class WebMvcCorsConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("http://127.0.0.1:5173", "http://localhost:5173")
                 .allowedMethods("*")
                 .allowedHeaders("*")
-                .allowCredentials(false)
+                .allowCredentials(false)//允许携带cookie
                 .maxAge(3600);
     }
 }

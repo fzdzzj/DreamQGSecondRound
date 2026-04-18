@@ -44,6 +44,7 @@ public class AiChatServiceImpl implements AiChatService {
     // Modify to adjust chunk size and delay
     private static final int SSE_CHUNK_SIZE = 50;// 增加块的大小，减少前端渲染次数
     private static final Duration SSE_CHUNK_DELAY = Duration.ofMillis(50); // 增加延迟，减缓推送
+
     /**
      * 流式回答
      *

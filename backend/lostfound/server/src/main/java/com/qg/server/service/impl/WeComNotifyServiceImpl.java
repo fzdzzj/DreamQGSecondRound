@@ -24,14 +24,15 @@ public class WeComNotifyServiceImpl implements WeComNotifyService {
 
     private final WeComRobotProperties properties;
     private final RestTemplateBuilder restTemplateBuilder;
+
     /**
      * 通知企业微信群机器人
      *
      * @param event 风险事件
-     * 1. 校验企业微信群机器人是否启用
-     * 2. 校验 webhook 是否配置
-     * 3. 构建企业微信群机器人消息内容
-     * 4. 发送企业微信群机器人消息
+     *              1. 校验企业微信群机器人是否启用
+     *              2. 校验 webhook 是否配置
+     *              3. 构建企业微信群机器人消息内容
+     *              4. 发送企业微信群机器人消息
      */
     @Override
     public void notifyRiskEvent(BizRiskEvent event) {

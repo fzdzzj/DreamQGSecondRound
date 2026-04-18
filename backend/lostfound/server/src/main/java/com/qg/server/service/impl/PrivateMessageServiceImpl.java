@@ -3,6 +3,7 @@ package com.qg.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.qg.common.constant.DeletedConstant;
 import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;
 import com.qg.common.exception.BaseException;
@@ -400,7 +401,7 @@ public class PrivateMessageServiceImpl extends ServiceImpl<BizPrivateMessageDao,
                 new LambdaQueryWrapper<BizPrivateMessage>()
                         .eq(BizPrivateMessage::getReceiverId, userId)
                         .eq(BizPrivateMessage::getStatus, 0)
-                        .eq(BizPrivateMessage::getReceiverDeleted, 0)
+                        .eq(BizPrivateMessage::getReceiverDeleted, DeletedConstant.NOT_DELETED)
         );
     }
 

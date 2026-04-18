@@ -65,10 +65,10 @@ public class TokenFilter extends OncePerRequestFilter {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) return true;
         log.info("请求：{} {}", request.getMethod(), request.getRequestURI());
         // 忽略白名单中的 URL
-        if (WHITE_LIST.contains(request.getRequestURI())){
+        if (WHITE_LIST.contains(request.getRequestURI())) {
             log.info("白名单中的 URL，无需过滤：{}", request.getRequestURI());
             return true;
-        };
+        }
         String uri = request.getRequestURI();
         return WHITE_LIST.stream().anyMatch(pattern -> pathMatcher.match(pattern, uri));
     }

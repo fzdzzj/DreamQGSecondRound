@@ -38,13 +38,13 @@ public class XssResponseAdvice implements ResponseBodyAdvice<Object> {
     /**
      * 处理 JSON 响应，防止 XSS 攻击
      *
-     * @param body
-     * @param returnType
-     * @param selectedContentType
-     * @param selectedConverterType
-     * @param request
-     * @param response
-     * @return
+     * @param body 原始返回值
+     * @param returnType 返回值类型
+     * @param selectedContentType 选中的内容类型
+     * @param selectedConverterType 选中的转换器类型
+     * @param request  请求对象
+     * @param response 响应对象
+     * @return 处理后的返回值
      */
     @Override
     public Object beforeBodyWrite(Object body,

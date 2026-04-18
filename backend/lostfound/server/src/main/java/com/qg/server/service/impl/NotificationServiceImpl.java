@@ -1,11 +1,9 @@
 package com.qg.server.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qg.common.constant.DefaultPageConstant;
-import com.qg.common.constant.DeletedConstant;
 import com.qg.common.constant.MessageConstant;
 import com.qg.common.constant.ReadStatusConstant;
 import com.qg.common.context.BaseContext;

@@ -9,8 +9,6 @@ import com.qg.common.constant.*;
 import com.qg.common.context.BaseContext;
 import com.qg.common.enums.BizItemStatusEnum;
 import com.qg.common.exception.AbsentException;
-import com.qg.common.exception.BaseException;
-import com.qg.common.exception.DeletionNotAllowedException;
 import com.qg.common.exception.UpdateNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.common.util.SensitiveWordFilterUtil;
@@ -34,7 +32,6 @@ import com.qg.server.service.RiskMonitorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -70,6 +67,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
     private final RiskMonitorService riskMonitorService;
     private final SensitiveWordFilterUtil sensitiveWordFilterUtil;
     private final ApplicationContext applicationContext;
+
     private ItemServiceImpl getSelf() {
         return applicationContext.getBean(ItemServiceImpl.class);
     }
@@ -327,7 +325,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                 query.getKeyword() == null ? "" : query.getKeyword().trim(),
                 query.getLocation() == null ? "" : query.getLocation().trim(),
                 query.getAiCategory() == null ? "" : query.getAiCategory().trim(),
-                // 👇 重点修复：不要用 toString()！
                 query.getStartTime() == null ? "" : query.getStartTime().format(formatter),
                 query.getEndTime() == null ? "" : query.getEndTime().format(formatter)
         );
@@ -342,7 +339,7 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         Page<BizItem> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
 
-        // 基础查询条件
+        // 1.1 基础查询条件
         wrapper.eq(query.getType() != null, BizItem::getType, query.getType())
                 .ge(query.getStartTime() != null, BizItem::getHappenTime, query.getStartTime())
                 .le(query.getEndTime() != null, BizItem::getHappenTime, query.getEndTime())
@@ -363,38 +360,42 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         boolean hasAiCategory = !aiCat.isEmpty();
 
         if (hasKeyword || hasLocation || hasAiCategory) {
-
             wrapper.and(w -> {
+                // 统一标记：是否已经有条件
+                boolean hasAny = false;
 
                 // 2.1. title + description 全文检索
                 if (hasKeyword) {
                     log.info("从数据库中查询物品分页结果,keyword: {}", kw);
                     w.apply("MATCH(title, description) AGAINST({0} IN NATURAL LANGUAGE MODE)", kw);
+                    hasAny = true;
                 }
 
                 // 2.2. location 模糊匹配
                 if (hasLocation) {
-                    if (hasKeyword) w.or();
+                    if (hasAny) w.or(); // 前面有条件才加 OR
                     log.info("从数据库中查询物品分页结果,location: {}", loc);
                     w.like(BizItem::getLocation, "%" + loc + "%");
+                    hasAny = true;
                 }
 
                 // 2.3. ai_category（exists + fulltext + like 合并）
-                if (hasKeyword || hasAiCategory) {
-
-                    if (hasKeyword || hasLocation) w.or();
+                if (hasAiCategory) {
+                    if (hasAny) w.or();
                     log.info("从数据库中查询物品分页结果,ai_category: {}", aiCat);
 
+                    // 安全拼接搜索词，避免 null
                     String aiSearchText = (kw + " " + aiCat).trim();
 
-                    w.exists(
-                            "SELECT 1 FROM biz_item_ai_result air " +
-                                    "WHERE air.item_id = biz_item.id " +
-                                    "AND air.result_version = (SELECT MAX(result_version) FROM biz_item_ai_result WHERE item_id = biz_item.id) " +
-                                    "AND (" +
-                                    " MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE) " +
-                                    " OR air.ai_category LIKE {1} ESCAPE '\\\\' " +
-                                    ")",
+                    w.exists("""
+                                    SELECT 1 FROM biz_item_ai_result air
+                                    WHERE air.item_id = biz_item.id
+                                      AND air.result_version = (SELECT MAX(result_version) FROM biz_item_ai_result WHERE item_id = air.item_id)
+                                      AND (
+                                          MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE)
+                                          OR air.ai_category LIKE {1} ESCAPE '\\\\'
+                                      )
+                                    """,
                             aiSearchText,
                             "%" + aiCat + "%"
                     );

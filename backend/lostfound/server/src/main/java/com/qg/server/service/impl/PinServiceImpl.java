@@ -14,7 +14,6 @@ import com.qg.common.exception.ViewNotAllowedException;
 import com.qg.common.result.PageResult;
 import com.qg.pojo.dto.PinApplyDTO;
 import com.qg.pojo.dto.PinAuditDTO;
-import com.qg.pojo.dto.PinRequestQueryDTO;
 import com.qg.pojo.entity.BizItem;
 import com.qg.pojo.entity.BizPinRequest;
 import com.qg.pojo.vo.PinRequestDetailVO;
@@ -111,18 +110,9 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
      * @param pinRequestId 用户处理申请ID
      *                     1. 校验置顶申请是否存在
      *                     2. 校验置顶申请状态是否为待处理
-     *                     3. 校验用户角色
-     *                     4. 删除置顶申请
-     *                     5. 撤销物品置顶
-     *                     6. 发送通知
-     *                     <p>
-     *                     管理员处理置顶申请
-     *                     1. 校验置顶申请是否存在
-     *                     2. 校验置顶申请状态是否为已批准
-     *                     3. 撤销物品置顶
-     *                     4. 删除置顶申请
-     *                     5. 撤销物品置顶
-     *                     6. 发送通知
+     *                     3. 删除置顶申请
+     *                     4. 撤销物品置顶
+     *                     5. 发送通知
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -142,7 +132,6 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
                 log.warn("用户{}不能取消别人的申请", currentUserId);
                 throw new BaseException(403, "不能取消他人申请");
             }
-            // 3.校验用户角色
             if (!PinRequestStatusConstant.PENDING.equals(pinRequest.getStatus())) {
                 log.warn("置顶申请{}状态不是待处理", pinRequestId);
                 throw new BaseException(400, "已处理的申请无法取消");
@@ -151,35 +140,6 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
             updateById(pinRequest);
             log.info("学生取消自己的置顶申请，pinRequestId={}", pinRequestId);
-            return;
-        }
-
-        // 管理员逻辑：可以取消任意申请
-        if (RoleConstant.ADMIN.equals(currentRole) || RoleConstant.SYSTEM.equals(currentRole)) {
-            //2.校验置顶申请状态是否为已批准
-            if (PinRequestStatusConstant.APPROVED.equals(pinRequest.getStatus())) {
-                //3. 如果管理员取消已批准的申请，同时撤销物品置顶
-                BizItem item = bizItemDao.selectById(pinRequest.getItemId());
-                if (item != null) {
-                    // 3. 撤销物品置顶
-                    log.warn("物品{}的置顶状态从已置顶{}更改为未置顶{}", pinRequest.getItemId(), PinConstant.PINNED, PinConstant.NOT_PINNED);
-                    item.setIsPinned(PinConstant.NOT_PINNED);
-                    item.setPinExpireTime(null);
-                    bizItemDao.updateById(item);
-                }
-            }
-            //4. 删除置顶申请
-            pinRequest.setStatus(PinRequestStatusConstant.CANCELED);
-            updateById(pinRequest);
-            notificationService.createNotification(pinRequest.getApplicantId(), pinRequest.getItemId(), "您的置顶申请已被撤销");
-            BizItem  item = bizItemDao.selectById(pinRequest.getItemId());
-            // 5. 撤销物品置顶
-            if (item != null) {
-                item.setIsPinned(PinConstant.NOT_PINNED);
-                item.setPinExpireTime(null);
-                bizItemDao.updateById(item);
-            }
-            log.info("管理员取消置顶申请，pinRequestId={}", pinRequestId);
             return;
         }
         log.warn("用户{}没有权限取消置顶申请", currentUserId);
@@ -197,6 +157,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
      *                    5. 发送通知
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void audit(PinAuditDTO pinAuditDTO) {
         Long adminId = BaseContext.getCurrentId();
         // 1. 校验置顶申请是否存在
@@ -240,23 +201,23 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
     /**
      * 查询置顶申请列表
      *
-     * @param pageNum 页码
-     * @param pageSize 每页数量
-     * @param status 状态
+     * @param pageNum     页码
+     * @param pageSize    每页数量
+     * @param status      状态
      * @param applicantId 申请人ID
-     * @param itemId 物品ID
+     * @param itemId      物品ID
      * @return 分页查询结果
-     *                 1. 校验参数
-     *                 2. 查询置顶申请列表
-     *                 3. 转换为 VO
+     * 1. 校验参数
+     * 2. 查询置顶申请列表
+     * 3. 转换为 VO
      */
     @Override
     public PageResult<PinRequestStatVO> queryPinRequests(Integer pageNum, Integer pageSize, Integer status, Long applicantId, Long itemId) {
-        if(pageNum == null || pageNum < 1){
-            pageNum=DefaultPageConstant.DEFAULT_PAGE_NUM;
+        if (pageNum == null || pageNum < 1) {
+            pageNum = DefaultPageConstant.DEFAULT_PAGE_NUM;
         }
-        if(pageSize == null || pageSize < 1){
-            pageSize=DefaultPageConstant.DEFAULT_PAGE_SIZE;
+        if (pageSize == null || pageSize < 1) {
+            pageSize = DefaultPageConstant.DEFAULT_PAGE_SIZE;
         }
         //1.构建查询参数
         Page<BizPinRequest> page = new Page<>(pageNum, pageSize);
@@ -264,7 +225,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
         LambdaQueryWrapper<BizPinRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper.orderByDesc(BizPinRequest::getCreateTime);
         if (applicantId != null) wrapper.eq(BizPinRequest::getApplicantId, applicantId);
-        if (status!=null&&StringUtils.isNotBlank(status.toString())) wrapper.eq(BizPinRequest::getStatus, status);
+        if (status != null && StringUtils.isNotBlank(status.toString())) wrapper.eq(BizPinRequest::getStatus, status);
         //3.查询置顶申请列表
         baseMapper.selectPage(page, wrapper);
         //4.转换为 VO
@@ -351,6 +312,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
                 .collect(Collectors.toList());
         return list;
     }
+
     /**
      * 清除过时的置顶申请
      */
@@ -361,7 +323,6 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
                 .lt(BizPinRequest::getCreateTime, LocalDateTime.now().minusDays(1)));
         log.info("清除过时的置顶申请完成");
     }
-
 
 
     /**

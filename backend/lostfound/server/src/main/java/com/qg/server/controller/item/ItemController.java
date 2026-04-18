@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.*;
 public class ItemController {
 
     private final ItemService itemService;
-    private final PinService pinService;
 
     /**
      * 发布丢失物品

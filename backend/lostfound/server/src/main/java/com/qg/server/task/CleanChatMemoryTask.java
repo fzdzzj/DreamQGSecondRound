@@ -21,9 +21,9 @@ public class CleanChatMemoryTask {
     private final ChatHistoryRepository chatHistoryRepository;
     private final TemporaryChatMemory temporaryChatMemory;
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
     public void cleanExpiredSessions() {
-        long ttlSeconds = 24 * 3600;
+        long ttlSeconds = 4 * 3600;
 
         List<String> chatIds = chatHistoryRepository.getAllChatIds("answer");
 
@@ -49,6 +49,6 @@ public class CleanChatMemoryTask {
     // 每10分钟清理一次，过期时间 1 天（86400秒）
     @Scheduled(cron = "0 */10 * * * ?")
     public void clean() {
-        temporaryChatMemory.cleanExpired(86400);
+        temporaryChatMemory.cleanExpired(4 * 3600);
     }
 }

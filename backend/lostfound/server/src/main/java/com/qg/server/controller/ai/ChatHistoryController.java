@@ -8,8 +8,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +23,6 @@ import java.util.List;
 @Tag(name = "AI聊天记录接口", description = "AI聊天记录接口")
 public class ChatHistoryController {
     private final ChatHistoryRepository chatHistoryRepository;
-    private final ChatMemory chatMemory;
 
     /**
      * 获取所有聊天记录的ID
@@ -35,9 +32,8 @@ public class ChatHistoryController {
      */
     @GetMapping("/chatIds")
     @Operation(summary = "获取所有聊天记录的ID")
-    public Result<List<String>> getChatIds(@RequestParam("type") String type)
-    {
-        Long userId= BaseContext.getCurrentId();
+    public Result<List<String>> getChatIds(@RequestParam("type") String type) {
+        Long userId = BaseContext.getCurrentId();
         log.info("获取所有聊天记录的ID，消息类型={}", type);
         List<String> chatIds = chatHistoryRepository.getChatIds(type, userId);
         log.info("从数据库中获取的聊天记录ID，用户ID={},消息类型={},ID数量={}", userId, type, chatIds.size());
@@ -46,15 +42,15 @@ public class ChatHistoryController {
 
     /**
      * 获取聊天历史记录
+     *
      * @param chatId 聊天ID
-
      */
     @GetMapping("/{chatId}")
     @Operation(summary = "获取聊天历史记录")
     public Result<List<MessageVO>> getChatHistory(@PathVariable("chatId") String chatId) {
         // 从数据库中获取聊天记录
         log.info("从数据库中获取聊天记录，chatId: {}", chatId);
-        Long userId= BaseContext.getCurrentId();
+        Long userId = BaseContext.getCurrentId();
         List<MessageVO> messages = chatHistoryRepository.list(chatId, userId);
         // 如果数据库中没有记录，返回空记录
         if (messages == null) {
