@@ -24,12 +24,16 @@
       <el-table-column prop="id" label="ID" width="100" />
       <el-table-column prop="itemId" label="物品ID" width="120" />
       <el-table-column prop="applicantId" label="申请人ID" width="100" />
-      <el-table-column prop="statusDesc" label="状态" width="120" />
+      <el-table-column label="状态" width="120">
+        <template #default="scope">
+          {{ getStatusText(scope.row.status) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="createTime" label="提交时间" min-width="180" />
       <el-table-column label="操作" width="240">
         <template #default="scope">
-          <el-button type="primary" @click="openAuditDialog(scope.row, 2)" v-if="scope.row.status === 1">通过</el-button>
-          <el-button type="danger" @click="openAuditDialog(scope.row, 3)" v-if="scope.row.status === 1">驳回</el-button>
+          <el-button type="primary" @click="openAuditDialog(scope.row, 2)" v-if="Number(scope.row.status) === 1">通过</el-button>
+          <el-button type="danger" @click="openAuditDialog(scope.row, 3)" v-if="Number(scope.row.status) === 1">驳回</el-button>
           <span v-else> - </span>
         </template>
       </el-table-column>
@@ -102,9 +106,9 @@ const load = async () => {
   const res = await getPinPageApi({
     pageNum: pageNum.value,
     pageSize: pageSize.value,
-    status: query.status,
-    applicantId: query.applicantId,
-    itemId: query.itemId
+    status: query.status?.toString(),
+    applicantId: query.applicantId?.toString(),
+    itemId: query.itemId?.toString()
   })
   list.value = res.list
   setPagination(res)
@@ -121,6 +125,16 @@ const reset = () => {
 const changePage = (val: number) => {
   pageNum.value = val
   load()
+}
+
+const getStatusText = (status: number | string) => {
+  const numStatus = Number(status)
+  const map: Record<number, string> = {
+    1: '待审核',
+    2: '已通过',
+    3: '已驳回'
+  }
+  return map[numStatus] || '未知状态'
 }
 
 onMounted(load)

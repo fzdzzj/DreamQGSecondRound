@@ -314,8 +314,8 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
      */
     @Override
     public PageResult<BizItemStatVO> pageList(ItemPageQueryDTO query) {
-// 时间格式化工具
-// 时间格式化（固定格式，保证时间不同 Key 一定不同）
+        // 时间格式化工具
+        // 时间格式化（固定格式，保证时间不同 Key 一定不同）
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         String cacheKey = String.format(RedisConstant.ITEM_PAGE_KEY_FORMAT,
@@ -384,20 +384,13 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
                     if (hasAny) w.or();
                     log.info("从数据库中查询物品分页结果,ai_category: {}", aiCat);
 
-                    // 安全拼接搜索词，避免 null
-                    String aiSearchText = (kw + " " + aiCat).trim();
-
                     w.exists("""
-                                    SELECT 1 FROM biz_item_ai_result air
-                                    WHERE air.item_id = biz_item.id
-                                      AND air.result_version = (SELECT MAX(result_version) FROM biz_item_ai_result WHERE item_id = air.item_id)
-                                      AND air.ai_category IS NOT NULL AND air.ai_category != ''
-                                      AND (
-                                          MATCH(air.ai_category) AGAINST({0} IN NATURAL LANGUAGE MODE)
-                                          OR air.ai_category LIKE {1} ESCAPE '\\\\'
-                                      )
-                                    """,
-                            aiSearchText,
+                                SELECT 1 FROM biz_item_ai_result air
+                                WHERE air.item_id = biz_item.id
+                                  AND air.result_version = (SELECT MAX(result_version) FROM biz_item_ai_result WHERE item_id = air.item_id)
+                                  AND air.ai_category IS NOT NULL AND air.ai_category != ''
+                                  AND air.ai_category LIKE {0} ESCAPE '\\\\'
+                                """,
                             "%" + aiCat + "%"
                     );
                 }
@@ -412,7 +405,6 @@ public class ItemServiceImpl extends ServiceImpl<BizItemDao, BizItem> implements
         redisTemplate.opsForValue().set(cacheKey, voList, 30, java.util.concurrent.TimeUnit.MINUTES);
         return voList;
     }
-
 
     /**
      * 分页查询物品（个人列表）

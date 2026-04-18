@@ -39,7 +39,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
     @Override
     public void generateDailyAiReport() {
         LocalDate today = LocalDate.now();
-        LocalDateTime start = today.minusDays(1).atStartOfDay();
+        LocalDateTime start = today.atStartOfDay().minusDays(1);
         LocalDateTime end = today.atStartOfDay();
         generateReport(today, start, end, aiStatisticsConstant.DAILY);
     }
@@ -48,15 +48,15 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
     @Override
     public void generateWeeklyAiReport() {
         LocalDate today = LocalDate.now();
-        LocalDateTime start = today.minusWeeks(1).atStartOfDay();
-        LocalDateTime end = today.atStartOfDay();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.atStartOfDay().plusDays(1);
         generateReport(today, start, end, aiStatisticsConstant.WEEKLY);
     }
 
     @Override
     public void generateMonthlyAiReport() {
         LocalDate today = LocalDate.now();
-        LocalDateTime start = today.minusMonths(1).atStartOfDay();
+        LocalDateTime start = today.atStartOfDay().minusMonths(1);
         LocalDateTime end = today.atStartOfDay();
         generateReport(today, start, end, aiStatisticsConstant.MONTHLY);
     }
@@ -81,6 +81,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
                         .le(BizItem::getCreateTime, end)
                         .eq(BizItem::getDeleted, DeletedConstant.NOT_DELETED)
         );
+        log.error("items={}", items);
         log.info("开始生成报表，statDate={}, start={}, end={}", statDate, start, end);
         // 2. 组装统计数据
         Map<String, Object> sourceData = new LinkedHashMap<>();

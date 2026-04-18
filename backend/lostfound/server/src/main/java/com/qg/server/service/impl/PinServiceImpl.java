@@ -193,7 +193,7 @@ public class PinServiceImpl extends ServiceImpl<BizPinRequestDao, BizPinRequest>
             log.info("物品{}的置顶状态从未置顶{}更改为已置顶{}", request.getItemId(), PinConstant.NOT_PINNED, PinConstant.PINNED);
         }
         // 5. 发送通知
-        notificationService.createNotification(request.getApplicantId(), request.getId(), PinRequestStatusEnum.getDescByCode(update.getStatus() + request.getId()));
+        notificationService.createNotification(request.getApplicantId(), request.getId(), "您的置顶申请状态已"+PinRequestStatusEnum.getDescByCode(update.getStatus()));
 
         log.info("置顶审核完成，requestId={}, status={}", request.getId(), update.getStatus());
     }
